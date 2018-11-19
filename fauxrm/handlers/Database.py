@@ -2,7 +2,7 @@ import cx_Oracle
 import datetime
 from . import Table, View
 from . import Row
-from .connections import get_connection
+from db.connections import get_connection
 
 
 class Database(object):
