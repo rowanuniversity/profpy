@@ -3,11 +3,13 @@ import datetime
 from . import Table, View
 from . import Row
 from db.connections import get_connection
+FULL_LOGIN = "full_login"
+DB_PASSWORD = "db_password"
 
 
 class Database(object):
 
-    def __init__(self, user_var, password_var):
+    def __init__(self, user_var=FULL_LOGIN, password_var=DB_PASSWORD):
 
         self.__connection = get_connection(user_var, password_var)
         self.__cursor     = self.__connection.cursor()
@@ -35,33 +37,39 @@ class Database(object):
         self.close()
     ####################################################################################################################
 
-    def track_view(self, owner, view_name):
-        if self.__object_exists(owner, view_name, "view"):
-            view = View(owner, view_name, self)
-            if owner in list(self.views.keys()):
-                self.views[owner][view_name] = view
+    def model(self, owner, object_name):
+        if self.__object_exists(owner, object_name):
+            object_type = self.__get_object_type(owner, object_name)
+            if object_type == "view":
+                model = self.__model_view(owner, object_name)
+            elif object_type == "table":
+                model = self.__model_table(owner, object_name)
             else:
-                self.views[owner] = {
-                    view_name: view
-                }
-            return view
+                raise Exception("Invalid object type. Must be table or view.")
+            return model
         else:
-            raise Exception("View does not exist.")
+            raise Exception("Specified table or view does not exist.")
 
-    def track_table(self, owner, table_name):
-
-        if self.__object_exists(owner, table_name, "table"):
-
-            table = Table(owner, table_name, self)
-            if owner in list(self.tables.keys()):
-                self.tables[owner][table_name] = table
-            else:
-                self.tables[owner] = {
-                    table_name: table
-                }
-            return table
+    def __model_view(self, owner, view_name):
+        view = View(owner, view_name, self)
+        if owner in list(self.views.keys()):
+            self.views[owner][view_name] = view
         else:
-            raise Exception("Table does not exist.")
+            self.views[owner] = {
+                view_name: view
+            }
+        return view
+
+    def __model_table(self, owner, table_name):
+
+        table = Table(owner, table_name, self)
+        if owner in list(self.tables.keys()):
+            self.tables[owner][table_name] = table
+        else:
+            self.tables[owner] = {
+                table_name: table
+            }
+        return table
 
     def execute_query(self, query, params=None, one_value=False):
         if params:
@@ -134,11 +142,20 @@ class Database(object):
         self.__cursor.execute("select ora_database_name from dual")
         return self.__cursor.fetchone()[0]
 
-    def __object_exists(self, in_owner, in_object_name, in_object_type):
-        sql = "select * from all_objects where lower(owner)=:in_owner and lower(object_type)=:in_object_type " \
+    def __get_object_type(self, in_owner, in_object_name):
+        sql = "select lower(object_type) from all_objects where lower(owner)=:in_owner " \
               "and lower(object_name)=:in_object_name"
-        self.__cursor.execute(sql, {"in_owner": in_owner.lower(), "in_object_type": in_object_type.lower(),
-                                    "in_object_name": in_object_name.lower()})
+        params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
+        self.__cursor.execute(sql, params)
+        return self.__cursor.fetchone()[0]
+
+    def __object_exists(self, in_owner, in_object_name, in_object_type=None):
+        sql = "select * from all_objects where lower(owner)=:in_owner and lower(object_name)=:in_object_name"
+        params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
+        if in_object_type:
+            sql += " and lower(object_type)=:in_object_type"
+            params["in_object_type"] = in_object_type.lower()
+        self.__cursor.execute(sql, params)
         return self.__cursor.fetchone()
 
     def __get_current_user(self):

@@ -44,7 +44,7 @@ from profpy import fauxrm
 
 # create a handler using a table name and environment variable strings
 with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    phonebook = db.track_table(owner="rowan", table_name="phonebook")
+    phonebook = db.model(owner="rowan", table_name="phonebook")
     phonebook.mapping
     # returns:
     # {'phone': {'generated': False, 'type': <type 'str'>, 'nullable': True},
@@ -75,8 +75,8 @@ We can also access several objects at once using the same handler.
 from profpy import fauxrm
 with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
     current_term_code = db.execute_function(owner="rowan", function_name="f_get_term_code", one_value=True)
-    sortest = db.track_table("saturn", "sortest")
-    spvname = db.track_view("rowan", "spvname")
+    sortest = db.model("saturn", "sortest")
+    spvname = db.model("rowan", "spvname")
 ```
 <br>
 <br>
@@ -91,7 +91,7 @@ composite keys as well as single field keys.
 from profpy import fauxrm
 with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
     
-    phonebook = db.track_table("rowan", "phonebook")
+    phonebook = db.model("rowan", "phonebook")
     
     # we know that Dennis' key value from the table was 1.
     record = phonebook.get(1)
@@ -105,7 +105,7 @@ with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_pa
     print(record["last_name"])
     
     # FauxRM's model-less design allows us to quickly switch tables and access those fields as attributes as well.
-    library = db.track_table("rowan", "library")
+    library = db.model("rowan", "library")
     record = library.get(1)
     print(record.author)
     print(record.title)
@@ -138,7 +138,7 @@ from profpy.fauxrm import Database
 #          (phone='555-555-5555' or last_name='Malcolm')
 
 with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    phonebook = db.track_table("rowan", "phonebook")
+    phonebook = db.model("rowan", "phonebook")
     or_statement = Or(phone="555-555-5555", last_name="Malcom")
     q = And(or_statement, first_name="Dennis", last_name="Nedry")
     records = phonebook.find(q)
@@ -162,7 +162,7 @@ Jane|Doe|23|33 N 12th St
 from profpy.fauxrm import Database
 from profpy.fauxrm.queries import And, Or
 with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    addresses = db.track_table("rowan", "address")
+    addresses = db.model("rowan", "address")
 
     # select * from addresses where last_name like 'Do%' and age > 23 and (first_name = 'John' or last_name='Doe')
     q = And(
@@ -194,7 +194,7 @@ from profpy.fauxrm import Database
 from profpy.fauxrm.queries import And, Or
 
 with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    addresses = db.track_table("rowan", "addresse")
+    addresses = db.model("rowan", "addresse")
 
     and_1 = And(first_name="John", last_name="Doe")
     or_1 = Or(first_name="John", age=22)
@@ -228,7 +228,7 @@ Using our phonebook table from before, lets insert some new data into the table.
 from profpy.fauxrm import Database
 
 with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    phonebook = db.track_table("rowan", "phonebook")
+    phonebook = db.model("rowan", "phonebook")
     new_record = phonebook.save(first_name="Dennis", last_name="Nedry", phone="555-555-5555")
 
     # just like before, we can access the fields of the table as attributes of the object
@@ -252,7 +252,7 @@ with Database("oracle_connection_string_environment_variable", "oracle_password_
 
     # let's say we know there is a record with an id of 1
     # this would grab the record at that key and update the first name field
-    phonebook = db.track_table("rowan", "phonebook")
+    phonebook = db.model("rowan", "phonebook")
     updated_record = phonebook.save(id=1, first_name="Ian")
     db.commit()
 
@@ -269,7 +269,7 @@ from profpy.fauxrm import Database
 
 with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
 
-    timesheet = db.track_table("rowan", "timesheet")
+    timesheet = db.model("rowan", "timesheet")
     current_date_time = datetime.datetime.now()
     work_days = timesheet.find(first_name="John", last_name="Smith")
     for record in work_days:
