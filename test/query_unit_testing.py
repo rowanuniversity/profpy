@@ -7,8 +7,8 @@ Rowan University
 import unittest
 import datetime
 
-from fauxrm import Database
-from fauxrm.queries import And, Or, Query
+from db.fauxrm import Database
+from db.fauxrm.queries import And, Or, Query
 
 db_handler = Database("host_pprd", "db_password")
 medical = db_handler.model("rowan", "fauxrm_test_medical")

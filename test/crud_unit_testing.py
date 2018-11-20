@@ -8,7 +8,7 @@ Rowan University
 import random
 import datetime
 import unittest
-import fauxrm
+from db import fauxrm
 
 # some constants for convenient testing
 DATE_FMT = "%d-%b-%y"

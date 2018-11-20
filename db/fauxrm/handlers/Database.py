@@ -2,7 +2,7 @@ import cx_Oracle
 import datetime
 from . import Table, View
 from . import Row
-from db.connections import get_connection
+from ...general import get_connection
 FULL_LOGIN = "full_login"
 DB_PASSWORD = "db_password"
 
@@ -90,7 +90,7 @@ class Database(object):
         else:
             return rows
 
-    def execute_function(self, owner, function_name, *args, one_value=False):
+    def execute_function(self, owner, function_name, *args):
         if self.__object_exists(owner, function_name, "function"):
             function_concat = owner + "." + function_name
             params = {}
@@ -103,14 +103,8 @@ class Database(object):
             params_sql = ", ".join(":{0}".format(k) for k in list(params.keys()))
             sql = "select {0}({1}) from dual".format(function_concat, params_sql)
             self.__cursor.execute(sql, params)
-            rows = self.__cursor.fetchall()
-            if one_value and len(rows) > 0:
-                result = rows[0][0]
-            elif len(rows) > 0:
-                result = rows
-            else:
-                result = None
-            return result
+            rows = self.__cursor.fetchone()
+            return rows[0] if rows else None
         else:
             raise Exception("Function does not exist.")
 
@@ -229,6 +223,9 @@ def fetch_to_dicts(in_cursor, limit=None):
     clean_fields = []
     for fn in field_names:
         new_field = fn
+
+        if "*" in new_field:
+            new_field = new_field.replace("*", "all")
         for bc in bad_chars:
             new_field = new_field.replace(bc, "_")
         count_chars = len(new_field)

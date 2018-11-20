@@ -30,6 +30,9 @@ class PrimaryKey(object):
 
         return str(self.columns if self.field_count > 1 else self.columns[0])
 
+    def __repr__(self):
+        return str(self.columns)
+
     ####################################################################################################################
     # PROPERTIES
     @property
