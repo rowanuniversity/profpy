@@ -2,7 +2,7 @@ import cx_Oracle
 import datetime
 from . import Table, View
 from . import Row
-from ...general import get_connection
+from ... import get_connection
 FULL_LOGIN = "full_login"
 DB_PASSWORD = "db_password"
 
