@@ -1,19 +1,15 @@
 import requests
 import base64
-from . import ParameterException, ApiException
-from .utils import Token
+from .utils import ParameterException, ApiException, Api, Token
 
 
-class BBLearn(object):
+class BBLearn(Api):
     """
     Class that optimizes http calls to the BlackBoard REST interface
 
     Documentation regarding individual endpoints can be found at:
     https://developer.blackboard.com/portal/displayApi
     """
-
-    # the base url for this API
-    __URL = "https://rowantest.blackboard.com/learn/api/public/"
 
     # status code messages
     __HTTP_ERRORS = {
@@ -30,12 +26,44 @@ class BBLearn(object):
         :param in_secret_key: The provided secret key
         """
 
-        self.__app_key = in_app_key
-        self.__app_id = in_app_id
-        self.__secret_key = in_secret_key
-        self.__token = self.__get_oauth2_token()
+        super(BBLearn, self).__init__(in_public_key=in_app_key, in_private_key=in_secret_key,
+                                      in_url="https://rowantest.blackboard.com/learn/api/public/")
+        self.app_id = in_app_id
+        self.token = self.__get_oauth2_token()
 
-    def __hit_endpoint(self, valid_args, endpoint_name, request_type="GET", only_results=True, **kwargs):
+    @property
+    def authentication_headers(self):
+        return self.token.header
+
+    @property
+    def authentication_parameters(self):
+        return {}
+
+    def __generate_hash_value(self):
+        return
+
+    def __update_time(self):
+        return
+
+    def __set_endpoints(self):
+        self.endpoints = ["v1/courses", "v1/courses/{0}/gradebook/columns",
+                          "v1/courses/{0}/gradebook/columns/{1}/attempts", "v1/courses/{0}/users",
+                          "v1/courses/{0}/gradebook/columns/{1}/users/{2}", "v1/users"]
+
+    def __set_args_mapping(self):
+        self.endpoint_to_args = {
+            "v1/courses": ["offset", "limit", "courseId", "name", "description", "externalId", "created", "allowGuests",
+                           "createdCompare", "dataSourceId", "termId", "organization", "sort", "fields"],
+            "v1/courses/{0}/gradebook/columns": ["offset", "limit", "contentId", "fields"],
+            "v1/courses/{0}/gradebook/columns/{1}/attempts": ["offset", "limit", "userId", "attemptStatuses", "fields"],
+            "v1/courses/{0}/users": ["offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
+                                     "lastAccessedCompare", "availability.available", "sort", "fields"],
+            "v1/courses/{0}/gradebook/columns/{1}/users/{2}": ["fields"],
+            "v1/users": ["offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
+                         "name.family", "availability.available", "sort", "fields"]
+        }
+
+    def __hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
         """
         Method used to abstract the calling of REST endpoints
         :param valid_args:    A collection of valid parameter names for this endpoint
@@ -53,7 +81,7 @@ class BBLearn(object):
 
             auth_header = "Bearer {0}".format(self.__token.token)
             headers = {"Authorization": auth_header, "Content-Type": "application/json; charset=utf-8"}
-            full_url = self.__URL + endpoint_name
+            full_url = self.url + endpoint_name
             r_type = request_type.upper()
             if r_type == "GET":
                 data = requests.get(full_url, params=kwargs, headers=headers)
@@ -66,8 +94,7 @@ class BBLearn(object):
 
             status = int(data.status_code)
             if 300 >= status >= 200:
-                data = data.json()
-                return data["results"] if only_results and "results" in data.keys() else data
+                return data.json()
             elif status >= 500:
                 raise ApiException("Internal Server Error")
             elif status >= 400:
@@ -88,9 +115,9 @@ class BBLearn(object):
         """
 
         body = {"grant_type": "client_credentials"}
-        auth = "Basic {0}".format(base64.b64encode("{0}:{1}".format(self.__app_key, self.__secret_key)))
+        auth = "Basic {0}".format(base64.b64encode("{0}:{1}".format(self.public_key, self.private_key)))
         headers = {"Content-Type": "application/x-www-form-urlencoded", "Authorization": auth}
-        raw_token = requests.post(self.__URL + "v1/oauth2/token", data=body, headers=headers)
+        raw_token = requests.post(self.url + "v1/oauth2/token", data=body, headers=headers)
         status = int(raw_token.status_code)
 
         if status >= 400:
@@ -111,10 +138,8 @@ class BBLearn(object):
         :param kwargs: any endpoint parameters
         :return:       a list of courses from BlackBoard
         """
-        valid_args = ("offset", "limit", "courseId", "name", "description", "externalId", "created", "allowGuests",
-                      "createdCompare", "dataSourceId", "termId", "organization", "sort", "fields")
         endpoint = "v1/courses"
-        return self.__hit_endpoint(valid_args, endpoint, **kwargs)
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)
 
     def get_courses_columns(self, course_id, **kwargs):
         """
@@ -125,9 +150,8 @@ class BBLearn(object):
         :param kwargs:    Any other endpoint parameters
         :return:          A list of gradebook columns for the given course id
         """
-        valid_args = ("offset", "limit", "contentId", "fields")
         endpoint = "v1/courses/{0}/gradebook/columns".format(course_id)
-        return self.__hit_endpoint(valid_args, endpoint, **kwargs)
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)
 
     def get_course_columns_attempts(self, course_id, column_id, **kwargs):
         """
@@ -137,9 +161,8 @@ class BBLearn(object):
         :param column_id: The unique column id
         :return:          The attempts for the given column
         """
-        valid_args = ("offset", "limit", "userId", "attemptStatuses", "fields")
         endpoint = "v1/courses/{0}/gradebook/columns/{1}/attempts".format(course_id, column_id)
-        return self.__hit_endpoint(valid_args, endpoint, **kwargs)
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)
 
     def get_course_members(self, course_id, role=None, **kwargs):
         """
@@ -151,10 +174,8 @@ class BBLearn(object):
         :param kwargs:    Any other endpoint parameters
         :return:          A list of gradebook columns for the given course id
         """
-        valid_args = ("offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
-                      "lastAccessedCompare", "availability.available", "sort", "fields")
         endpoint = "v1/courses/{0}/users".format(course_id)
-        data = self.__hit_endpoint(valid_args, endpoint, **kwargs)
+        data = self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)
         return filter(lambda x: x["courseRoleId"] == role, data) if role else data
 
     def get_course_grade_columns_by_user(self, course_id, column_id, user_id, **kwargs):
@@ -168,9 +189,8 @@ class BBLearn(object):
         :param kwargs:    All other endpoint parameters
         :return:          A list of gradebook columns for the course-column-user combination
         """
-        valid_args = ("fields", )
         endpoint = "v1/courses/{0}/gradebook/columns/{1}/users/{2}".format(course_id, column_id, user_id)
-        return self.__hit_endpoint(valid_args, endpoint, **kwargs)
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)
 
     def get_users(self, user_id=None, **kwargs):
         """
@@ -181,9 +201,8 @@ class BBLearn(object):
         :param kwargs:  All other endpoint parameters
         :return:        A list of users based on the input parameters
         """
-        valid_args = ("offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
-                      "name.family", "availability.available", "sort", "fields")
         endpoint = "v1/users"
+        valid_args = self.endpoint_to_args[endpoint]
         if user_id:
             endpoint += "/{0}".format(user_id)
             valid_args = ("fields", )

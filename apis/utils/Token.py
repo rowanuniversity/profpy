@@ -22,3 +22,10 @@ class Token(object):
         :return: Whether or not the token is expired
         """
         return datetime.datetime.now() > self.expire_time
+
+    @property
+    def header(self):
+        return {
+            "Authorization": "Bearer {0}".format(self.token),
+            "Content-Type": "application/json; charset=utf-8"
+        }

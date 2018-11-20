@@ -3,31 +3,15 @@ import uuid
 import hashlib
 import time
 import datetime
-from . import ParameterException
+from .utils import ParameterException, Api
 
 
-class CampusLabs(object):
+class CampusLabs(Api):
     """
      Class that optimizes http calls to the Campus Labs REST interface
      """
 
     # class-wide constants
-    __URL       = "https://rowan.campuslabs.com/engage/api/"
-    __ORG_ARGS  = ("organizationId", "page", "pageSize", "status", "excludeHiddenOrganizations", "category",
-                   "type", "name", "ModifiedOnStart", "ModifiedOnEnd")
-    __POS_ARGS  = ("page", "pageSize", "organizationId", "template", "type", "activeStatusOnly")
-    __USER_ARGS = ("page", "pageSize", "userId", "username", "cardId", "sisId", "affiliation", "enrollmentStatus",
-                   "SchoolOfEnrollment", "status", "CreatedOnStart", "CreatedOnEnd")
-    __MEM_ARGS  = ("page", "pageSize", "membershipId", "userId", "username", "organizationId", "currentMembershipsOnly",
-                   "publicPrivacyFilter", "campusPrivacyFilter", "includeReflections", "positionTemplateId",
-                   "positionTemplateName", "startDate", "endDate", "ModifiedOnStart", "ModifiedOnEnd", "includeDeletes")
-    __ENDPOINTS = ("organizations", "memberships", "positions", "users")
-    __ENDPOINT_TO_ARGS = {
-        "organizations": __ORG_ARGS,
-        "memberships"  : __MEM_ARGS,
-        "positions"    : __POS_ARGS,
-        "users"        : __USER_ARGS
-    }
     __MAX_PAGE_SIZE = 500
     __RATE_LIMIT_CODE = 429
     __RATE_LIMIT_PM = 400
@@ -41,23 +25,39 @@ class CampusLabs(object):
          :param in_private_key: The provided private key
          :param in_ip_address:  The ip address that these requests will be made from
          """
-        self.__public_key = in_public_key
-        self.__private_key = in_private_key
-        self.__ip_address = in_ip_address
-        self.__uuid = str(uuid.uuid4())
 
-        # these values change with every request
-        self.__time = None
-        self.__hash = None
+        super(CampusLabs, self).__init__(in_public_key, in_private_key, "https://rowan.campuslabs.com/engage/api/",
+                                         in_ip_address)
+        self.uuid = str(uuid.uuid4())
 
     @property
-    def authentication_params(self):
+    def authentication_headers(self):
+        return {}
+
+    @property
+    def authentication_parameters(self):
         """
          The parameters used to authenticate to the REST service
          :return: A dictionary of authentication parameters
          """
-        return {"time": self.__time, "ipaddress": self.__ip_address, "apikey": self.__public_key,
-                "random": self.__uuid, "hash": self.__hash}
+        return {"time": self.time, "ipaddress": self.ip_restriction, "apikey": self.public_key,
+                "random": self.uuid, "hash": self.hash}
+
+    def __set_endpoints(self):
+        self.endpoints = ["organizations", "memberships", "positions", "users"]
+
+    def __set_args_mapping(self):
+        self.endpoint_to_args = {
+            "organizations": ["organizationId", "page", "pageSize", "status", "excludeHiddenOrganizations", "category",
+                              "type", "name", "ModifiedOnStart", "ModifiedOnEnd"],
+            "memberships": ["page", "pageSize", "membershipId", "userId", "username", "organizationId",
+                            "currentMembershipsOnly", "publicPrivacyFilter", "campusPrivacyFilter",
+                            "includeReflections", "positionTemplateId", "positionTemplateName", "startDate", "endDate",
+                            "ModifiedOnStart", "ModifiedOnEnd", "includeDeletes"],
+            "positions": ["page", "pageSize", "organizationId", "template", "type", "activeStatusOnly"],
+            "users": ["page", "pageSize", "userId", "username", "cardId", "sisId", "affiliation", "enrollmentStatus",
+                      "SchoolOfEnrollment", "status", "CreatedOnStart", "CreatedOnEnd"]
+        }
 
     def __update_time(self):
         """
@@ -73,11 +73,11 @@ class CampusLabs(object):
          :return:  the hash value in hex
          """
         hasher = hashlib.sha512()
-        for value in (self.__public_key, self.__ip_address, self.__time, self.__uuid, self.__private_key):
+        for value in (self.public_key, self.ip_restriction, self.time, self.uuid, self.private_key):
             hasher.update(value.encode())
         return hasher.hexdigest()
 
-    def __hit_endpoint(self, valid_args, endpoint_name, get_one, **kwargs):
+    def __hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
         """
          Wrapper method for calling a REST endpoint
          :param valid_args:    A collection containing the valid url parameters for the desired endpoint
@@ -89,13 +89,13 @@ class CampusLabs(object):
         # only do work if all of the given parameters are valid
         if all(arg in valid_args for arg in kwargs.keys()):
             self.__update_time()
-            params = dict(self.authentication_params, **kwargs)
+            params = dict(self.authentication_parameters, **kwargs)
 
             if "pageSize" not in params.keys():
                 params["pageSize"] = self.__MAX_PAGE_SIZE
 
             # hit the endpoint and return the resulting data
-            full_url = self.__URL + endpoint_name
+            full_url = self.url + endpoint_name
             data = requests.get(full_url, params).json()
 
             # if they specified the page, give them whatever is returned
@@ -119,7 +119,7 @@ class CampusLabs(object):
 
                         # we have to update our time and hash params to ensure that we can make valid calls to the api
                         self.__update_time()
-                        params = dict(self.authentication_params, **kwargs)
+                        params = dict(self.authentication_parameters, **kwargs)
 
                         # dynamically switch pages and grab the new data
                         params["page"] = page
@@ -152,29 +152,22 @@ class CampusLabs(object):
         else:
             raise ParameterException("Invalid parameter supplied.")
 
-    def get_url(self, endpoint_name, **kwargs):
-        if endpoint_name in self.__ENDPOINTS and \
-                all(arg in self.__ENDPOINT_TO_ARGS[endpoint_name] for arg in kwargs.keys()):
-
-            self.__update_time()
-            params = dict(self.authentication_params, **kwargs)
-            return self.__URL + "{0}?{1}".format(endpoint_name,
-                                                 "&".join("{0}={1}".format(k, v) for k, v in params.items()))
-        else:
-            return None
-
     # The following methods call individual REST endpoints within the api. They can all kwargs specific to each
     # endpoint, i.e. get_organizations(organizationId=22314)
     #
     # If no kwargs are specified, they return all records found in the system
     def get_users(self, get_one=False, **kwargs):
-        return self.__hit_endpoint(self.__USER_ARGS, "users", get_one, **kwargs)
+        endpoint = "users"
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, get_one, **kwargs)
 
     def get_positions(self, get_one=False, **kwargs):
-        return self.__hit_endpoint(self.__POS_ARGS, "positions", get_one, **kwargs)
+        endpoint = "positions"
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, get_one, **kwargs)
 
     def get_memberships(self, get_one=False, **kwargs):
-        return self.__hit_endpoint(self.__MEM_ARGS, "memberships", get_one, **kwargs)
+        endpoint = "memberships"
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, get_one, **kwargs)
 
     def get_organizations(self, get_one=False, **kwargs):
-        return self.__hit_endpoint(self.__ORG_ARGS, "organizations", get_one, **kwargs)
+        endpoint = "organizations"
+        return self.__hit_endpoint(self.endpoint_to_args[endpoint], endpoint, get_one, **kwargs)
