@@ -76,5 +76,7 @@ with get_connection("full_login", "db_password") as connection:
 ```
 <br>
 
+---
+
 ## Advanced Usage
 The db submodule is home to the fauxrm database abstraction layer, which can be used for more complex tasks. See [the docs](./fauxrm/README.md) for more details.

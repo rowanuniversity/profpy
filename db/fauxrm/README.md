@@ -1,11 +1,11 @@
-# FauxRM
-FauxRM is a lightweight Oracle database abstraction layer for Python that provides a lot of the
+# profpy.db.fauxrm
+fauxrm is a lightweight Oracle database abstraction layer for Python that provides a lot of the
 functionality of traditional ORM's without the usual step of writing domain/model classes.
 This library is meant to hopefully simplify tasks that involve basic record creation/modification,
 whether it be an ETL batch job or a simple web application.
 
 ### Dependencies
-The only non-native Python library needed to run FauxRM is [cx_Oracle](https://oracle.github.io/python-cx_Oracle/).
+The only non-native Python library needed to run fauxrm is [cx_Oracle](https://oracle.github.io/python-cx_Oracle/).
 Information on installing this library can be found [here](http://cx-oracle.readthedocs.io/en/latest/installation.html).
 
 Note: The [Oracle Instant Client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/overview/index.html)
@@ -22,7 +22,7 @@ id | first_name | last_name | phone
 <i>Note: Our id column is the primary key, and is a generated integer value.</i><br>
 
 ### Handler objects
-FauxRM revolves around the usage of Database objects, which are easily instantiated using environment variable names that house database login info.
+fauxrm revolves around the usage of Database objects, which are easily instantiated using environment variable names that house database login info.
 By default, these get set to "full_login" and "db_password" if you do not set them explicitly
 
 ```python
@@ -67,7 +67,7 @@ with fauxrm.Database() as database:
     #  'id': 'Auto generated primary key for phonebook entries'}
     
     phonebook.description
-    # returns "A Test table for the FauxRM library"
+    # returns "A Test table for the fauxrm library"
 
 ```
 
@@ -128,7 +128,7 @@ records = table.find({"first_name": "Dennis", "last_name": "Nedry"})
 
 ##### Query Classes
 Keyword arguments are good for simple searches on a few fields. However, they can only replicate a big AND statement in the database.
-For more complex queries we can use the FauxRM query classes.
+For more complex queries we can use the fauxrm query classes.
 ```python
 from profpy.db.fauxrm.queries import And, Or
 from profpy.fauxrm import Database
