@@ -5,6 +5,9 @@ One of the main goals of profpy is to limit code duplication across our scripts 
 provides a group of general functions for basic data access. Some of these were directly inspired/forked from legacy code
 that was found across multiple projects and CVS repositories. 
 <br>
+<br>
+
+---
 
 #### get_connection(<i> login_var, password_var </i>)
 <i>Returns cx_Oracle connection object based on given environment variable names. Often "full_login" and "db_password"</i>.
@@ -23,6 +26,8 @@ with get_connection("full_login", "db_password") as connection:
     connection.commit()
 ```
 <br>
+
+---
 
 #### execute_sql ( <i>cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None</i> )
 <i>Returns a list of dictionaries from a resulting SQL query. This is in contrast to the normal behavior of cx_Oracle cursor
