@@ -9,9 +9,9 @@ The only non-native Python library needed to run fauxrm is [cx_Oracle](https://o
 Information on installing this library can be found [here](http://cx-oracle.readthedocs.io/en/latest/installation.html).
 
 Note: The [Oracle Instant Client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/overview/index.html)
-will need to be installed as well as a dependency for cx_Oracle.<br><br><br>
+will need to be installed.<br><br><br>
 
-## Usage
+## General Usage
 For the purposes of these examples, let's assume there is a table in our database called "phonebook" that looks like this:
 
 id | first_name | last_name | phone
