@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='profpy',
     version='0.1',
-    packages=['', 'db', 'db.connections', 'apis', 'fauxrm', 'fauxrm.queries', 'fauxrm.handlers'],
+    packages=['', 'db', 'db.fauxrm', 'db.fauxrm.queries', 'db.fauxrm.handlers', 'db.general', 'apis', 'apis.utils'],
     url='',
     license='',
     author='Connor Hornibrook',

@@ -1,17 +1,17 @@
-# FauxRM
-FauxRM is a lightweight Oracle database abstraction layer for Python that provides a lot of the
+# profpy.db.fauxrm
+fauxrm is a lightweight Oracle database abstraction layer for Python that provides a lot of the
 functionality of traditional ORM's without the usual step of writing domain/model classes.
 This library is meant to hopefully simplify tasks that involve basic record creation/modification,
 whether it be an ETL batch job or a simple web application.
 
 ### Dependencies
-The only non-native Python library needed to run FauxRM is [cx_Oracle](https://oracle.github.io/python-cx_Oracle/).
+The only non-native Python library needed to run fauxrm is [cx_Oracle](https://oracle.github.io/python-cx_Oracle/).
 Information on installing this library can be found [here](http://cx-oracle.readthedocs.io/en/latest/installation.html).
 
 Note: The [Oracle Instant Client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/overview/index.html)
-will need to be installed as well as a dependency for cx_Oracle.<br><br><br>
+will need to be installed.<br><br><br>
 
-## Usage
+## General Usage
 For the purposes of these examples, let's assume there is a table in our database called "phonebook" that looks like this:
 
 id | first_name | last_name | phone
@@ -22,12 +22,13 @@ id | first_name | last_name | phone
 <i>Note: Our id column is the primary key, and is a generated integer value.</i><br>
 
 ### Handler objects
-FauxRM revolves around the usage of Database objects, which are easily instantiated using environment variable names that house database login info.
+fauxrm revolves around the usage of Database objects, which are easily instantiated using environment variable names that house database login info.
+By default, these get set to "full_login" and "db_password" if you do not set them explicitly
 
 ```python
-from profpy import fauxrm
+from profpy.db import fauxrm
 
-# create a handler using a table name and environment variable strings
+# create a handler using a table name and environment variable strings. 
 with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
     # ... do stuff ...
     
@@ -40,11 +41,11 @@ with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_pa
 ### Exploring handler object's properties
 When a handler is created, you have access to all of that database's tables, views and functions.
 ```python
-from profpy import fauxrm
+from profpy.db import fauxrm
 
-# create a handler using a table name and environment variable strings
-with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    phonebook = db.track_table(owner="rowan", table_name="phonebook")
+# use default "full_login" and "db_password"
+with fauxrm.Database() as database:
+    phonebook = database.model(owner="rowan", table_name="phonebook")
     phonebook.mapping
     # returns:
     # {'phone': {'generated': False, 'type': <type 'str'>, 'nullable': True},
@@ -66,17 +67,17 @@ with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_pa
     #  'id': 'Auto generated primary key for phonebook entries'}
     
     phonebook.description
-    # returns "A Test table for the FauxRM library"
+    # returns "A Test table for the fauxrm library"
 
 ```
 
 We can also access several objects at once using the same handler.
 ```python
-from profpy import fauxrm
-with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    current_term_code = db.execute_function(owner="rowan", function_name="f_get_term_code", one_value=True)
-    sortest = db.track_table("saturn", "sortest")
-    spvname = db.track_view("rowan", "spvname")
+from profpy.db import fauxrm
+with fauxrm.Database() as database:
+    current_term_code = database.execute_function(owner="rowan", function_name="f_get_term_code")
+    sortest = database.model("saturn", "sortest")
+    spvname = database.model("rowan", "spvname")
 ```
 <br>
 <br>
@@ -88,10 +89,10 @@ There are a couple of different ways to retrieve data from tables using handlers
 get method takes a key value as a parameter and returns the single record that corresponds with it. This will work for
 composite keys as well as single field keys.
 ```python
-from profpy import fauxrm
-with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
+from profpy.db import fauxrm
+with fauxrm.Database() as database:
     
-    phonebook = db.track_table("rowan", "phonebook")
+    phonebook = database.model("rowan", "phonebook")
     
     # we know that Dennis' key value from the table was 1.
     record = phonebook.get(1)
@@ -105,7 +106,7 @@ with fauxrm.Database("oracle_connection_string_environment_variable", "oracle_pa
     print(record["last_name"])
     
     # FauxRM's model-less design allows us to quickly switch tables and access those fields as attributes as well.
-    library = db.track_table("rowan", "library")
+    library = database.model("rowan", "library")
     record = library.get(1)
     print(record.author)
     print(record.title)
@@ -127,9 +128,9 @@ records = table.find({"first_name": "Dennis", "last_name": "Nedry"})
 
 ##### Query Classes
 Keyword arguments are good for simple searches on a few fields. However, they can only replicate a big AND statement in the database.
-For more complex queries we can use the FauxRM query classes.
+For more complex queries we can use the fauxrm query classes.
 ```python
-from profpy.fauxrm.queries import And, Or
+from profpy.db.fauxrm.queries import And, Or
 from profpy.fauxrm import Database
 
 # select * from phonebook
@@ -137,8 +138,8 @@ from profpy.fauxrm import Database
 #          last_name='Nedry' and
 #          (phone='555-555-5555' or last_name='Malcolm')
 
-with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    phonebook = db.track_table("rowan", "phonebook")
+with Database() as database:
+    phonebook = database.model("rowan", "phonebook")
     or_statement = Or(phone="555-555-5555", last_name="Malcom")
     q = And(or_statement, first_name="Dennis", last_name="Nedry")
     records = phonebook.find(q)
@@ -161,8 +162,8 @@ Jane|Doe|23|33 N 12th St
 ```python
 from profpy.fauxrm import Database
 from profpy.fauxrm.queries import And, Or
-with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    addresses = db.track_table("rowan", "address")
+with Database() as database:
+    addresses = database.model("rowan", "address")
 
     # select * from addresses where last_name like 'Do%' and age > 23 and (first_name = 'John' or last_name='Doe')
     q = And(
@@ -190,11 +191,11 @@ IN|field___in=\[values\]<br>field=\[values\]<br>field={values}
 ##### Query concatenation and nesting
 We can also use the "&" and "|" operators to concatenate query parts.
 ```python
-from profpy.fauxrm import Database
-from profpy.fauxrm.queries import And, Or
+from profpy.db import fauxrm
+from profpy.db.fauxrm.queries import And, Or
 
-with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    addresses = db.track_table("rowan", "addresse")
+with fauxrm.Database() as database:
+    addresses = database.model("rowan", "addresse")
 
     and_1 = And(first_name="John", last_name="Doe")
     or_1 = Or(first_name="John", age=22)
@@ -207,7 +208,7 @@ with Database("oracle_connection_string_environment_variable", "oracle_password_
 ```
 As shown in the previous example, queries can be input as arguments to other queries. The below query would likely not return anything, but it demonstrates this nesting behavior.
 ```python
-from profpy.fauxrm.queries import Or, And
+from profpy.db.fauxrm.queries import Or, And
 query = Or(
             Or(first_name="Jane", last_name="Doe"),
             And(age___gt=55, birthday=datetime.datetime(1990, 2, 3),
@@ -225,10 +226,10 @@ query = Or(
 
 Using our phonebook table from before, lets insert some new data into the table.
 ```python
-from profpy.fauxrm import Database
+from profpy.db import fauxrm
 
-with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
-    phonebook = db.track_table("rowan", "phonebook")
+with fauxrm.Database() as database:
+    phonebook = database.model("rowan", "phonebook")
     new_record = phonebook.save(first_name="Dennis", last_name="Nedry", phone="555-555-5555")
 
     # just like before, we can access the fields of the table as attributes of the object
@@ -238,7 +239,7 @@ with Database("oracle_connection_string_environment_variable", "oracle_password_
 
     # the record's new key
     new_record.key
-    db.commit()
+    database.commit()
 ```
 <br>
 <br>
@@ -246,15 +247,15 @@ with Database("oracle_connection_string_environment_variable", "oracle_password_
 #### Updating
 We can also use the save function to update data, if we specify the key in our input
 ```python
-from profpy.fauxrm import Database
+from profpy.db import fauxrm
 
-with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
+with fauxrm.Database() as database:
 
     # let's say we know there is a record with an id of 1
     # this would grab the record at that key and update the first name field
-    phonebook = db.track_table("rowan", "phonebook")
+    phonebook = database.model("rowan", "phonebook")
     updated_record = phonebook.save(id=1, first_name="Ian")
-    db.commit()
+    database.commit()
 
 ```
 
@@ -262,14 +263,14 @@ But what if we don't know the key? For instance, what if we needed to update a t
 Luckily, the returned records also have a save method that can be invoked after we alter their attributes.
 ```python
 import datetime
-from profpy.fauxrm import Database
+from profpy.db import fauxrm
 
 # let's say we have a table called "timesheet" which has a timestamp field called "time_in"
 # let's update the "time_in" field for all the records for "John Smith" to be the current date/time
 
-with Database("oracle_connection_string_environment_variable", "oracle_password_environment_variable") as db:
+with fauxrm.Database() as database:
 
-    timesheet = db.track_table("rowan", "timesheet")
+    timesheet = database.model("rowan", "timesheet")
     current_date_time = datetime.datetime.now()
     work_days = timesheet.find(first_name="John", last_name="Smith")
     for record in work_days:
@@ -277,6 +278,6 @@ with Database("oracle_connection_string_environment_variable", "oracle_password_
         record.time_in = current_date_time
         record.save()
 
-    db.commit()
+    database.commit()
 ```
 Any attribute change goes through validation that will not allow a user to enter improper data types or null values where they are not allowed.

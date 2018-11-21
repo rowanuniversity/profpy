@@ -8,7 +8,7 @@ Rowan University
 import random
 import datetime
 import unittest
-import fauxrm
+from db import fauxrm
 
 # some constants for convenient testing
 DATE_FMT = "%d-%b-%y"
@@ -27,10 +27,10 @@ TEST_BAND_MEMBERS = [
 ]
 
 
-db_handler = fauxrm.Database("host_pprd", "db_password")
-phonebook_table = db_handler.track_table("rowan", "fauxrm_test_phonebook")
-band_member_table  = db_handler.track_table("rowan", "fauxrm_test_band_members")
-sortest = db_handler.track_table("saturn", "sortest")
+db_handler = fauxrm.Database()
+phonebook_table = db_handler.model("rowan", "fauxrm_test_phonebook")
+band_member_table  = db_handler.model("rowan", "fauxrm_test_band_members")
+sortest = db_handler.model("saturn", "sortest")
 
 
 def create_new_band_test_record(in_handler, clear_table=False):

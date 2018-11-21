@@ -182,6 +182,8 @@ class Row(object):
             null_valid = value is not None
 
         valid_types = in_type == required_type
+        if is_nullable and value is None:
+            valid_types = True
 
         # parse together an error message, if needed
         if not null_valid:

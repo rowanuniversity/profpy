@@ -7,11 +7,11 @@ Rowan University
 import unittest
 import datetime
 
-from fauxrm import Database
-from fauxrm.queries import And, Or, Query
+from db.fauxrm import Database
+from db.fauxrm.queries import And, Or, Query
 
 db_handler = Database("host_pprd", "db_password")
-medical = db_handler.track_table("rowan", "fauxrm_test_medical")
+medical = db_handler.model("rowan", "fauxrm_test_medical")
 TEST_WEIGHT = 300.0
 TEST_AGE = 40
 TEST_DATE = datetime.datetime(2004, 1, 1, 1, 4, 5, 3)
