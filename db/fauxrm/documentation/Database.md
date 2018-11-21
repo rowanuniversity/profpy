@@ -1,3 +1,4 @@
+## Constructor
 ### profpy.db.fauxrm.Database ( *login_var="full_login", password_var="db_password"* )
 Returns a Database object which acts as a window into the database available to the specified credentials. Database
 objects have their own internal connection and cursor objects that get appropriately opened and closed if used 
@@ -24,8 +25,24 @@ database = fauxrm.Database()
 database.close()
 ```
 
+## Properties
+#### name
+The name of the database, akin to:
 
-#### Methods
+```sql
+select ora_database_name from dual;
+```
+
+Example:
+```python
+from profpy.db import fauxrm
+
+with fauxrm.Database() as database:
+    db_name = database.name
+```
+
+
+## Methods
 #### model ( *owner, object_name* )
 Returns either a Table or View handler object, depending on which type the object specified is. Table and View objects
 are children of the Data class, and can be used to retrieve/modify data. For more information on the Table and View 
@@ -111,6 +128,8 @@ with fauxrm.Database() as database:
 ```
 
 ---
+
+
 #### rollback ( )
 Rolls back any changes to the database. See documentation on Table and View objects for more examples on this.
 
@@ -134,5 +153,18 @@ with fauxrm.Database() as database:
     # error found, rollback
     except:
         database.rollback()
+```
 
+---
+
+#### close ( )
+Manually closes the Database object. Not needed if using the with-block convention.
+
+Example:
+```python
+from profpy.db import fauxrm
+
+database = fauxrm.Database()
+# do a bunch of stuff
+database.close()
 ```
