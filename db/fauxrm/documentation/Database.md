@@ -1,5 +1,3 @@
-# profpy.db.fauxrm - Technical Documentation
-
 ### profpy.db.fauxrm.Database ( *login_var="full_login", password_var="db_password"* )
 Returns a Database object which acts as a window into the database available to the specified credentials. Database
 objects have their own internal connection and cursor objects that get appropriately opened and closed if used 
