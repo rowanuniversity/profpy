@@ -75,7 +75,7 @@ We can also access several objects at once using the same handler.
 ```python
 from profpy.db import fauxrm
 with fauxrm.Database() as database:
-    current_term_code = database.execute_function(owner="rowan", function_name="f_get_term_code", one_value=True)
+    current_term_code = database.execute_function(owner="rowan", function_name="f_get_term_code")
     sortest = database.model("saturn", "sortest")
     spvname = database.model("rowan", "spvname")
 ```
