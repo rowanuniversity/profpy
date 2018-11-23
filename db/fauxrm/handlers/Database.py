@@ -1,7 +1,8 @@
 import cx_Oracle
 import datetime
-from . import Table, View
-from . import Row
+from .DatabaseObjects import Table, View
+from .utils import fetch_to_dicts
+from .Row import Row
 from ... import get_connection
 FULL_LOGIN = "full_login"
 DB_PASSWORD = "db_password"
@@ -9,10 +10,17 @@ DB_PASSWORD = "db_password"
 
 class Database(object):
 
+    __IO_ERROR_MSG = "Cannot open the file that was given."
+
     def __init__(self, user_var=FULL_LOGIN, password_var=DB_PASSWORD):
+        """
+        Constructor
+        :param user_var:     An environment variable containing an Oracle connection string
+        :param password_var: An environment variable containing an Oracle password
+        """
 
         self.__connection = get_connection(user_var, password_var)
-        self.__cursor     = self.__connection.cursor()
+        self.cursor     = self.__connection.cursor()
         self.user         = self.__get_current_user()
         self.tables       = {}
         self.views        = {}
@@ -38,6 +46,12 @@ class Database(object):
     ####################################################################################################################
 
     def model(self, owner, object_name):
+        """
+        Returns a Table or View object based on the given parameters.
+        :param owner:       The object's owner   (str)
+        :param object_name: The object's name    (str)
+        :return:            The object           (Object - Table or View)
+        """
         if self.__object_exists(owner, object_name):
             object_type = self.__get_object_type(owner, object_name)
             if object_type == "view":
@@ -51,6 +65,12 @@ class Database(object):
             raise Exception("Specified table or view does not exist.")
 
     def __model_view(self, owner, view_name):
+        """
+        Returns a view object based on the given info
+        :param owner:     The owner of the view (str)
+        :param view_name: The name of the view  (str)
+        :return:          A View object         (View)
+        """
         view = View(owner, view_name, self)
         if owner in list(self.views.keys()):
             self.views[owner][view_name] = view
@@ -61,6 +81,12 @@ class Database(object):
         return view
 
     def __model_table(self, owner, table_name):
+        """
+        Returns a Table object based on the given info
+        :param owner:      The owner of the Table (str)
+        :param table_name: The name of the table  (str)
+        :return:           A Table object         (Table)
+        """
 
         table = Table(owner, table_name, self)
         if owner in list(self.tables.keys()):
@@ -71,26 +97,39 @@ class Database(object):
             }
         return table
 
-    def execute_query(self, query, params=None, one_value=False):
+    def execute_query(self, query, params=None, limit=None):
+        """
+        Executes a sql query and returns the results
+        :param query:    The sql query to be executed                       (str)
+        :param params:   The parameters for the query                       (dict)
+        :param limit:    A cap on the number of rows returned               (int)
+        :return:         A list of Row objects from the result of the query (list)
+        """
+
+        if limit and limit < 1:
+            raise ValueError("Limit must be greater than 0.")
+
         if params:
-            self.__cursor.execute(query, params)
+            self.cursor.execute(query, params)
         else:
-            self.__cursor.execute(query)
-        data = fetch_to_dicts(self.__cursor)
+            self.cursor.execute(query)
+        data = fetch_to_dicts(self.cursor)
         rows = []
         if isinstance(data, dict):
             data = [data]
         for record in data:
             rows.append(Row(record, [], {}, None))
 
-        if one_value and len(rows) == 0:
-            return None
-        elif one_value:
-            return rows[0]
-        else:
-            return rows
+        return rows[:limit] if limit else rows
 
     def execute_function(self, owner, function_name, *args):
+        """
+        Executes an Oracle function
+        :param owner:         The schema owner of the function       (str)
+        :param function_name: The name of the function               (str)
+        :param args:          Any ordered parameters to the function (*args)
+        :return:              The value returned by the function     ( any )
+        """
         if self.__object_exists(owner, function_name, "function"):
             function_concat = owner + "." + function_name
             params = {}
@@ -102,16 +141,60 @@ class Database(object):
                 params["a_{0}".format(i)] = good_arg
             params_sql = ", ".join(":{0}".format(k) for k in list(params.keys()))
             sql = "select {0}({1}) from dual".format(function_concat, params_sql)
-            self.__cursor.execute(sql, params)
-            rows = self.__cursor.fetchone()
+            self.cursor.execute(sql, params)
+            rows = self.cursor.fetchone()
             return rows[0] if rows else None
         else:
             raise Exception("Function does not exist.")
 
+    def execute_sql_from_file(self, in_file):
+        """
+        Executes sql from a .sql file using the current connection
+        :param in_file: The path to a .sql file (str)
+        :return:
+        """
+
+        try:
+            with open(in_file, "r") as sql_file:
+                try:
+                    self.cursor.execute(sql_file.read())
+                    try:
+                        return fetch_to_dicts(self.cursor)
+                    except cx_Oracle.DatabaseError:
+                        return None
+
+                except cx_Oracle.DatabaseError as db_error:
+                    raise db_error
+        except IOError:
+            raise IOError(self.__IO_ERROR_MSG)
+
+    def execute_sql(self, sql, params=None):
+        """
+        Executes a general sql statement, doesn't return anything.
+        :param sql:    The sql to be executed (str)
+        :param params: The parameters         (dict)
+        :return:       Nothing
+        """
+        try:
+            if params:
+                self.cursor.execute(sql, params)
+            else:
+                self.cursor.execute(sql)
+        except cx_Oracle.DatabaseError:
+            self.rollback()
+
     def commit(self):
+        """
+        Commit changes to the database
+        :return:
+        """
         self.__connection.commit()
 
     def rollback(self):
+        """
+        Rollback database changes
+        :return:
+        """
         self.__connection.rollback()
 
     def close(self):
@@ -122,9 +205,9 @@ class Database(object):
         try:
 
             self.__connection.rollback()
-            self.__cursor.close()
+            self.cursor.close()
             self.__connection.close()
-            self.__cursor = None
+            self.cursor = None
             self.__connection = None
 
         except AttributeError:
@@ -133,108 +216,44 @@ class Database(object):
 
     @property
     def name(self):
-        self.__cursor.execute("select ora_database_name from dual")
-        return self.__cursor.fetchone()[0]
+        """
+        :return: The name of the database
+        """
+        self.cursor.execute("select ora_database_name from dual")
+        return self.cursor.fetchone()[0]
 
     def __get_object_type(self, in_owner, in_object_name):
+        """
+        Gets the type of a database object
+        :param in_owner:       The object's owner (str)
+        :param in_object_name: The object's name  (str)
+        :return:               The object's type  (str)
+        """
         sql = "select lower(object_type) from all_objects where lower(owner)=:in_owner " \
               "and lower(object_name)=:in_object_name"
         params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
-        self.__cursor.execute(sql, params)
-        return self.__cursor.fetchone()[0]
+        self.cursor.execute(sql, params)
+        return self.cursor.fetchone()[0]
 
     def __object_exists(self, in_owner, in_object_name, in_object_type=None):
+        """
+        Searches for an object (Table, View, Function, etc.) to see if it exists in the database
+        :param in_owner:       The owner of the object          (str)
+        :param in_object_name: The name of the object           (str)
+        :param in_object_type: The type of the object           (str)
+        :return:               Whether or not the object exists (bool)
+        """
         sql = "select * from all_objects where lower(owner)=:in_owner and lower(object_name)=:in_object_name"
         params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
         if in_object_type:
             sql += " and lower(object_type)=:in_object_type"
             params["in_object_type"] = in_object_type.lower()
-        self.__cursor.execute(sql, params)
-        return self.__cursor.fetchone()
+        self.cursor.execute(sql, params)
+        return self.cursor.fetchone()
 
     def __get_current_user(self):
         """
         :return: The user logged in under this schema
         """
-        self.__cursor.execute("select lower(user) from dual")
-        return self.__cursor.fetchone()[0]
-
-    def execute_sql(self, sql, table_object, get_data=False, params=None, get_record_objects=False, limit=None):
-        """
-        Executes a given sql statement
-        :param sql:                  The sql statement/query to be executed (str)
-        :param get_data:             Whether or not data should be returned (i.e. fetchall) (boolean)
-        :param params:               For parameterization (dict)
-        :param get_record_objects    Whether or not the caller wants a list of Record objects (boolean)
-        :return:                     A list of Record objects, if get_record_objects is set to True (list)
-        """
-        try:
-            if params is None:
-                self.__cursor.execute(sql)
-            else:
-                self.__cursor.execute(sql, params)
-
-            if get_data:
-                if get_record_objects:
-                    rows = []
-                    fetched = fetch_to_dicts(self.__cursor, limit)
-                    if isinstance(fetched, dict):
-                        fetched = [fetched]
-
-                    for row in fetched:
-                        new_record = {}
-
-                        for col in table_object.columns:
-                            new_record[col] = row[col]
-
-                        pk_cols = getattr(table_object, "_Table__primary_key_object").columns \
-                            if isinstance(table_object, Table) else []
-                        rows.append(Row(new_record, pk_cols, table_object.mapping, table_object))
-
-                else:
-                    rows = fetch_to_dicts(self.__cursor, limit)
-
-                return rows
-
-        except cx_Oracle.IntegrityError:
-            self.__connection.rollback()
-            raise cx_Oracle.IntegrityError("Key constraint violated.")
-
-        except cx_Oracle.DatabaseError:
-            self.__connection.rollback()
-            raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
-
-
-def fetch_to_dicts(in_cursor, limit=None):
-    bad_chars = [".", "(", ")"]
-    if limit:
-        if limit == 1:
-            results = in_cursor.fetchone()
-            if results is None:
-                results = []
-            else:
-                results = [results]
-        else:
-            results = in_cursor.fetchmany(limit)
-    else:
-        results = in_cursor.fetchall()
-
-    field_names = [d[0].lower() for d in in_cursor.description]
-    clean_fields = []
-    for fn in field_names:
-        new_field = fn
-
-        if "*" in new_field:
-            new_field = new_field.replace("*", "all")
-        for bc in bad_chars:
-            new_field = new_field.replace(bc, "_")
-        count_chars = len(new_field)
-        if new_field[count_chars - 1] == "_":
-            new_field = new_field[:-1]
-        clean_fields.append(new_field)
-
-    output = [dict(zip(clean_fields, row)) for row in results]
-    if limit and len(output) > 0:
-        output = output[0] if limit == 1 else output[0:limit]
-    return output
-
+        self.cursor.execute("select lower(user) from dual")
+        return self.cursor.fetchone()[0]

@@ -1,2 +1,2 @@
 # init file
-from .handlers import Database
+from .handlers.Database import Database

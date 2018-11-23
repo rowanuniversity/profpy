@@ -1,6 +1,8 @@
 import datetime
 import cx_Oracle
+from .Row import Row
 from .KeyHandler import PrimaryKey
+from .utils import fetch_to_dicts
 from ..queries import Query
 
 
@@ -10,7 +12,6 @@ class Data(object):
     """
 
     __PK_ERROR_MSG = "This table does not have a primary key."
-    __IO_ERROR_MSG = "Cannot open the file that was given."
     __GENERATED_PK_MSG = "Cannot insert primary key on table where it is generated."
     __REQUIRED_FIELDS_MSG = "Did not enter required fields. Required: {0}"
 
@@ -139,23 +140,7 @@ class Data(object):
         """
 
         sql = "select * from {table}".format(table=self.name)
-        return self._db.execute_sql(sql, self, get_data=True, get_record_objects=True)
-
-    def execute_sql_from_file(self, in_file):
-        """
-        Executes sql from a .sql file using the current connection
-        :param in_file: The path to a .sql file (str)
-        :return:
-        """
-
-        try:
-            with open(in_file, "r") as sql_file:
-                try:
-                    self._db.execute_sql(sql_file.read(), self)
-                except cx_Oracle.DatabaseError as db_error:
-                    raise db_error
-        except IOError:
-            raise IOError(self.__IO_ERROR_MSG)
+        return self._execute_sql(sql, get_data=True, get_record_objects=True)
 
     def find(self, data=None, limit=None, raw=False, **kwargs):
         """
@@ -173,8 +158,8 @@ class Data(object):
         else:
             use_this = kwargs if data is None else data
             prepared_kwargs = self._prepare_kwargs(use_this, "select {0}".format(", ".join(self.columns)))
-            result = self._db.execute_sql(prepared_kwargs["sql"], self, get_data=True,
-                                          params=prepared_kwargs["params"], get_record_objects=True, limit=limit)
+            result = self._execute_sql(prepared_kwargs["sql"], get_data=True, params=prepared_kwargs["params"],
+                                       get_record_objects=True, limit=limit)
 
         num_results = len(result)
         if raw:
@@ -202,6 +187,51 @@ class Data(object):
 
     ####################################################################################################################
     # PROTECTED METHODS
+
+    def _execute_sql(self, sql, get_data=False, params=None, get_record_objects=False, limit=None):
+        """
+        Executes a given sql statement
+        :param sql:                  The sql statement/query to be executed (str)
+        :param get_data:             Whether or not data should be returned (i.e. fetchall) (boolean)
+        :param params:               For parameterization (dict)
+        :param get_record_objects    Whether or not the caller wants a list of Record objects (boolean)
+        :return:                     A list of Record objects, if get_record_objects is set to True (list)
+        """
+        try:
+            if params is None:
+                self._db.cursor.execute(sql)
+            else:
+                self._db.cursor.execute(sql, params)
+
+            if get_data:
+                if get_record_objects:
+                    rows = []
+                    fetched = fetch_to_dicts(self._db.cursor, limit)
+                    if isinstance(fetched, dict):
+                        fetched = [fetched]
+
+                    for row in fetched:
+                        new_record = {}
+
+                        for col in self.columns:
+                            new_record[col] = row[col]
+
+                        pk_cols = getattr(self, "_Table__primary_key_object").columns \
+                            if isinstance(self, Table) else []
+                        rows.append(Row(new_record, pk_cols, self.mapping, self))
+
+                else:
+                    rows = fetch_to_dicts(self._db.cursor, limit)
+
+                return rows
+
+        except cx_Oracle.IntegrityError:
+            self._db.connection.rollback()
+            raise cx_Oracle.IntegrityError("Key constraint violated.")
+
+        except cx_Oracle.DatabaseError:
+            self._db.connection.rollback()
+            raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
 
     def _fix_field_casing(self, data):
         """
@@ -294,7 +324,7 @@ class Data(object):
         """
 
         sql = "select count(*) as total from {0}".format(self.name)
-        return self._db.execute_sql(sql, self, get_data=True, limit=1)["total"]
+        return self._execute_sql(sql, get_data=True, limit=1)["total"]
 
     def __get_field_comments(self):
         """
@@ -305,7 +335,7 @@ class Data(object):
         sql = "select lower(column_name) as c_name, comments from all_col_comments " \
               "where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
-        raw_comments = self._db.execute_sql(sql, self, get_data=True, params=params)
+        raw_comments = self._execute_sql(sql, get_data=True, params=params)
         comment_dict = {}
         for row in raw_comments:
             comment_dict[row["c_name"]] = row["comments"]
@@ -323,7 +353,7 @@ class Data(object):
         sql = "select lower(column_name) as c_name, data_type, nullable, identity_column from all_tab_columns " \
               "where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
-        result = self._db.execute_sql(sql, self, get_data=True, params=params)
+        result = self._execute_sql(sql, get_data=True, params=params)
         definitions = {}
         for row in result:
             type_value = row["data_type"]
@@ -354,7 +384,7 @@ class Data(object):
         sql = "select lower(column_name) as field_name from all_tab_columns where lower(owner)=:in_owner and " \
               "lower(table_name)=:in_table"
         params = {"in_owner": self.__owner.lower(), "in_table": self.__table_name.lower()}
-        result = self._db.execute_sql(sql, self, get_data=True, params=params)
+        result = self._execute_sql(sql, get_data=True, params=params)
         return [row["field_name"] for row in result]
 
     def __get_table_comments(self):
@@ -365,7 +395,7 @@ class Data(object):
 
         sql = "select comments from all_tab_comments where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
-        result = self._db.execute_sql(sql, self, get_data=True, params=params)
+        result = self._execute_sql(sql, get_data=True, params=params)
         if len(result) > 0:
             return result[0]["comments"]  # result will be a one-item list with a single dict
         else:
@@ -396,8 +426,8 @@ class Data(object):
                 validation = self.__validate_arg_types(query.original_values)
                 has_valid_args, message = validation["validity"], validation["message"]
                 if has_valid_args:
-                    return self._db.execute_sql(query.get_full_sql(self.name), self, get_data=True,
-                                                params=query.params, get_record_objects=True, limit=limit)
+                    return self._execute_sql(query.get_full_sql(self.name), get_data=True, params=query.params,
+                                             get_record_objects=True, limit=limit)
                 else:
                     raise TypeError(message)
 
@@ -520,9 +550,9 @@ class Table(Data):
 
         if len(kwargs.keys()) > 0:
             prepared_kwargs = self._prepare_kwargs(kwargs, "delete")
-            self._db.execute_sql(prepared_kwargs["sql"], self, params=prepared_kwargs["params"])
+            self._execute_sql(prepared_kwargs["sql"], params=prepared_kwargs["params"])
         else:
-            self._db.execute_sql("delete from {table}".format(table=self.name), self)
+            self._execute_sql("delete from {table}".format(table=self.name))
 
     def get(self, key=None, **kwargs):
         """
@@ -625,7 +655,7 @@ class Table(Data):
         components = self._prepare_kwargs(kwargs, sql_prefix=None, is_insert=True)
         params = components["params"]
         try:
-            self._db.execute_sql(components["sql"], self, params=params)
+            self._execute_sql(components["sql"], params=params)
 
             if self.has_key:
                 return_sql = self.__get_key_sql_and_params(params)
@@ -640,7 +670,7 @@ class Table(Data):
                 params_sql = " and ".join(params_sql)
                 return_sql += params_sql
 
-            results = self._db.execute_sql(return_sql, self, params=params, get_data=True, get_record_objects=True)
+            results = self._execute_sql(return_sql, params=params, get_data=True, get_record_objects=True)
             return results[0] if self.has_key else results
 
         except cx_Oracle.DatabaseError as db_error:
@@ -675,14 +705,13 @@ class Table(Data):
 
             # lock the record for update
             lock_sql = "select * from {0} where {1} for update".format(self.name, self.primary_key.sql_where_clause)
-            self._db.execute_sql(lock_sql, self, params=key_params)
+            self._execute_sql(lock_sql, params=key_params)
 
             # update the record
-            self._db.execute_sql(update_sql, self, params=params)
+            self._execute_sql(update_sql, params=params)
 
             # return the updated Record object back to the caller
-            return self._db.execute_sql(return_sql, self, params=key_params, get_data=True,
-                                        get_record_objects=True)[0]
+            return self._execute_sql(return_sql, params=key_params, get_data=True, get_record_objects=True)[0]
 
     def __record_exists_in_table(self, in_args):
         """
@@ -701,7 +730,7 @@ class Table(Data):
                 params_sql += " and "
 
         sql = "select * from {table} where ".format(table=self.name) + params_sql
-        result = self._db.execute_sql(sql, self, get_data=True, params=params)
+        result = self._execute_sql(sql, get_data=True, params=params)
         return len(result) > 0
 
     def __pk_in_kwargs(self, in_kwargs):
@@ -729,7 +758,7 @@ class Table(Data):
             gen_field_statements = []
             for gf in self.generated_fields:
                 sql = "select max({field}) as gen_col from {table}".format(field=gf, table=self.name)
-                value = self._db.execute_sql(sql, self, get_data=True, limit=1)["gen_col"]
+                value = self._execute_sql(sql, get_data=True, limit=1)["gen_col"]
                 key_params[gf] = value
                 gen_field_statements.append("{field}=:{field}".format(field=gf))
 
@@ -758,7 +787,7 @@ class Table(Data):
         parameters = {"in_table": self.table_name.lower(), "in_type": "P", "in_owner": self.owner}
 
         try:
-            pk = [row["column_name"] for row in self._db.execute_sql(sql, self, get_data=True, params=parameters)]
+            pk = [row["column_name"] for row in self._execute_sql(sql, get_data=True, params=parameters)]
         except IndexError:
             # no primary key found for the table
             pk = None
