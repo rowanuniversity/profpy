@@ -148,9 +148,13 @@ class Data(object):
         the resulting set.
         :param data:    Fields to search on as field-value pairs in a dictionary (dict)
         :param limit:   A limit on the number of records returned (int)
+        :param raw      Whether or not to return a list of dicts rather than Row objects (bool)
         :param kwargs:  Fields to search on, i.e. first_name="Joe", last_name="Johnson" (used instead of "data" arg)
         :return:        A result set from the database (list of Result objects)
         """
+
+        if data is None and len(kwargs) == 0:
+            raise Exception("Did not specify anything for query.")
 
         if isinstance(data, Query):
             result = self.__query(data, limit)
@@ -170,16 +174,17 @@ class Data(object):
         else:
             return result
 
-    def find_one(self, data=None, **kwargs):
+    def find_one(self, data=None, raw=None, **kwargs):
         """
         Same as find, but it returns only the first record in the resulting list.
 
         :param data:    Fields to search on as field-value pairs in a dictionary (dict)
+        :param raw:     Whether or not to return a raw dict instead of a Row object
         :param kwargs:  Optionally, the caller can specify field-value pairs as keyword arguments
         :return:        If it exists, the Record found at the specified field-value pairs.
         """
 
-        results = self.find(data=data, limit=1, **kwargs)
+        results = self.find(data=data, limit=1, raw=raw, **kwargs)
         if len(results) > 0:
             return results[0]
         else:
@@ -226,11 +231,11 @@ class Data(object):
                 return rows
 
         except cx_Oracle.IntegrityError:
-            self._db.connection.rollback()
+            self._db.rollback()
             raise cx_Oracle.IntegrityError("Key constraint violated.")
 
         except cx_Oracle.DatabaseError:
-            self._db.connection.rollback()
+            self._db.rollback()
             raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
 
     def _fix_field_casing(self, data):
@@ -544,7 +549,7 @@ class Table(Data):
 
     def delete_from(self, **kwargs):
         """
-        Truncates the table associated with this TableHandler instance
+        Truncates the table associated with this Table instance
         :return:
         """
 
