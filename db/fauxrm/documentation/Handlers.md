@@ -211,9 +211,11 @@ properties and methods are only available to table objects.
 #### primary_key
 Returns the primary key object for this table, if one is set. 
 
+---
 #### generated_fields
 Returns all generated fields for this table
 
+---
 #### has_key
 Returns whether or not this table has a primary key
 

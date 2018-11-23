@@ -33,7 +33,6 @@ with fauxrm.Database() as pprd:
     database_name = pprd.name
 ```
 
-
 #### Execute Raw SQL
 ```python
 from profpy.db import fauxrm
