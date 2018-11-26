@@ -1,3 +1,5 @@
+import cx_Oracle
+
 class Row(object):
 
     __TYPE_ERROR_MSG = "Invalid type input for '{0}', {1} required but {2} given"
@@ -22,6 +24,10 @@ class Row(object):
         self.__mapping = mapping
         self.__handler = handler
         self.__key = {}
+
+        for field, value in self.__data.items():
+            if isinstance(value, cx_Oracle.LOB):
+                self.__data[field] = value.read()
 
         for field in key_fields:
             self.__key[field] = self.__data[field]
@@ -121,6 +127,7 @@ class Row(object):
         return str(self.data)
     ####################################################################################################################
     # PROPERTIES
+
     @property
     def data(self):
         """
@@ -172,7 +179,8 @@ class Row(object):
 
         # get the required and input types
         in_type = type(value)
-        required_type = self.__mapping[field][self.__MAPPING_TYPE_KEY]
+        mapping = self.__mapping[field]
+        required_type = mapping[self.__MAPPING_TYPE_KEY]
 
         # check for nullability
         is_nullable = self.__mapping[field][self.__MAPPING_NULLABLE_KEY]
@@ -182,6 +190,9 @@ class Row(object):
             null_valid = value is not None
 
         valid_types = in_type == required_type
+        if in_type in (bytes, str) and required_type in (cx_Oracle.CLOB, cx_Oracle.BLOB):
+            valid_types = True
+
         if is_nullable and value is None:
             valid_types = True
 

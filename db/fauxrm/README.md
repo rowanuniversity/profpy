@@ -12,7 +12,7 @@ Note: The [Oracle Instant Client](http://www.oracle.com/technetwork/database/dat
 will need to be installed.<br><br><br>
 
 # Quick Start
-This is a brief quick start guide, for more information, see the [docs](./documentation/README.md).
+This is a brief quick start guide, for more information, see the [technical documentation](./documentation/README.md).
 
 ## Basic Functionality
 #### Connecting to the database

@@ -20,10 +20,12 @@ class Database(object):
         """
 
         self.__connection = get_connection(user_var, password_var)
-        self.cursor     = self.__connection.cursor()
+        self.cursor       = self.__connection.cursor()
         self.user         = self.__get_current_user()
         self.tables       = {}
         self.views        = {}
+        self.lobs         = []
+        self.rows         = []
 
     ####################################################################################################################
     # OVERRIDES
@@ -44,6 +46,9 @@ class Database(object):
         """
         self.close()
     ####################################################################################################################
+
+    def clear_lobs(self):
+        self.lobs.clear()
 
     def model(self, owner, object_name):
         """
@@ -203,7 +208,8 @@ class Database(object):
         :return:
         """
         try:
-
+            self.clear_lobs()
+            self.lobs = None
             self.__connection.rollback()
             self.cursor.close()
             self.__connection.close()

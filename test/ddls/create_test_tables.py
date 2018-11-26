@@ -7,7 +7,7 @@ if __name__ == "__main__":
     connection = get_connection("host_pprd", "db_password")
     cursor = connection.cursor()
 
-    ddls = list(filter(lambda file_name: re.match(re.compile(r"[a-zA-Z_1-9]+_ddl.sql$"), file_name), os.listdir(".")))
+    ddls = list(filter(lambda file_name: re.match(re.compile(r"[a-zA-Z_1-9]+.ddl.sql$"), file_name), os.listdir(".")))
 
     concat_sql = ""
     for file in ddls:

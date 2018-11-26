@@ -33,7 +33,9 @@ class Data(object):
         "DECIMAL":              float,
         "DOUBLE PRECISION":     float,
         "DATE":                 datetime.datetime,
-        "TIMESTAMP":            datetime.datetime
+        "TIMESTAMP":            datetime.datetime,
+        "CLOB":                 cx_Oracle.CLOB,
+        "BLOB":                 cx_Oracle.BLOB
     }
     __DB_TRUE = ("Y", "y", "YES", "yes")
     __DB_FALSE = ("N", "n", "NO", "no")
@@ -49,6 +51,7 @@ class Data(object):
         self.__table_name = name
         self.__full_name = "{0}.{1}".format(owner, name)
 
+        self._lobs = []
         self.__field_names = self.__get_field_names()
         self.__field_definitions = self.__get_field_definitions()
 
@@ -224,7 +227,6 @@ class Data(object):
                         pk_cols = getattr(self, "_Table__primary_key_object").columns \
                             if isinstance(self, Table) else []
                         rows.append(Row(new_record, pk_cols, self.mapping, self))
-
                 else:
                     rows = fetch_to_dicts(self._db.cursor, limit)
 
@@ -236,6 +238,7 @@ class Data(object):
 
         except cx_Oracle.DatabaseError:
             self._db.rollback()
+            print(sql)
             raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
 
     def _fix_field_casing(self, data):
@@ -259,7 +262,7 @@ class Data(object):
 
         return None if bad_data else cleaned_data
 
-    def _prepare_kwargs(self, in_kwargs, sql_prefix, is_insert=False):
+    def _prepare_kwargs(self, in_kwargs, sql_prefix, is_change=False):
         """
         Converts kwargs inputs to sql and packages it with a corresponding parameter dictionary
         :param in_kwargs:   user-input kwargs
@@ -267,7 +270,7 @@ class Data(object):
         :return:            a dictionary containing the sql and its corresponding parameters (also a dict)
         """
 
-        if is_insert:
+        if is_change:
 
             validated_columns = self._fix_field_casing(in_kwargs)
             if validated_columns is None:
@@ -289,7 +292,37 @@ class Data(object):
 
             params = {}
             for column, value in in_kwargs.items():
-                params[column] = value
+
+                this_mapping = self.mapping[column]
+                acceptable_type = this_mapping["type"]
+
+                # handle CLOBs and BLOBs
+                if acceptable_type in [cx_Oracle.BLOB, cx_Oracle.CLOB]:
+
+                    value_type = type(value)
+                    if value_type not in [cx_Oracle.CLOB, cx_Oracle.BLOB, str, bytes]:
+                        raise Exception("Invalid insert/update on LOB field '{0}'.".format(column))
+                    else:
+
+                        insert_value = value
+
+                        # python type is not cx_Oracle.BLOB or cx_Oracle.CLOB
+                        if value_type in (bytes, str):
+
+                            insert_value = self._db.cursor.var(acceptable_type)
+
+                            if value_type is bytes:
+                                insert_value.setvalue(0, value.decode("utf-8"))
+                            else:
+                                insert_value.setvalue(0, value)
+                            self._db.lobs.append(insert_value)
+
+                        params[column] = insert_value
+                        self._db.cursor.setinputsizes(**{column: acceptable_type})
+                        del insert_value
+
+                else:
+                    params[column] = value
 
             column_list = []
             params_list = []
@@ -474,14 +507,18 @@ class Data(object):
 
                 # invalid type was found for this field
                 elif not isinstance(value, accepted_type) and value is not None:
+                    value_type = type(value)
 
                     # check if a list or tuple of values was entered
-                    if type(value) in (list, tuple, set) and len(value) > 0:
+                    if value_type in (list, tuple, set) and len(value) > 0:
 
                         # all values in this collection must be valid to proceed
                         if not all(isinstance(this_value, accepted_type) or this_value is None for this_value in value):
                             message = msg
                             has_valid_args = False
+
+                    elif value_type in (str, bytes) and accepted_type in (cx_Oracle.BLOB, cx_Oracle.CLOB):
+                        pass
 
                     # value had the wrong type
                     else:
@@ -657,7 +694,7 @@ class Table(Data):
         :return:
         """
 
-        components = self._prepare_kwargs(kwargs, sql_prefix=None, is_insert=True)
+        components = self._prepare_kwargs(kwargs, sql_prefix=None, is_change=True)
         params = components["params"]
         try:
             self._execute_sql(components["sql"], params=params)
@@ -693,7 +730,7 @@ class Table(Data):
             raise Exception(self.__PK_ERROR_MSG)
         else:
 
-            params = self._prepare_kwargs(kwargs, "")["params"]
+            params = self._prepare_kwargs(kwargs, "", is_change=True)["params"]
             update_sql = "update {table} set ".format(table=self.name)
 
             keys = params.keys()
