@@ -1,5 +1,5 @@
 """
-The generic unit testing module for the FauxRM library's CRUD functionality.
+The generic unit testing module for the fauxrm library's CRUD functionality.
 
 Developed by Connor Hornibrook, 2018
 Rowan University

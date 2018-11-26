@@ -1,7 +1,7 @@
 import os
 import re
 import cx_Oracle
-from db.general import get_connection
+from db import get_connection
 
 if __name__ == "__main__":
     connection = get_connection("host_pprd", "db_password")

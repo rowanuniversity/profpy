@@ -282,8 +282,8 @@ class Data(object):
 
         if is_change:
 
-            validated_columns = self._fix_field_casing(in_kwargs)
-            if validated_columns is None:
+            in_kwargs = self._fix_field_casing(in_kwargs)
+            if in_kwargs is None:
                 raise ValueError("Invalid field.")
 
             validated_type_results = self.__validate_arg_types(in_kwargs)
@@ -338,8 +338,8 @@ class Data(object):
             sql = "insert into {0} ({1}) values ({2})".format(self.name, column_list, params_list)
 
         else:
+            if any(self.mapping[k.split("___")[0]]["type"] in [cx_Oracle.BLOB, cx_Oracle.CLOB] for k in list(in_kwargs.keys())):
 
-            if any(self.mapping[k]["type"] in [cx_Oracle.BLOB, cx_Oracle.CLOB] for k in list(in_kwargs.keys())):
                 raise Exception("Cannot query on LOB fields.")
 
             q = Query(**in_kwargs)
@@ -694,7 +694,6 @@ class Table(Data):
                 result = self.__insert(**use_this)
         else:
             result = self.__insert(**use_this)
-
         return result
 
     def __insert(self, **kwargs):
@@ -707,6 +706,7 @@ class Table(Data):
         components = self._prepare_kwargs(kwargs, sql_prefix=None, is_change=True)
         params = components["params"]
         try:
+
             self._execute_sql(components["sql"], params=params)
 
             if self.has_key:
