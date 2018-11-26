@@ -307,11 +307,12 @@ class Data(object):
                 acceptable_type = this_mapping["type"]
 
                 # handle CLOBs and BLOBs
-                if acceptable_type in [cx_Oracle.BLOB, cx_Oracle.CLOB]:
-
+                if column in self.lob_fields:
                     value_type = type(value)
-                    if value_type not in [str, bytes]:
-                        raise Exception("Invalid insert/update on LOB field '{0}'.".format(column))
+                    if value_type is not str and acceptable_type is cx_Oracle.CLOB:
+                        raise Exception("Invalid insert/update on CLOB field '{0}'".format(column))
+                    elif value_type is not bytes and acceptable_type is cx_Oracle.BLOB:
+                        raise Exception("Invalid insert/update on BLOB field '{0}'".format(column))
                     else:
                         params[column] = value
                 else:
