@@ -1,5 +1,6 @@
 import cx_Oracle
 
+
 class Row(object):
 
     __TYPE_ERROR_MSG = "Invalid type input for '{0}', {1} required but {2} given"

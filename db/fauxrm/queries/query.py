@@ -1,5 +1,6 @@
 import re
 import datetime
+import cx_Oracle
 
 COLLECTION_TYPES = (list, set, tuple)
 
@@ -44,7 +45,7 @@ class Query(object):
     __QUERY_TYPE_ERROR_MSG = "Other object must be of type 'Query'."
     __SQL_PARSING_ERROR_MSG = "Sql Parsing Error"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, mapping=None, **kwargs):
         """
         Constructor
         :param args:    Other Query objects
@@ -66,6 +67,7 @@ class Query(object):
         #  ex) if in __original_fields we have: {"first_name": ["first_name", "first_name__1", "first_name__2"]
         #      then the highest index value for "first_name" with be 2
         self.__field_to_highest_index = {}
+        self.__mapping = mapping
 
         sql_statements = []
         same_keys = {}
@@ -233,6 +235,7 @@ class Query(object):
 
     ####################################################################################################################
     # PUBLIC METHODS
+
     def get_full_sql(self, table_name):
         """
         Returns a full sql query, given a table name
@@ -416,6 +419,9 @@ class Query(object):
         :return: All parameter names being used by this Query
         """
         return list(self.__params.keys())
+
+    def __get_column_type(self, column_name):
+        return self.__mapping[column_name]["type"] if self.__mapping else None
 
     def __or(self, other):
         """

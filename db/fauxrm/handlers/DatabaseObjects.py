@@ -91,6 +91,18 @@ class Data(object):
         return self.__get_table_comments()
 
     @property
+    def lob_fields(self):
+        """
+        :return: Any LOB-type field
+        """
+        sql = "select lower(column_name) as column_name from all_tab_cols " \
+              "where lower(owner)=:in_owner and lower(table_name)=:in_table and data_type in ('CLOB', 'BLOB')"
+
+        params = {"in_owner": self.owner.lower(), "in_table": self.table_name.lower()}
+        results = self._db.execute_query(sql, params=params)
+        return [row["column_name"] for row in results]
+
+    @property
     def mapping(self):
         """
         :return: The field definitions of this table (dictionary)
@@ -229,7 +241,6 @@ class Data(object):
                         rows.append(Row(new_record, pk_cols, self.mapping, self))
                 else:
                     rows = fetch_to_dicts(self._db.cursor, limit)
-
                 return rows
 
         except cx_Oracle.IntegrityError:
@@ -238,7 +249,6 @@ class Data(object):
 
         except cx_Oracle.DatabaseError:
             self._db.rollback()
-            print(sql)
             raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
 
     def _fix_field_casing(self, data):
@@ -300,27 +310,10 @@ class Data(object):
                 if acceptable_type in [cx_Oracle.BLOB, cx_Oracle.CLOB]:
 
                     value_type = type(value)
-                    if value_type not in [cx_Oracle.CLOB, cx_Oracle.BLOB, str, bytes]:
+                    if value_type not in [str, bytes]:
                         raise Exception("Invalid insert/update on LOB field '{0}'.".format(column))
                     else:
-
-                        insert_value = value
-
-                        # python type is not cx_Oracle.BLOB or cx_Oracle.CLOB
-                        if value_type in (bytes, str):
-
-                            insert_value = self._db.cursor.var(acceptable_type)
-
-                            if value_type is bytes:
-                                insert_value.setvalue(0, value.decode("utf-8"))
-                            else:
-                                insert_value.setvalue(0, value)
-                            self._db.lobs.append(insert_value)
-
-                        params[column] = insert_value
-                        self._db.cursor.setinputsizes(**{column: acceptable_type})
-                        del insert_value
-
+                        params[column] = value
                 else:
                     params[column] = value
 
@@ -328,7 +321,15 @@ class Data(object):
             params_list = []
             for column in in_kwargs.keys():
                 column_list.append(column)
-                params_list.append(":" + column)
+                param_list_sql = ":" + column
+                mapping = self.mapping[column]
+
+                if mapping["type"] is cx_Oracle.BLOB:
+                    param_list_sql = "to_blob(" + param_list_sql + ")"
+                elif mapping["type"] is cx_Oracle.CLOB:
+                    param_list_sql = "to_clob(" + param_list_sql + ")"
+
+                params_list.append(param_list_sql)
             column_list = ", ".join(column_list)
             params_list = ", ".join(params_list)
 
@@ -336,6 +337,10 @@ class Data(object):
             sql = "insert into {0} ({1}) values ({2})".format(self.name, column_list, params_list)
 
         else:
+
+            if any(self.mapping[k]["type"] in [cx_Oracle.BLOB, cx_Oracle.CLOB] for k in list(in_kwargs.keys())):
+                raise Exception("Cannot query on LOB fields.")
+
             q = Query(**in_kwargs)
             sql = "{prefix} from {table} where {w}".format(prefix=sql_prefix, table=self.name, w=q.sql)
             params = q.params
@@ -517,7 +522,10 @@ class Data(object):
                             message = msg
                             has_valid_args = False
 
-                    elif value_type in (str, bytes) and accepted_type in (cx_Oracle.BLOB, cx_Oracle.CLOB):
+                    elif value_type is bytes and accepted_type is cx_Oracle.BLOB:
+                        pass
+
+                    elif value_type is str and accepted_type is cx_Oracle.CLOB:
                         pass
 
                     # value had the wrong type
@@ -673,6 +681,7 @@ class Table(Data):
         :param kwargs:  If data is not used, the caller can specify individual field-value pairs as keyword arguments
         :return:        The Record object that was saved to the table (Record)
         """
+
         use_this = kwargs
         if data is not None:
             use_this = data
@@ -700,6 +709,7 @@ class Table(Data):
             self._execute_sql(components["sql"], params=params)
 
             if self.has_key:
+
                 return_sql = self.__get_key_sql_and_params(params)
                 params = return_sql["params"]
                 return_sql = return_sql["sql"]
@@ -799,6 +809,7 @@ class Table(Data):
         if len(self.generated_fields) > 0:
             gen_field_statements = []
             for gf in self.generated_fields:
+
                 sql = "select max({field}) as gen_col from {table}".format(field=gf, table=self.name)
                 value = self._execute_sql(sql, get_data=True, limit=1)["gen_col"]
                 key_params[gf] = value
