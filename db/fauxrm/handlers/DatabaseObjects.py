@@ -111,6 +111,17 @@ class Data(object):
         return self.__field_definitions
 
     @property
+    def mapping_pretty(self):
+        """
+        :return: Read-friendly string of the mapping
+        """
+        string = ""
+        for field, mapping in self.mapping.items():
+            string += field + "\n\tType:\t\t{0}\n".format(mapping["type"].__name__)
+            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\n".format(mapping["nullable"], mapping["generated"])
+        return string
+
+    @property
     def name(self):
         """
         :return: The table's full name
@@ -280,11 +291,11 @@ class Data(object):
         :return:            a dictionary containing the sql and its corresponding parameters (also a dict)
         """
 
-        if is_change:
+        in_kwargs = self._fix_field_casing(in_kwargs)
+        if in_kwargs is None:
+            raise ValueError("Invalid field.")
 
-            in_kwargs = self._fix_field_casing(in_kwargs)
-            if in_kwargs is None:
-                raise ValueError("Invalid field.")
+        if is_change:
 
             validated_type_results = self.__validate_arg_types(in_kwargs)
             if not validated_type_results["validity"]:
