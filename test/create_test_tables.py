@@ -27,14 +27,16 @@ def get_connection(login_var, password_var):
 
 
 if __name__ == "__main__":
+
+    path = "./test/ddls"
     connection = get_connection("host_pprd", "db_password")
     cursor = connection.cursor()
 
-    ddls = list(filter(lambda file_name: re.match(re.compile(r"ddls/[a-zA-Z_1-9]+.ddl.sql$"), file_name), os.listdir(".")))
+    ddls = list(filter(lambda file_name: re.match(re.compile(r"[a-zA-Z_1-9]+\.ddl\.sql$"), file_name),
+                       os.listdir(path)))
 
-    concat_sql = ""
     for file in ddls:
-        with open(file, "r") as sql:
+        with open(os.path.join(path, file), "r") as sql:
             statements = sql.read().split(";")
             for statement in statements:
                 statement = statement.lstrip().rstrip()
