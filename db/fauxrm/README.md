@@ -1,4 +1,7 @@
 # profpy.db.fauxrm
+<i>This is a brief quick start guide, for more information, see the [technical documentation](./documentation/README.md).</i>
+
+
 fauxrm is a lightweight Oracle database abstraction layer for Python that provides a lot of the
 functionality of traditional ORM's without the usual step of writing domain/model classes.
 This library is meant to hopefully simplify tasks that involve basic record creation/modification,
@@ -12,8 +15,6 @@ Note: The [Oracle Instant Client](http://www.oracle.com/technetwork/database/dat
 will need to be installed.<br><br><br>
 
 # Quick Start
-This is a brief quick start guide, for more information, see the [technical documentation](./documentation/README.md).
-
 ## Basic Functionality
 #### Connecting to the database
 ```python
@@ -145,3 +146,18 @@ with fauxrm.Database() as database:
     phonebook = database.model("owner", "phonebook")
     results = phonebook.find(query)
 ```
+
+#### LOBs
+fauxrm supports the reading and writing BLOBS and CLOBS. However, it does not currently support searching on these data types.
+```python
+from profpy.db import fauxrm
+
+with fauxrm.Database() as database:
+
+    table_with_lobs = database.model("owner", "lobs")
+    clob_value = "this is a test CLOB"
+    blob_value = b"test blob"
+    
+    table_with_lobs.save(id=1, clob_field=clob_value, blob_field=blob_value)
+```
+
