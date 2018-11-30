@@ -291,11 +291,11 @@ class Data(object):
         :return:            a dictionary containing the sql and its corresponding parameters (also a dict)
         """
 
-        in_kwargs = self._fix_field_casing(in_kwargs)
-        if in_kwargs is None:
-            raise ValueError("Invalid field.")
-
         if is_change:
+
+            in_kwargs = self._fix_field_casing(in_kwargs)
+            if in_kwargs is None:
+                raise ValueError("Invalid field.")
 
             validated_type_results = self.__validate_arg_types(in_kwargs)
             if not validated_type_results["validity"]:
