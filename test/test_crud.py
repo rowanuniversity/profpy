@@ -1,14 +1,14 @@
 """
-The generic unit testing module for the FauxRM library's CRUD functionality.
+The generic unit testing module for the fauxrm library's CRUD functionality.
 
 Developed by Connor Hornibrook, 2018
 Rowan University
 """
-
 import random
 import datetime
 import unittest
 from db import fauxrm
+
 
 # some constants for convenient testing
 DATE_FMT = "%d-%b-%y"

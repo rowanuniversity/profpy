@@ -1,2 +1,3 @@
 # init file
-from .handlers import Database
+from .handlers.Database import Database
+from .queries.query import And, Or

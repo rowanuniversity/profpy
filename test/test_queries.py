@@ -1,5 +1,5 @@
 """
-The unit testing module for the FauxRM library's query functionality.
+The unit testing module for the fauxrm's library's query functionality.
 
 Developed by Connor Hornibrook, 2018
 Rowan University
