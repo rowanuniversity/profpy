@@ -1,5 +1,5 @@
 # profpy.db.fauxrm
-<i>This is a brief quick start guide, for more information, see the [technical documentation](./documentation/README.md).</i>
+<i>This is a brief quick start guide, for more information, see the [technical documentation](./documentation/).</i>
 
 
 fauxrm is a lightweight Oracle database abstraction layer for Python that provides a lot of the
