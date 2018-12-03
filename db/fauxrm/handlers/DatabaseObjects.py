@@ -91,6 +91,14 @@ class Data(object):
         return self.__get_table_comments()
 
     @property
+    def is_table(self):
+        """
+        :return: Whether or not this object is a table
+        """
+
+        return isinstance(self, Table)
+
+    @property
     def lob_fields(self):
         """
         :return: Any LOB-type field

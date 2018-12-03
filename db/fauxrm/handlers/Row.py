@@ -153,13 +153,17 @@ class Row(object):
         if self.__handler is None:
             raise AttributeError("Cannot save this record to the database.")
         else:
-            if not self.__handler.has_key:
-                raise Exception("Cannot perform 'update' operation without primary key.")
-            self.__handler.save(**self.__data)
-            new_object = self.__handler.get(self.key)
-            if self.__state_changed():
-                self.__handler.delete_from(**self.__original_values)
-            self.__dict__.update(new_object.__dict__)
+
+            if self.__handler.is_table:
+                if not self.__handler.has_key:
+                    raise Exception("Cannot perform 'update' operation without primary key.")
+                self.__handler.save(**self.__data)
+                new_object = self.__handler.get(self.key)
+                if self.__state_changed():
+                    self.__handler.delete_from(**self.__original_values)
+                self.__dict__.update(new_object.__dict__)
+            else:
+                raise Exception("Can only perform 'save' on a record in a table.")
 
     ####################################################################################################################
     # PRIVATE METHODS
