@@ -151,7 +151,7 @@ class Data(object):
         """
 
         required_fields = []
-        for field, definition in self.mapping:
+        for field, definition in self.mapping.items():
             is_nullable = definition["nullable"]
             if is_nullable and not definition["generated"]:
                 required_fields.append(field)
