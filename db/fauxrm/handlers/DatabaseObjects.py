@@ -214,7 +214,7 @@ class Data(object):
         """
 
         results = self.find(data=data, limit=1, **kwargs)
-        return next(results) if results else None
+        return results if results else None
 
     ####################################################################################################################
     # PROTECTED METHODS
@@ -683,6 +683,7 @@ class Table(Data):
                 result = self.__insert(**use_this)
         else:
             result = self.__insert(**use_this)
+
         return result
 
     def __insert(self, **kwargs):
@@ -691,7 +692,6 @@ class Table(Data):
         :param values: The values to be inserted (dict)
         :return:
         """
-
         components = self._prepare_kwargs(kwargs, sql_prefix=None, is_change=True)
         params = components["params"]
         try:
@@ -725,7 +725,6 @@ class Table(Data):
         :param kwargs:      Keyword arguments corresponding to field value updates, e.g. last_name="Smith"
         :return:
         """
-
         if self.primary_key is None:
             raise Exception(self.__PK_ERROR_MSG)
         else:
@@ -775,8 +774,11 @@ class Table(Data):
                 params_sql += " and "
 
         sql = "select * from {table} where ".format(table=self.name) + params_sql
-        result = self._execute_sql(sql, get_data=True, params=params)
-        return result is not None
+        try:
+            next(self._execute_sql(sql, get_data=True, params=params))
+            return True
+        except StopIteration:
+            return False
 
     def __pk_in_kwargs(self, in_kwargs):
         """
