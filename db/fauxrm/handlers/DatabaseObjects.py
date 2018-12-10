@@ -47,8 +47,8 @@ class Data(object):
         """
 
         self._db = db
-        self.__owner = owner
-        self.__table_name = name
+        self.__owner = owner.lower()
+        self.__table_name = name.lower()
         self.__full_name = "{0}.{1}".format(owner, name)
 
         self._lobs = []
@@ -106,7 +106,7 @@ class Data(object):
         sql = "select lower(column_name) as column_name from all_tab_cols " \
               "where lower(owner)=:in_owner and lower(table_name)=:in_table and data_type in ('CLOB', 'BLOB')"
 
-        params = {"in_owner": self.owner.lower(), "in_table": self.table_name.lower()}
+        params = {"in_owner": self.owner, "in_table": self.table_name}
         results = self._db.execute_query(sql, params=params)
         return [row["column_name"] for row in results]
 
@@ -126,7 +126,7 @@ class Data(object):
         string = ""
         for field, mapping in self.mapping.items():
             string += field + "\n\tType:\t\t{0}\n".format(mapping["type"].__name__)
-            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\n".format(mapping["nullable"], mapping["generated"])
+            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\tTriggered:\t{2}\n\n".format(mapping["nullable"], mapping["generated"], mapping["triggered"])
         return string
 
     @property
@@ -153,7 +153,7 @@ class Data(object):
         required_fields = []
         for field, definition in self.mapping.items():
             is_nullable = definition["nullable"]
-            if not is_nullable and not definition["generated"]:
+            if not is_nullable and not definition["generated"] and not definition["triggered"]:
                 required_fields.append(field)
 
         return required_fields
@@ -165,6 +165,13 @@ class Data(object):
         """
 
         return self.__table_name
+
+    @property
+    def triggered_fields(self):
+        """
+        :return: Any triggers associated with this table
+        """
+        return [field for field, mapping in self.mapping.items() if mapping["triggered"]]
 
     ####################################################################################################################
     # PUBLIC METHODS
@@ -429,7 +436,7 @@ class Data(object):
 
             column_name = row["c_name"]
             definition = {"type": self.__TYPE_MAPPING[type_value], "nullable": nullable_value,
-                          "generated": is_generated}
+                          "generated": is_generated, "triggered": self.__is_trigger_populated(column_name)}
             pk_attr = "_Table__primary_key_object"
             if hasattr(self, pk_attr) and column_name in getattr(self, pk_attr).columns:
                 definition["generated"] = is_generated
@@ -493,6 +500,20 @@ class Data(object):
                                              get_record_objects=True, limit=limit)
                 else:
                     raise TypeError(message)
+
+    def __is_trigger_populated(self, field_name):
+        """
+        Finds fields that are populated by triggers.
+        :param field_name: The name of the field (str)
+        :return:           Whether or not it is populated by a trigger.
+        """
+        sql = "select count(*) from dba_source " \
+              "where type='TRIGGER' and " \
+              "lower(text) like '%' || :column_name || '%' and lower(text) like '%:=%' " \
+              "and lower(owner)=:in_owner"
+        params = {"column_name": field_name.lower(), "in_owner": self.owner}
+        self._db.cursor.execute(sql, params)
+        return True if self._db.cursor.fetchone()[0] else False
 
     def __validate_arg_types(self, in_kwargs):
         """
