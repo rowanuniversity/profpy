@@ -1,4 +1,5 @@
 import abc
+from urllib.parse import quote
 
 
 class Api(abc.ABC):
@@ -23,8 +24,7 @@ class Api(abc.ABC):
 
             self.__update_time()
             params = dict(self.authentication_parameters, **kwargs)
-            return self.url + "{0}?{1}".format(endpoint_name, "&".join("{0}={1}".format(k, v)
-                                                                       for k, v in params.items()))
+            return self.url + parse_parameters(params)
         else:
             return None
 
@@ -57,3 +57,12 @@ class Api(abc.ABC):
     @abc.abstractmethod
     def __update_time(self):
         pass
+
+
+def parse_parameters(parameters):
+    """
+    Parses a dictionary of URL parameters into a string
+    :param parameters: A dict of parameters (dict)
+    :return:           A parsed string of url params e.g. "&name=john&state=nj"
+    """
+    return quote("&".join(["{0}={1}".format(parameter, value) for parameter, value in parameters.items()]))

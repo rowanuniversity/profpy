@@ -13,9 +13,9 @@ class BBLearn(Api):
 
     # status code messages
     __HTTP_ERRORS = {
-        400: "Bad Request",
-        403: "Invalid Credentials",
-        404: "Invalid endpoint"
+        requests.status_codes._codes[200]: "Bad Request",
+        requests.status_codes._codes[403]: "Invalid Credentials",
+        requests.status_codes._codes[404]: "Invalid endpoint"
     }
 
     def __init__(self, in_app_key, in_app_id, in_secret_key):
