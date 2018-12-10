@@ -211,7 +211,7 @@ class TestCRUD(unittest.TestCase):
     def test_find_on_null_value(self):
         phonebook_table.delete_from()
         phonebook_table.save(first_name=TEST_FIRST, last_name=TEST_LAST)  # phone number will be null
-        results = phonebook_table.find(phone=None)
+        results = list(phonebook_table.find(phone=None))
         num_results = len(results)
 
         self.assertGreater(num_results, 0)
@@ -372,7 +372,7 @@ class TestDates(unittest.TestCase):
     def test_find_date_in_collection(self):
         manual_sql_result_count = 2020  # value grabbed from oracle db using old test scores that won't change
         results = sortest.find(sortest_test_date___trunc=self.test_dates, sortest_tesc_code=self.test_code)
-        self.assertEqual(len(results), manual_sql_result_count)
+        self.assertEqual(len(list(results)), manual_sql_result_count)
 
 
 class RandomGenerators(object):

@@ -1,8 +1,7 @@
 import datetime
 import cx_Oracle
-from .Row import Row
 from .KeyHandler import PrimaryKey
-from .utils import fetch_to_dicts
+from .utils import fetch_to_dicts, fetch_to_row_objs
 from ..queries import Query
 
 
@@ -181,13 +180,12 @@ class Data(object):
         sql = "select * from {table}".format(table=self.name)
         return self._execute_sql(sql, get_data=True, get_record_objects=True)
 
-    def find(self, data=None, limit=None, raw=False, **kwargs):
+    def find(self, data=None, limit=None, **kwargs):
         """
         Finds records based on field values. User may provide as many fields as he/she wants to continue to filter
         the resulting set.
         :param data:    Fields to search on as field-value pairs in a dictionary (dict)
         :param limit:   A limit on the number of records returned (int)
-        :param raw      Whether or not to return a list of dicts rather than Row objects (bool)
         :param kwargs:  Fields to search on, i.e. first_name="Joe", last_name="Johnson" (used instead of "data" arg)
         :return:        A result set from the database (list of Result objects)
         """
@@ -204,30 +202,19 @@ class Data(object):
             result = self._execute_sql(prepared_kwargs["sql"], get_data=True, params=prepared_kwargs["params"],
                                        get_record_objects=True, limit=limit)
 
-        num_results = len(result)
-        if raw:
-            result = [row.data for row in result]
-        if limit is not None and num_results > 0:
-            return result[0:limit]
+        return result
 
-        else:
-            return result
-
-    def find_one(self, data=None, raw=None, **kwargs):
+    def find_one(self, data=None, **kwargs):
         """
         Same as find, but it returns only the first record in the resulting list.
 
         :param data:    Fields to search on as field-value pairs in a dictionary (dict)
-        :param raw:     Whether or not to return a raw dict instead of a Row object
         :param kwargs:  Optionally, the caller can specify field-value pairs as keyword arguments
         :return:        If it exists, the Record found at the specified field-value pairs.
         """
 
-        results = self.find(data=data, limit=1, raw=raw, **kwargs)
-        if len(results) > 0:
-            return results[0]
-        else:
-            return None
+        results = self.find(data=data, limit=1, **kwargs)
+        return next(results) if results else None
 
     ####################################################################################################################
     # PROTECTED METHODS
@@ -246,23 +233,10 @@ class Data(object):
                 self._db.cursor.execute(sql)
             else:
                 self._db.cursor.execute(sql, params)
-
             if get_data:
                 if get_record_objects:
-                    rows = []
-                    fetched = fetch_to_dicts(self._db.cursor, limit)
-                    if isinstance(fetched, dict):
-                        fetched = [fetched]
-
-                    for row in fetched:
-                        new_record = {}
-
-                        for col in self.columns:
-                            new_record[col] = row[col]
-
-                        pk_cols = getattr(self, "_Table__primary_key_object").columns \
-                            if isinstance(self, Table) else []
-                        rows.append(Row(new_record, pk_cols, self.mapping, self))
+                    pk_cols = getattr(self, "_Table__primary_key_object").columns if isinstance(self, Table) else []
+                    rows = fetch_to_row_objs(self._db.cursor, pk_cols, self.mapping, self, limit)
                 else:
                     rows = fetch_to_dicts(self._db.cursor, limit)
                 return rows
@@ -454,8 +428,8 @@ class Data(object):
         sql = "select comments from all_tab_comments where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
         result = self._execute_sql(sql, get_data=True, params=params)
-        if len(result) > 0:
-            return result[0]["comments"]  # result will be a one-item list with a single dict
+        if result:
+            return next(result)["comments"]  # result will be a one-item list with a single dict
         else:
             return ""
 
@@ -678,8 +652,9 @@ class Table(Data):
                 # since the composite key utilizes a combination of fields, we can utilize the find method to retrieve
                 # the unique record
                 else:
-                    results = self.find(**use_this)
+                    results = list(self.find(**use_this))
                     num_results = len(results)
+
                     # returned no results
                     if num_results == 0:
                         return None
@@ -738,7 +713,7 @@ class Table(Data):
                 return_sql += params_sql
 
             results = self._execute_sql(return_sql, params=params, get_data=True, get_record_objects=True)
-            return results[0] if self.has_key else results
+            return next(results) if self.has_key else results
 
         except cx_Oracle.DatabaseError as db_error:
             raise db_error
@@ -778,7 +753,10 @@ class Table(Data):
             self._execute_sql(update_sql, params=params)
 
             # return the updated Record object back to the caller
-            return self._execute_sql(return_sql, params=key_params, get_data=True, get_record_objects=True)[0]
+            try:
+                return next(self._execute_sql(return_sql, params=key_params, get_data=True, get_record_objects=True))
+            except StopIteration:
+                return
 
     def __record_exists_in_table(self, in_args):
         """
@@ -798,7 +776,7 @@ class Table(Data):
 
         sql = "select * from {table} where ".format(table=self.name) + params_sql
         result = self._execute_sql(sql, get_data=True, params=params)
-        return len(result) > 0
+        return result is not None
 
     def __pk_in_kwargs(self, in_kwargs):
         """

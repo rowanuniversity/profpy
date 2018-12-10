@@ -1,3 +1,6 @@
+from .Row import Row
+
+
 def fetch_to_dicts(in_cursor, limit=None):
     """
     Takes a cursor, post sql execution, and spits out a list of dictionaries with the keys being the field names and
@@ -6,22 +9,40 @@ def fetch_to_dicts(in_cursor, limit=None):
     :param limit:     A cap on the number or results (int)
     :return:          A list of dict objects         (list)
     """
-    bad_chars = [".", "(", ")"]
-    if limit:
-        if limit == 1:
-            results = in_cursor.fetchone()
-            if results is None:
-                results = []
-            else:
-                results = [results]
-        else:
-            results = in_cursor.fetchmany(limit)
-    else:
-        results = in_cursor.fetchall()
 
-    field_names = [d[0].lower() for d in in_cursor.description]
+    field_names = clean_field_names([d[0].lower() for d in in_cursor.description])
+
+    if limit:
+        results = execution_iterator(in_cursor, field_names, limit)
+        if limit == 1:
+            try:
+                results = next(results)
+            except StopIteration:
+                results = None
+    else:
+        results = execution_iterator(in_cursor, field_names)
+
+    return results
+
+
+def fetch_to_row_objs(in_cursor, key_fields, mapping, table_object, limit=None):
+
+    field_names = clean_field_names([d[0].lower() for d in in_cursor.description])
+    if limit:
+        results = row_obj_iterator(in_cursor, field_names, key_fields, mapping, table_object, limit)
+        if limit == 1:
+            try:
+                results = next(results)
+            except StopIteration:
+                results = None
+    else:
+        results = row_obj_iterator(in_cursor, field_names, key_fields, mapping, table_object)
+    return results
+
+
+def clean_field_names(in_field_names, bad_chars=(".", "(", ")")):
     clean_fields = []
-    for fn in field_names:
+    for fn in in_field_names:
         new_field = fn
 
         if "*" in new_field:
@@ -32,8 +53,24 @@ def fetch_to_dicts(in_cursor, limit=None):
         if new_field[count_chars - 1] == "_":
             new_field = new_field[:-1]
         clean_fields.append(new_field)
+    return in_field_names
 
-    output = [dict(zip(clean_fields, row)) for row in results]
-    if limit and len(output) > 0:
-        output = output[0] if limit == 1 else output[0:limit]
-    return output
+
+def row_obj_iterator(cursor, field_names, key_fields, mapping, table_object, array_size=1000):
+    while True:
+        results = cursor.fetchmany(array_size)
+        if not results:
+            break
+        else:
+            for result in results:
+                yield Row(dict(zip(field_names, result)), key_fields, mapping, table_object)
+
+
+def execution_iterator(cursor, field_names, array_size=1000):
+    while True:
+        results = cursor.fetchmany(array_size)
+        if not results:
+            break
+        for result in results:
+            yield dict(zip(field_names, result))
+

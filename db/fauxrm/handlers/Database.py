@@ -209,7 +209,7 @@ class Database(object):
         try:
             self.clear_lobs()
             self.lobs = None
-            self.__connection.rollback()
+            self.rollback()
             self.cursor.close()
             self.__connection.close()
             self.cursor = None
