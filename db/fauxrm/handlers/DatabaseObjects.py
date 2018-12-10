@@ -53,7 +53,6 @@ class Data(object):
 
         self._lobs = []
         self.__field_names = self.__get_field_names()
-        self.__trigger_fields = self.__get_trigger_fields()
         self.__field_definitions = self.__get_field_definitions()
 
     ####################################################################################################################
@@ -126,7 +125,7 @@ class Data(object):
         string = ""
         for field, mapping in self.mapping.items():
             string += field + "\n\tType:\t\t{0}\n".format(mapping["type"].__name__)
-            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\tTriggered:\t{2}\n\n".format(mapping["nullable"], mapping["generated"], mapping["triggered"])
+            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\n".format(mapping["nullable"], mapping["generated"])
         return string
 
     @property
@@ -145,7 +144,7 @@ class Data(object):
         return self.__owner
 
     @property
-    def required_fields(self):
+    def non_nullable_fields(self):
         """
         :return: The fields in this table that are required (non-nullable)
         """
@@ -153,9 +152,8 @@ class Data(object):
         required_fields = []
         for field, definition in self.mapping.items():
             is_nullable = definition["nullable"]
-            if not is_nullable and not definition["generated"] and not definition["triggered"]:
+            if not is_nullable:
                 required_fields.append(field)
-
         return required_fields
 
     @property
@@ -316,16 +314,6 @@ class Data(object):
             if not validated_type_results["validity"]:
                 raise TypeError(validated_type_results["message"])
 
-            # TODO: rewrite the possible check for generated pk's
-            # # do not allow the user to insert a new key on a table where keys are generated
-            # if self.primary_key_field is not None and self.mapping[self.primary_key_field]["generated"]:
-            #     if self.primary_key_field in in_kwargs.keys():
-            #         raise Exception(self.__GENERATED_PK_MSG)
-
-            # make sure that all required (non-nullable) fields are entered, excluding generated keys
-            if not self.__entered_required_fields(in_kwargs):
-                raise Exception(self.__REQUIRED_FIELDS_MSG.format(", ".join(self.required_fields)))
-
             params = {}
             for column, value in in_kwargs.items():
 
@@ -436,7 +424,7 @@ class Data(object):
 
             column_name = row["c_name"]
             definition = {"type": self.__TYPE_MAPPING[type_value], "nullable": nullable_value,
-                          "generated": is_generated, "triggered": self.__is_trigger_populated(column_name)}
+                          "generated": is_generated}
             pk_attr = "_Table__primary_key_object"
             if hasattr(self, pk_attr) and column_name in getattr(self, pk_attr).columns:
                 definition["generated"] = is_generated
@@ -500,29 +488,6 @@ class Data(object):
                                              get_record_objects=True, limit=limit)
                 else:
                     raise TypeError(message)
-
-    def __get_trigger_fields(self):
-        """
-        Finds all fields that are populated by triggers
-        :return: Fields populated by triggers (list)
-        """
-        sql = "select distinct lower(cols.column_name) as column_name " \
-              "from all_tab_cols cols " \
-              "join dba_source ds on " \
-              "lower(ds.text) like '%' || lower(cols.column_name) || '%' and lower(ds.text) like '%:=%' " \
-              "where ds.type='TRIGGER' " \
-              "and lower(cols.table_name) = :in_table and lower(cols.owner) = :in_owner"
-
-        params = {"in_table": self.table_name, "in_owner": self.owner}
-        return [row["column_name"] for row in self._execute_sql(sql, params=params, get_data=True)]
-
-    def __is_trigger_populated(self, field_name):
-        """
-        Finds fields that are populated by triggers.
-        :param field_name: The name of the field (str)
-        :return:           Whether or not it is populated by a trigger.
-        """
-        return field_name in self.triggered_fields
 
     def __validate_arg_types(self, in_kwargs):
         """
