@@ -53,8 +53,8 @@ class Data(object):
 
         self._lobs = []
         self.__field_names = self.__get_field_names()
+        self.__trigger_fields = self.__get_trigger_fields()
         self.__field_definitions = self.__get_field_definitions()
-
 
     ####################################################################################################################
     # PROPERTIES
@@ -171,7 +171,7 @@ class Data(object):
         """
         :return: Any triggers associated with this table
         """
-        return [field for field, mapping in self.mapping.items() if mapping["triggered"]]
+        return self.__trigger_fields
 
     ####################################################################################################################
     # PUBLIC METHODS
@@ -501,19 +501,28 @@ class Data(object):
                 else:
                     raise TypeError(message)
 
+    def __get_trigger_fields(self):
+        """
+        Finds all fields that are populated by triggers
+        :return: Fields populated by triggers (list)
+        """
+        sql = "select distinct lower(cols.column_name) as column_name " \
+              "from all_tab_cols cols " \
+              "join dba_source ds on " \
+              "lower(ds.text) like '%' || lower(cols.column_name) || '%' and lower(ds.text) like '%:=%' " \
+              "where ds.type='TRIGGER' " \
+              "and lower(cols.table_name) = :in_table and lower(cols.owner) = :in_owner"
+
+        params = {"in_table": self.table_name, "in_owner": self.owner}
+        return [row["column_name"] for row in self._execute_sql(sql, params=params, get_data=True)]
+
     def __is_trigger_populated(self, field_name):
         """
         Finds fields that are populated by triggers.
         :param field_name: The name of the field (str)
         :return:           Whether or not it is populated by a trigger.
         """
-        sql = "select count(*) from dba_source " \
-              "where type='TRIGGER' and " \
-              "lower(text) like '%' || :column_name || '%' and lower(text) like '%:=%' " \
-              "and lower(owner)=:in_owner"
-        params = {"column_name": field_name.lower(), "in_owner": self.owner}
-        self._db.cursor.execute(sql, params)
-        return True if self._db.cursor.fetchone()[0] else False
+        return field_name in self.triggered_fields
 
     def __validate_arg_types(self, in_kwargs):
         """
