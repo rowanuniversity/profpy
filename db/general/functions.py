@@ -1,3 +1,5 @@
+import os
+
 def execute_sql(cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None):
     """
      Executes a sql query, and outputs the results as a list of dictionaries, rather than a list of lists. This allows
@@ -48,3 +50,23 @@ def execute_sql(cursor, sql, params=None, limit=None, null_to_empty_string=False
         if limit == 1 and len(output) > 0:
             output = output[0]
     return output
+
+
+def sql_file_to_text(in_file_path):
+    """
+    Reads in a sql file and returns it as a string
+    :param in_file_path: The file path
+    :return:             The contents of the file as a str object
+    """
+    if os.path.isfile(in_file_path):
+        parts = in_file_path.split(".")
+        try:
+            if parts[len(parts) - 1] != "sql":
+                raise Exception("Invalid file type: Must be .sql file.")
+            else:
+                with open(in_file_path, "r") as sql:
+                    return sql.read()
+        except IndexError:
+            raise Exception("Invalid file type: Must be .sql file.")
+    else:
+        raise Exception("File does not exist.")
