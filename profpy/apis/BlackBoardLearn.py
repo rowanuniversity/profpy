@@ -1,6 +1,6 @@
 import base64
 import requests
-from . import Api, ApiException, ParameterException
+from . import Api, ApiException, ParameterException, Token
 
 
 class BlackBoardLearn(Api):
