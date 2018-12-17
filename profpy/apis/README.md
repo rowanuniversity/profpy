@@ -5,5 +5,4 @@ Each API will get its own class, which will be a child of the abstract class fou
 
 ## Current APIs
 
-- CampusLabs API
 - BlackBoard Learn API
