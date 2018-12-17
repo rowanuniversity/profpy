@@ -1,4 +1,3 @@
-from apis.utils.exceptions import ParameterException, ApiException
-from .CampusLabs import CampusLabs
-from .BBLearn import BBLearn
-
+from .utils.Token import Token
+from .utils.Api import Api
+from .utils.exceptions import ParameterException, ApiException
