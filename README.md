@@ -20,5 +20,5 @@ connection = get_connection("full_login", "db_password")
 
 ##### Current Submodules
 For in-depth documentation, explore the submodules individually:
-- [db](./db)
-- [apis](./apis)
+- [db](./profpy/db)
+- [apis](./profpy/apis)
