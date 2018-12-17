@@ -9,7 +9,7 @@ def read(file_name):
 setup(
     name='profpy',
     version='0.1',
-    packages=['profpy', 'profpy.db', 'profpy.db.fauxrm', 'profpy.db.fauxrm.queries', 'profpy.db.fauxrm.handlers', 'profpy.db.general', 'profpy.apis', 'profpy.apis.utils', "test"],
+    packages=['profpy', 'profpy.db', 'profpy.db.fauxrm', 'profpy.db.fauxrm.queries', 'profpy.db.fauxrm.handlers', 'profpy.db.general', 'profpy.apis', 'profpy.apis.utils'],
     url='',
     license='',
     author='Connor Hornibrook',
