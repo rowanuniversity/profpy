@@ -7,7 +7,7 @@ Rowan University
 import random
 import datetime
 import unittest
-from db import fauxrm
+from profpy.db import fauxrm
 
 
 # some constants for convenient testing

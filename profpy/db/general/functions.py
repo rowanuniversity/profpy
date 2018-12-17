@@ -1,5 +1,6 @@
 import os
 
+
 def execute_sql(cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None):
     """
      Executes a sql query, and outputs the results as a list of dictionaries, rather than a list of lists. This allows

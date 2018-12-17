@@ -1,5 +1,5 @@
 import unittest
-from db import fauxrm
+from profpy.db import fauxrm
 
 
 database = fauxrm.Database()
