@@ -348,7 +348,7 @@ class Query(object):
                             re.compile(old_param_text + "[\s]"): new_param_text + " ",
                             re.compile(old_param_text + "$"): new_param_text,
                             re.compile(old_param_text + "[)]"): new_param_text + ")",
-                            re.compile(old_param_text + "[,\s]"): new_param_text + ","
+                            re.compile(old_param_text + "[,\s]"): new_param_text + ", "
                         }
 
                         repl_text = ""
