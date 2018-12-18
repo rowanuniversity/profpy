@@ -29,7 +29,7 @@ def get_connection(login_var, password_var):
 if __name__ == "__main__":
 
     path = "./test/ddls"
-    connection = get_connection("host_pprd", "db_password")
+    connection = get_connection("full_login", "db_password")
     cursor = connection.cursor()
 
     ddls = list(filter(lambda file_name: re.match(re.compile(r"[a-zA-Z_1-9]+\.ddl\.sql$"), file_name),

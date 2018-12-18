@@ -10,7 +10,7 @@ import datetime
 from profpy.db.fauxrm import Database
 from profpy.db.fauxrm.queries import And, Or, Query
 
-db_handler = Database("host_pprd", "db_password")
+db_handler = Database()
 medical = db_handler.model("rowan", "fauxrm_test_medical")
 TEST_WEIGHT = 300.0
 TEST_AGE = 40
