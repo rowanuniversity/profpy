@@ -18,16 +18,27 @@ class BlackBoardLearn(Api):
         404: "Invalid endpoint"
     }
 
-    def __init__(self, in_app_key, in_app_id, in_secret_key):
+    COLUMNS                    = "v1/courses/{0}/gradebook/columns"
+    COLUMN_ATTEMPTS            = "v1/courses/{0}/gradebook/columns/{1}/attempts"
+    COURSES                    = "v1/courses"
+    COURSE_MEMBERS             = "v1/courses/{0}/users"
+    COURSE_GRADE_COLUMNS_USERS = "v1/courses/{0}/gradebook/columns/{1}/users/{2}"
+    USERS                      = "v1/users"
+
+    __TEST                     = "rowantest"
+    __PROD                     = "rowan"
+
+    def __init__(self, in_app_key, in_app_id, in_secret_key, is_test=False):
         """
         Constructor
         :param in_app_key:    The provided developer application key
         :param in_app_id:     The provided application id
         :param in_secret_key: The provided secret key
+        :param is_test:       Whether or not to use the test instance of Blackboard
         """
 
-        super(BlackBoardLearn, self).__init__(in_public_key=in_app_key, in_private_key=in_secret_key,
-                                              in_url="https://rowantest.blackboard.com/learn/api/public/")
+        url = "https://{0}.blackboard.com/learn/api/public/".format(self.__TEST if is_test else self.__PROD)
+        super().__init__(in_public_key=in_app_key, in_private_key=in_secret_key, in_url=url)
         self.app_id = in_app_id
         self.token = self.__get_oauth2_token()
         self._set_endpoints()
@@ -68,9 +79,8 @@ class BlackBoardLearn(Api):
         Sets a list of valid endpoints for this API
         :return: a list of valid endpoints for this API
         """
-        self.endpoints = ["v1/courses", "v1/courses/{0}/gradebook/columns",
-                          "v1/courses/{0}/gradebook/columns/{1}/attempts", "v1/courses/{0}/users",
-                          "v1/courses/{0}/gradebook/columns/{1}/users/{2}", "v1/users"]
+        self.endpoints = [self.COURSES, self.COLUMNS, self.COLUMN_ATTEMPTS, self.COURSE_MEMBERS,
+                          self.COURSE_GRADE_COLUMNS_USERS, self.USERS]
 
     def _set_args_mapping(self):
         """
@@ -78,14 +88,14 @@ class BlackBoardLearn(Api):
         :return: A dict containing endpoints as keys and their valid parameters names (list) as values
         """
         self.endpoint_to_args = {
-            "v1/courses": ["offset", "limit", "courseId", "name", "description", "externalId", "created", "allowGuests",
+            self.COURSES: ["offset", "limit", "courseId", "name", "description", "externalId", "created", "allowGuests",
                            "createdCompare", "dataSourceId", "termId", "organization", "sort", "fields"],
-            "v1/courses/{0}/gradebook/columns": ["offset", "limit", "contentId", "fields"],
-            "v1/courses/{0}/gradebook/columns/{1}/attempts": ["offset", "limit", "userId", "attemptStatuses", "fields"],
-            "v1/courses/{0}/users": ["offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
-                                     "lastAccessedCompare", "availability.available", "sort", "fields"],
-            "v1/courses/{0}/gradebook/columns/{1}/users/{2}": ["fields"],
-            "v1/users": ["offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
+            self.COLUMNS: ["offset", "limit", "contentId", "fields"],
+            self.COLUMN_ATTEMPTS: ["offset", "limit", "userId", "attemptStatuses", "fields"],
+            self.COURSE_MEMBERS: ["offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
+                                  "lastAccessedCompare", "availability.available", "sort", "fields"],
+            self.COURSE_GRADE_COLUMNS_USERS: ["fields"],
+            self.USERS: ["offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
                          "name.family", "availability.available", "sort", "fields"]
         }
 
@@ -130,7 +140,11 @@ class BlackBoardLearn(Api):
             else:
                 raise ApiException("Unknown error.")
         else:
-            raise ParameterException("Invalid parameter supplied.")
+            bad_args = ", ".join(list(kwargs.keys()))
+            good_args = ", ".join(valid_args)
+            msg = "Invalid parameter supplied at BlackBoardLearn::_hit_endpoint(). Arguments provided: {0}. " \
+                  "Valid arguments: {1}.".format(bad_args, good_args)
+            raise ParameterException(msg)
 
     def __get_oauth2_token(self):
         """
@@ -164,7 +178,7 @@ class BlackBoardLearn(Api):
         :param kwargs: any endpoint parameters
         :return:       a list of courses from BlackBoard
         """
-        endpoint = "v1/courses"
+        endpoint = self.COURSES
         return self._hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)["results"]
 
     def get_courses_columns(self, course_id, **kwargs):
@@ -176,7 +190,7 @@ class BlackBoardLearn(Api):
         :param kwargs:    Any other endpoint parameters
         :return:          A list of gradebook columns for the given course id
         """
-        endpoint = "v1/courses/{0}/gradebook/columns"
+        endpoint = self.COLUMNS
         return self._hit_endpoint(self.endpoint_to_args[endpoint], endpoint.format(course_id), **kwargs)["results"]
 
     def get_course_columns_attempts(self, course_id, column_id, **kwargs):
@@ -187,7 +201,7 @@ class BlackBoardLearn(Api):
         :param column_id: The unique column id
         :return:          The attempts for the given column
         """
-        endpoint = "v1/courses/{0}/gradebook/columns/{1}/attempts"
+        endpoint = self.COLUMN_ATTEMPTS
         return self._hit_endpoint(self.endpoint_to_args[endpoint],
                                   endpoint.format(course_id, column_id), **kwargs)["results"]
 
@@ -201,7 +215,7 @@ class BlackBoardLearn(Api):
         :param kwargs:    Any other endpoint parameters
         :return:          A list of gradebook columns for the given course id
         """
-        endpoint = "v1/courses/{0}/users"
+        endpoint = self.COURSE_MEMBERS
         data = self._hit_endpoint(self.endpoint_to_args[endpoint], endpoint.format(course_id), **kwargs)["results"]
         return list(filter(lambda x: x["courseRoleId"] == role, data)) if role else data
 
@@ -216,7 +230,7 @@ class BlackBoardLearn(Api):
         :param kwargs:    All other endpoint parameters
         :return:          A list of gradebook columns for the course-column-user combination
         """
-        endpoint = "v1/courses/{0}/gradebook/columns/{1}/users/{2}"
+        endpoint = self.COURSE_GRADE_COLUMNS_USERS
         return self._hit_endpoint(self.endpoint_to_args[endpoint],
                                   endpoint.format(course_id, column_id, user_id), **kwargs)
 
@@ -229,7 +243,7 @@ class BlackBoardLearn(Api):
         :param kwargs:  All other endpoint parameters
         :return:        A list of users based on the input parameters
         """
-        endpoint = "v1/users"
+        endpoint = self.USERS
         valid_args = self.endpoint_to_args[endpoint]
         if user_id:
             endpoint += "/{0}".format(user_id)

@@ -551,11 +551,8 @@ class Table(Data):
 
     def __init__(self, owner, name, db):
 
-        super(Table, self).__init__(owner, name, db)
-
+        super().__init__(owner=owner, name=name, db=db)
         self.__primary_key_object = self.__get_primary_key_object()
-        # if not self.__primary_key_object.exists:
-        #     raise Exception("Table must have a primary key.")
 
     @property
     def primary_key(self):
@@ -844,5 +841,4 @@ class Table(Data):
 
 class View(Data):
     def __init__(self, owner, name, db):
-        super(View, self).__init__(owner, name, db)
-
+        super().__init__(owner=owner, name=name, db=db)
