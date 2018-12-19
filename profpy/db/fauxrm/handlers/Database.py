@@ -171,10 +171,7 @@ class Database(object):
         :param params: The parameters         (dict)
         :return:       Nothing
         """
-        try:
-            self.cursor.execute(sql, params if params else {})
-        except cx_Oracle.DatabaseError:
-            self.rollback()
+        self.cursor.execute(sql, params if params else {})
 
     def commit(self):
         """
