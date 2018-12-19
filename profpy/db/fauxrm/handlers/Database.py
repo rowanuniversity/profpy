@@ -156,15 +156,11 @@ class Database(object):
 
         try:
             with open(in_file, "r") as sql_file:
+                self.cursor.execute(sql_file.read())
                 try:
-                    self.cursor.execute(sql_file.read())
-                    try:
-                        return fetch_to_dicts(self.cursor)
-                    except cx_Oracle.DatabaseError:
-                        return None
-
-                except cx_Oracle.DatabaseError as db_error:
-                    raise db_error
+                    return fetch_to_dicts(self.cursor)
+                except cx_Oracle.DatabaseError:
+                    return None
         except IOError:
             raise IOError(self.__IO_ERROR_MSG)
 
