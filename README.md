@@ -18,6 +18,11 @@ from profpy.db import get_connection
 connection = get_connection("full_login", "db_password")
 ```
 
+### Dependencies
+Python 3.6.7 or above, as well as the following libraries:
+- cx_Oracle
+- requests
+
 ##### Current Submodules
 For in-depth documentation, explore the submodules individually:
 - [db](./profpy/db)
