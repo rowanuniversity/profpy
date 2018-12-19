@@ -229,10 +229,7 @@ class Data(object):
         :return:                     A list of Record objects, if get_record_objects is set to True (list)
         """
         try:
-            if params is None:
-                self._db.cursor.execute(sql)
-            else:
-                self._db.cursor.execute(sql, params)
+            self._db.cursor.execute(sql, params if params else {})
             if get_data:
                 if get_record_objects:
                     pk_cols = getattr(self, "_Table__primary_key_object").columns if isinstance(self, Table) else []

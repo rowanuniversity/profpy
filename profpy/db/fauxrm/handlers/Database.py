@@ -110,13 +110,9 @@ class Database(object):
         :return:         A list of Row objects from the result of the query (list)
         """
 
-        if limit and limit < 1:
+        if limit is not None and limit < 1:
             raise ValueError("Limit must be greater than 0.")
-
-        if params:
-            self.cursor.execute(query, params)
-        else:
-            self.cursor.execute(query)
+        self.cursor.execute(query, params if params else {})
         data = fetch_to_dicts(self.cursor)
         rows = []
         if isinstance(data, dict):
@@ -180,10 +176,7 @@ class Database(object):
         :return:       Nothing
         """
         try:
-            if params:
-                self.cursor.execute(sql, params)
-            else:
-                self.cursor.execute(sql)
+            self.cursor.execute(sql, params if params else {})
         except cx_Oracle.DatabaseError:
             self.rollback()
 
