@@ -165,20 +165,16 @@ class Database(object):
         :param in_file: The path to a .sql file (str)
         :return:
         """
-
-        try:
-            with open(in_file, "r") as sql_file:
-                cur = self.get_cursor()
-                data = None
-                try:
-                    cur.execute(sql_file.read())
-                    data = fetch_to_dicts(cur)
-                except cx_Oracle.DatabaseError:
-                    pass
-                finally:
-                    return data
-        except IOError:
-            raise IOError(self.__IO_ERROR_MSG)
+        with open(in_file, "r") as sql_file:
+            cur = self.get_cursor()
+            data = None
+            try:
+                cur.execute(sql_file.read())
+                data = fetch_to_dicts(cur)
+            except cx_Oracle.DatabaseError:
+                pass
+            finally:
+                return data
 
     def execute_sql(self, sql, params=None):
         """
