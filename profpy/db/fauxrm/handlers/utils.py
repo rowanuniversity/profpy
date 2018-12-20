@@ -73,4 +73,3 @@ def execution_iterator(cursor, field_names, array_size=1000):
             break
         for result in results:
             yield dict(zip(field_names, result))
-

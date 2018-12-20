@@ -163,13 +163,6 @@ class Data(object):
 
         return self.__table_name
 
-    @property
-    def triggered_fields(self):
-        """
-        :return: Any triggers associated with this table
-        """
-        return self.__trigger_fields
-
     ####################################################################################################################
     # PUBLIC METHODS
     def all(self):
@@ -228,22 +221,21 @@ class Data(object):
         :param get_record_objects    Whether or not the caller wants a list of Record objects (boolean)
         :return:                     A list of Record objects, if get_record_objects is set to True (list)
         """
+        cur = self._db.get_cursor()
         try:
-            self._db.cursor.execute(sql, params if params else {})
+            cur.execute(sql, params if params else {})
             if get_data:
                 if get_record_objects:
                     pk_cols = getattr(self, "_Table__primary_key_object").columns if isinstance(self, Table) else []
-                    rows = fetch_to_row_objs(self._db.cursor, pk_cols, self.mapping, self, limit)
+                    rows = fetch_to_row_objs(cur, pk_cols, self.mapping, self, limit)
                 else:
-                    rows = fetch_to_dicts(self._db.cursor, limit)
+                    rows = fetch_to_dicts(cur, limit)
                 return rows
 
         except cx_Oracle.IntegrityError:
-            self._db.rollback()
             raise cx_Oracle.IntegrityError("Key constraint violated.")
 
         except cx_Oracle.DatabaseError:
-            self._db.rollback()
             raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
 
     def _fix_field_casing(self, data):
