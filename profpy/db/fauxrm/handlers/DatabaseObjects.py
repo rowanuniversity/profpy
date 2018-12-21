@@ -1,7 +1,7 @@
 import datetime
 import cx_Oracle
 from .KeyHandler import PrimaryKey
-from .utils import fetch_to_dicts, fetch_to_row_objs
+from .utils import results_to_objs
 from ..queries import Query
 
 
@@ -171,7 +171,7 @@ class Data(object):
         """
 
         sql = "select * from {table}".format(table=self.name)
-        return self._execute_sql(sql, get_data=True, get_record_objects=True)
+        return self._execute_sql(sql, get_data=True, get_row_objects=True)
 
     def find(self, data=None, limit=None, **kwargs):
         """
@@ -193,7 +193,7 @@ class Data(object):
             use_this = kwargs if data is None else data
             prepared_kwargs = self._prepare_kwargs(use_this, "select {0}".format(", ".join(self.columns)))
             result = self._execute_sql(prepared_kwargs["sql"], get_data=True, params=prepared_kwargs["params"],
-                                       get_record_objects=True, limit=limit)
+                                       get_row_objects=True, limit=limit)
 
         return result
 
@@ -207,31 +207,25 @@ class Data(object):
         """
 
         results = self.find(data=data, limit=1, **kwargs)
-        return results if results else None
+        return results[0] if results else None
 
     ####################################################################################################################
     # PROTECTED METHODS
 
-    def _execute_sql(self, sql, get_data=False, params=None, get_record_objects=False, limit=None):
+    def _execute_sql(self, sql, get_data=False, params=None, get_row_objects=False, limit=None):
         """
         Executes a given sql statement
         :param sql:                  The sql statement/query to be executed (str)
         :param get_data:             Whether or not data should be returned (i.e. fetchall) (boolean)
         :param params:               For parameterization (dict)
-        :param get_record_objects    Whether or not the caller wants a list of Record objects (boolean)
+        :param get_row_objects    Whether or not the caller wants a list of Record objects (boolean)
         :return:                     A list of Record objects, if get_record_objects is set to True (list)
         """
-        cur = self._db.get_cursor()
         try:
-            cur.execute(sql, params if params else {})
+            self._db.cursor.execute(sql, params if params else {})
             if get_data:
-                if get_record_objects:
-                    pk_cols = getattr(self, "_Table__primary_key_object").columns if isinstance(self, Table) else []
-                    rows = fetch_to_row_objs(cur, pk_cols, self.mapping, self, limit)
-                else:
-                    rows = fetch_to_dicts(cur, limit)
+                rows = results_to_objs(self._db.cursor, self, limit, get_row_objs=get_row_objects)
                 return rows
-
         except cx_Oracle.IntegrityError:
             raise cx_Oracle.IntegrityError("Key constraint violated.")
 
@@ -345,7 +339,7 @@ class Data(object):
         """
 
         sql = "select count(*) as total from {0}".format(self.name)
-        return self._execute_sql(sql, get_data=True, limit=1)["total"]
+        return self._execute_sql(sql, get_data=True, limit=1)[0]["total"]
 
     def __get_field_comments(self):
         """
@@ -418,7 +412,7 @@ class Data(object):
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
         result = self._execute_sql(sql, get_data=True, params=params)
         if result:
-            return next(result)["comments"]  # result will be a one-item list with a single dict
+            return result[0]["comments"]  # result will be a one-item list with a single dict
         else:
             return ""
 
@@ -448,7 +442,7 @@ class Data(object):
                 has_valid_args, message = validation["validity"], validation["message"]
                 if has_valid_args:
                     return self._execute_sql(query.get_full_sql(self.name), get_data=True, params=query.params,
-                                             get_record_objects=True, limit=limit)
+                                             get_row_objects=True, limit=limit)
                 else:
                     raise TypeError(message)
 
@@ -669,7 +663,6 @@ class Table(Data):
                 result = self.__insert(**use_this)
         else:
             result = self.__insert(**use_this)
-
         return result
 
     def __insert(self, **kwargs):
@@ -698,8 +691,8 @@ class Table(Data):
                 params_sql = " and ".join(params_sql)
                 return_sql += params_sql
 
-            results = self._execute_sql(return_sql, params=params, get_data=True, get_record_objects=True)
-            return next(results) if self.has_key else results
+            results = self._execute_sql(return_sql, params=params, get_data=True, get_row_objects=True, limit=1)
+            return results[0] if self.has_key else results
 
         except cx_Oracle.DatabaseError as db_error:
             raise db_error
@@ -739,8 +732,8 @@ class Table(Data):
 
             # return the updated Record object back to the caller
             try:
-                return next(self._execute_sql(return_sql, params=key_params, get_data=True, get_record_objects=True))
-            except StopIteration:
+                return self._execute_sql(return_sql, params=key_params, get_data=True, get_row_objects=True)[0]
+            except IndexError:
                 return
 
     def __record_exists_in_table(self, in_args):
@@ -761,9 +754,9 @@ class Table(Data):
 
         sql = "select * from {table} where ".format(table=self.name) + params_sql
         try:
-            next(self._execute_sql(sql, get_data=True, params=params))
+            x = self._execute_sql(sql, get_data=True, params=params)[0]
             return True
-        except StopIteration:
+        except IndexError:
             return False
 
     def __pk_in_kwargs(self, in_kwargs):
@@ -792,7 +785,7 @@ class Table(Data):
             for gf in self.generated_fields:
 
                 sql = "select max({field}) as gen_col from {table}".format(field=gf, table=self.name)
-                value = self._execute_sql(sql, get_data=True, limit=1)["gen_col"]
+                value = self._execute_sql(sql, get_data=True, limit=1)[0]["gen_col"]
                 key_params[gf] = value
                 gen_field_statements.append("{field}=:{field}".format(field=gf))
 
@@ -831,3 +824,7 @@ class Table(Data):
 class View(Data):
     def __init__(self, owner, name, db):
         super().__init__(owner=owner, name=name, db=db)
+
+    @property
+    def has_key(self):
+        return False

@@ -325,4 +325,5 @@ class TestOperators(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    db_handler.rollback()
     db_handler.close()

@@ -176,11 +176,13 @@ class TestCRUD(unittest.TestCase):
 
     # can the handler correctly insert a bunch of records (5000) using keyword arguments
     def test_insert_5000(self):
+
         self.test_delete_from()
         for i in range(5000):
             name, phone = RandomGenerators.get_random_name(), RandomGenerators.get_random_phone_number()
             phonebook_table.save(first_name=name[0], last_name=name[1], phone=phone)
         self.assertEqual(phonebook_table.count, 5000)
+
 
     # can the handler access records using their primary keys correctly
     def test_get(self):
@@ -415,4 +417,5 @@ class RandomGenerators(object):
 
 if __name__ == "__main__":
     unittest.main()
+    db_handler.rollback()
     db_handler.close()

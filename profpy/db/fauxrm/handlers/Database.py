@@ -1,8 +1,7 @@
 import cx_Oracle
 import datetime
 from .DatabaseObjects import Table, View
-from .utils import fetch_to_dicts
-from .Row import Row
+from .utils import results_to_objs
 from ... import get_connection
 FULL_LOGIN = "full_login"
 DB_PASSWORD = "db_password"
@@ -20,8 +19,7 @@ class Database(object):
         """
 
         self.__connection   = get_connection(user_var, password_var)
-        self.__cursor       = self.__connection.cursor()  # a private cursor for internal sql calls
-        self.__cursors      = [self.__cursor]
+        self.cursor         = self.__connection.cursor()  # a private cursor for internal sql calls
         self.user           = self.__get_current_user()
         self.tables         = {}
         self.views          = {}
@@ -50,14 +48,6 @@ class Database(object):
 
     def clear_lobs(self):
         self.lobs.clear()
-
-    def get_cursor(self):
-        """
-        :return: A new cx_Oracle cursor object
-        """
-        cur = self.__connection.cursor()
-        self.__cursors.append(cur)
-        return cur
 
     def model(self, owner, object_name):
         """
@@ -122,16 +112,8 @@ class Database(object):
 
         if limit is not None and limit < 1:
             raise ValueError("Limit must be greater than 0.")
-        cur = self.get_cursor()
-        cur.execute(query, params if params else {})
-        data = fetch_to_dicts(cur)
-        rows = []
-        if isinstance(data, dict):
-            data = [data]
-        for record in data:
-            rows.append(Row(record, [], {}, None))
-
-        return rows[:limit] if limit else rows
+        self.cursor.execute(query, params if params else {})
+        return results_to_objs(self.cursor)
 
     def execute_function(self, owner, function_name, *args):
         """
@@ -152,9 +134,8 @@ class Database(object):
                 params["a_{0}".format(i)] = good_arg
             params_sql = ", ".join(":{0}".format(k) for k in list(params.keys()))
             sql = "select {0}({1}) from dual".format(function_concat, params_sql)
-            cur = self.get_cursor()
-            cur.execute(sql, params)
-            rows = cur.fetchone()
+            self.cursor.execute(sql, params)
+            rows = self.cursor.fetchone()
             return rows[0] if rows else None
         else:
             raise Exception("Function does not exist.")
@@ -166,11 +147,10 @@ class Database(object):
         :return:
         """
         with open(in_file, "r") as sql_file:
-            cur = self.get_cursor()
             data = None
             try:
-                cur.execute(sql_file.read())
-                data = fetch_to_dicts(cur)
+                self.cursor.execute(sql_file.read())
+                data = results_to_objs(self.cursor)
             except cx_Oracle.DatabaseError:
                 pass
             finally:
@@ -183,8 +163,7 @@ class Database(object):
         :param params: The parameters         (dict)
         :return:       Nothing
         """
-        cur = self.get_cursor()
-        cur.execute(sql, params if params else {})
+        self.cursor.execute(sql, params if params else {})
 
     def commit(self):
         """
@@ -209,11 +188,8 @@ class Database(object):
             self.clear_lobs()
             self.lobs = None
             self.rollback()
-
-            for cur in self.__cursors:
-                cur.close()
-                del cur
-
+            self.cursor.close()
+            self.cursor = None
             self.__connection.close()
             self.__connection = None
 
@@ -226,16 +202,16 @@ class Database(object):
         """
         :return: The name of the database
         """
-        self.__cursor.execute("select name from v$database")
-        return self.__cursor.fetchone()[0]
+        self.cursor.execute("select name from v$database")
+        return self.cursor.fetchone()[0]
 
     @property
     def global_name(self):
         """
         :return: The global name of the database
         """
-        self.__cursor.execute("select ora_database_name from dual")
-        return self.__cursor.fetchone()[0]
+        self.cursor.execute("select ora_database_name from dual")
+        return self.cursor.fetchone()[0]
 
     def __get_object_type(self, in_owner, in_object_name):
         """
@@ -247,8 +223,8 @@ class Database(object):
         sql = "select lower(object_type) from all_objects where lower(owner)=:in_owner " \
               "and lower(object_name)=:in_object_name"
         params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
-        self.__cursor.execute(sql, params)
-        return self.__cursor.fetchone()[0]
+        self.cursor.execute(sql, params)
+        return self.cursor.fetchone()[0]
 
     def __object_exists(self, in_owner, in_object_name, in_object_type=None):
         """
@@ -263,12 +239,12 @@ class Database(object):
         if in_object_type:
             sql += " and lower(object_type)=:in_object_type"
             params["in_object_type"] = in_object_type.lower()
-        self.__cursor.execute(sql, params)
-        return self.__cursor.fetchone()
+        self.cursor.execute(sql, params)
+        return self.cursor.fetchone()
 
     def __get_current_user(self):
         """
         :return: The user logged in under this schema
         """
-        self.__cursor.execute("select lower(user) from dual")
-        return self.__cursor.fetchone()[0]
+        self.cursor.execute("select lower(user) from dual")
+        return self.cursor.fetchone()[0]

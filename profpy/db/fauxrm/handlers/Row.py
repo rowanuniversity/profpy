@@ -11,18 +11,16 @@ class Row(object):
     __MAPPING_NULLABLE_KEY = "nullable"
     __RESERVED_ATTRS = ("_Row__data", "_Row__mapping", "_Row__key", "_Row__handler", "_Row__original_values")
 
-    def __init__(self, data, key_fields, mapping, handler):
+    def __init__(self, data, handler):
         """
         Constructor
         :param data:       The data for this row (dict)
-        :param key_fields: The fields that make up the primary key (list)
-        :param mapping:    The field mapping (dict)
-        :param handler:    The table handler object (fauxrm.Table)
+        :param handler:    The handler object (fauxrm)
         """
 
         self.__data = data
         self.__original_values = data
-        self.__mapping = mapping
+        self.__mapping = handler.mapping if handler else {}
         self.__handler = handler
         self.__key = {}
 
@@ -30,8 +28,9 @@ class Row(object):
             if isinstance(value, cx_Oracle.LOB):
                 self.__data[field] = value.read()
 
-        for field in key_fields:
-            self.__key[field] = self.__data[field]
+        if handler.has_key:
+            for field in handler.primary_key.columns:
+                self.__key[field] = self.__data[field]
 
     ####################################################################################################################
     # OVERRIDES
