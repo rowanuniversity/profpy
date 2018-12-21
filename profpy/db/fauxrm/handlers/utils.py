@@ -5,6 +5,21 @@ A collection of utility functions for the various handler classes to use.
 from .Row import Row
 
 
+def validate_params(in_params):
+    """
+    Validates input parameters for parameterized sql
+    :param in_params: The parameters (dict, or None)
+    :return:          The parameters, if valid
+    """
+    if in_params:
+        if isinstance(in_params, dict):
+            return in_params
+        else:
+            raise TypeError("Parameters must be of type 'dict'")
+    else:
+        return {}
+
+
 def results_to_objs(in_cursor, table_object=None, limit=None, get_row_objs=False):
     """
     Takes in a cursor (post execution) and spits out results as a list of dict objects or Row objects

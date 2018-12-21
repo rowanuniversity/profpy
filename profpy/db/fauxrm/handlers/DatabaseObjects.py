@@ -1,7 +1,7 @@
 import datetime
 import cx_Oracle
 from .KeyHandler import PrimaryKey
-from .utils import results_to_objs
+from .utils import results_to_objs, validate_params
 from ..queries import Query
 
 
@@ -224,7 +224,7 @@ class Data(object):
         :return:                     A list of Record objects, if get_record_objects is set to True (list)
         """
         try:
-            self._db.cursor.execute(sql, params if params else {})
+            self._db.cursor.execute(sql, validate_params(params))
             if get_data:
                 rows = results_to_objs(self._db.cursor, self, limit, get_row_objs=get_row_objects)
                 return rows
@@ -327,14 +327,6 @@ class Data(object):
 
     ####################################################################################################################
     # PRIVATE METHODS
-    def __entered_required_fields(self, in_kwargs):
-        """
-        :param in_kwargs: The arguments being tested
-        :return:          Whether or not the input arguments contained all of the required fields
-        """
-
-        return all(field in in_kwargs.keys() for field in self.required_fields)
-
     def __get_count(self):
         """
         :return: The total number of records in the table

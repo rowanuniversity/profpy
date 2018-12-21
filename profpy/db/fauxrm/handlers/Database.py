@@ -1,7 +1,7 @@
 import cx_Oracle
 import datetime
 from .DatabaseObjects import Table, View
-from .utils import results_to_objs
+from .utils import results_to_objs, validate_params
 from ... import get_connection
 FULL_LOGIN = "full_login"
 DB_PASSWORD = "db_password"
@@ -112,7 +112,7 @@ class Database(object):
 
         if limit is not None and limit < 1:
             raise ValueError("Limit must be greater than 0.")
-        self.cursor.execute(query, params if params else {})
+        self.cursor.execute(query, validate_params(params))
         return results_to_objs(self.cursor)
 
     def execute_function(self, owner, function_name, *args):
@@ -163,7 +163,7 @@ class Database(object):
         :param params: The parameters         (dict)
         :return:       Nothing
         """
-        self.cursor.execute(sql, params if params else {})
+        self.cursor.execute(sql, validate_params(params))
 
     def commit(self):
         """
