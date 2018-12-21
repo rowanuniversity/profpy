@@ -29,5 +29,3 @@ def clean_field_names(in_field_names, bad_chars=(".", "(", ")")):
             new_field = new_field[:-1]
         clean_fields.append(new_field)
     return in_field_names
-
-

@@ -72,7 +72,7 @@ with fauxrm.Database() as pprd:
     john_smith_list = spvname.find(first_name="John", last_name="Smith")
     
     # using tables
-    sortest = pprd.model("rowan", "sortest")
+    sortest = pprd.model("saturn", "sortest")
     keys = []
     
     # grab all the primary key values for the resulting rows
