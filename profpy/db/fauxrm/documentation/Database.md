@@ -30,7 +30,7 @@ database.close()
 The name of the database, akin to:
 
 ```sql
-select ora_database_name from dual;
+select name from v$database;
 ```
 
 Example:
@@ -41,6 +41,18 @@ with fauxrm.Database() as database:
     db_name = database.name
 ```
 
+### global_name
+The global name of the database, akin to:
+```sql
+select ora_database_name from dual;
+```
+
+Example:
+```python
+from profpy.db import fauxrm
+with fauxrm.Database() as database:
+    global_name = database.global_name
+```
 
 ## Methods
 #### model ( *owner, object_name* )

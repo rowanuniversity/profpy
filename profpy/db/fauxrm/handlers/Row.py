@@ -1,3 +1,24 @@
+"""
+Row.py
+Abstracts a row from a sql query result so that you can access the fields of the row as this object's attributes.
+
+For instance, if there is a table called "phonebook" with a column for "area_code", you could access the data in that
+column using the .find method, which returns these Row objects:
+
+    with fauxrm.Database() as database:
+        phonebook = database.model("owner", "phonebook")
+        area_codes = []
+        for row in phonebook.find(first_name="Joe"):
+            area_codes.append(row.area_code)
+
+You can also update data using these objects, if they belong to a table handler:
+    with fauxrm.Database() as database:
+        phonebook = database.model("owner", "phonebook")
+        for row in phonebook.find(first_name="Joe"):
+            row.area_code = "555"
+            row.save()
+        phonebook.commit()
+"""
 import cx_Oracle
 
 

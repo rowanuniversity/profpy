@@ -173,14 +173,15 @@ class Data(object):
         sql = "select * from {table}".format(table=self.name)
         return self._execute_sql(sql, get_data=True, get_row_objects=True)
 
-    def find(self, data=None, limit=None, **kwargs):
+    def find(self, data=None, limit=None, get_row_objects=True, **kwargs):
         """
         Finds records based on field values. User may provide as many fields as he/she wants to continue to filter
         the resulting set.
-        :param data:    Fields to search on as field-value pairs in a dictionary (dict)
-        :param limit:   A limit on the number of records returned (int)
-        :param kwargs:  Fields to search on, i.e. first_name="Joe", last_name="Johnson" (used instead of "data" arg)
-        :return:        A result set from the database (list of Result objects)
+        :param data:            Fields to search on as field-value pairs in a dictionary (dict)
+        :param limit:           A limit on the number of records returned (int)
+        :param get_row_objects: Whether or not to return Row objects, as opposed to dicts (bool)
+        :param kwargs:          Fields to search on, i.e. first_name="Joe" (used instead of "data" arg)
+        :return:                A result set from the database (list of Result objects)
         """
 
         if data is None and len(kwargs) == 0:
@@ -193,20 +194,21 @@ class Data(object):
             use_this = kwargs if data is None else data
             prepared_kwargs = self._prepare_kwargs(use_this, "select {0}".format(", ".join(self.columns)))
             result = self._execute_sql(prepared_kwargs["sql"], get_data=True, params=prepared_kwargs["params"],
-                                       get_row_objects=True, limit=limit)
+                                       get_row_objects=get_row_objects, limit=limit)
 
         return result
 
-    def find_one(self, data=None, **kwargs):
+    def find_one(self, data=None, get_row_objects=True, **kwargs):
         """
         Same as find, but it returns only the first record in the resulting list.
 
-        :param data:    Fields to search on as field-value pairs in a dictionary (dict)
-        :param kwargs:  Optionally, the caller can specify field-value pairs as keyword arguments
-        :return:        If it exists, the Record found at the specified field-value pairs.
+        :param data:            Fields to search on as field-value pairs in a dictionary (dict)
+        :param get_row_objects: Whether or not to return Row objects, as opposed to dicts (bool)
+        :param kwargs:          Optionally, the caller can specify field-value pairs as keyword arguments
+        :return:                If it exists, the Record found at the specified field-value pairs.
         """
 
-        results = self.find(data=data, limit=1, **kwargs)
+        results = self.find(data=data, limit=1, get_row_objects=get_row_objects, **kwargs)
         return results[0] if results else None
 
     ####################################################################################################################
