@@ -62,21 +62,7 @@ class Row(object):
         :return: Are the two objects equal (bool)
         """
 
-        # handle nulls
-        if self is None and other is None:
-            return True
-        elif self is not None and other is None:
-            return False
-        elif self is None and other is not None:
-            return False
-
-        # check types
-        elif not isinstance(other, Row):
-            return False
-
-        # check keys
-        else:
-            return self.key == other.key
+        return isinstance(other, type(self)) and self.key == other.key
 
     def __getattr__(self, field):
         """
