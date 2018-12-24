@@ -49,8 +49,6 @@ class Data(object):
         self.__owner = owner.lower()
         self.__table_name = name.lower()
         self.__full_name = "{0}.{1}".format(owner, name)
-
-        self._lobs = []
         self.__field_names = self.__get_field_names()
         self.__field_definitions = self.__get_field_definitions()
 
