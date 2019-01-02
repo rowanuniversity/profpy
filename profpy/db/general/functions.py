@@ -4,7 +4,19 @@ import cx_Oracle
 DEFAULT_ARRAY_SIZE = 1000
 
 
-def execute_sql(cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False):
+def execute_dml(cursor, sql, params=None):
+    """
+    Executes a dml statement. If the input statement is not dml, then the statement is executed and nothing is returned.
+    :param cursor: The input cursor.
+    :param sql:    The sql to be executed
+    :param params: The parameters
+    :return:
+    """
+
+    execute_sql(cursor, sql, params)
+
+
+def execute_query(cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False):
     """
      Executes a sql query, and outputs the results as a list of dictionaries, rather than a list of lists. This allows
      us to access data by column name rather than index, resulting in much more readable code.
@@ -16,6 +28,27 @@ def execute_sql(cursor, sql, params=None, limit=None, null_to_empty_string=False
      This functional will instead return:
         [ {"first_name": "john", "last_name": "smith"}, {"first_name": "jane", "last_name": "doe"} ... ]
 
+
+     :param cursor:               a cx_Oracle cursor object         (cx_Oracle Cursor) -- required
+     :param sql:                  a sql statement                   (str)              -- required
+     :param params:               parameters for the sql statement  (dict)             -- optional
+     :param limit:                a limit on the number of results  (int)              -- optional
+     :param null_to_empty_string: convert Nones to empty strings    (bool)             -- optional
+     :param prefix:               remove this prefix from dict keys (str)              -- optional
+
+
+     :param use_generator:        whether or not to return data as
+                                  a generator rather than a list    (bool)             -- optional
+
+     :return:                     a list of dictionaries for the results of the sql query
+     """
+
+    return execute_sql(cursor, sql, params, limit, null_to_empty_string, prefix, use_generator)
+
+
+def execute_sql(cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False):
+    """
+     Abstracted logic to handle both the execute_dml and execute_query functions.
 
      :param cursor:               a cx_Oracle cursor object         (cx_Oracle Cursor) -- required
      :param sql:                  a sql statement                   (str)              -- required

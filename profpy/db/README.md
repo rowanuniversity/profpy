@@ -47,7 +47,7 @@ executions which return a list of lists. This allows us to access data by column
 
 Basic usage:
 ```python
-from profpy.db import get_connection, execute_sql
+from profpy.db import get_connection, execute_query
 
 sql = "select phone_number, first_name, last_name from phonebook where last_name=:last_name and first_name=:first_name"
 
@@ -55,7 +55,7 @@ with get_connection("full_login", "db_password") as connection:
     cursor = connection.cursor()
     parameters = {"first_name": "Jane", "last_name": "Doe"}
     
-    for row in execute_sql(cursor, sql, parameters):
+    for row in execute_query(cursor, sql, parameters):
         print(row["first_name"])  # rather than row[1]
     
     cursor.close()
@@ -63,13 +63,13 @@ with get_connection("full_login", "db_password") as connection:
 
 Chopping off prefix:
 ```python
-from profpy.db import get_connection, execute_sql
+from profpy.db import get_connection, execute_query
 
 sql = "select * from sortest where sortest_pidm=:pidm"
 
 with get_connection("full_login", "db_password") as connection:
     cursor = connection.cursor()
-    for row in execute_sql(cursor, sql, {"pidm", "123456"}, prefix="sortest_"):
+    for row in execute_query(cursor, sql, {"pidm", "123456"}, prefix="sortest_"):
         print(row["tesc_code"])  # rather than "sortest_tesc_code
         
     cursor.close()
