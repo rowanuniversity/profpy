@@ -1,6 +1,6 @@
+import re
 import os
 import cx_Oracle
-import re
 
 short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9]*@[a-zA-Z]+$")
 
