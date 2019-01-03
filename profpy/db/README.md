@@ -29,9 +29,38 @@ with get_connection("full_login", "db_password") as connection:
 
 ---
 
-#### execute_sql ( <i>cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None</i> )
+#### execute_statement ( <i>cursor, sql, params=None</i> )
+<i>Executes a SQL statement (DML/DDL) and returns nothing.</i>
+
+<b>Parameters:</b>
+
+| Name                 | Description                                          | Type             | Required |
+|----------------------|------------------------------------------------------|------------------|----------|
+| cursor               | database cursor                                      | cx_Oracle Cursor | yes      |
+| sql                  | sql to be executed                                   | str              | yes      |
+| params               | parameters for the sql                               | dict             | no       |
+
+
+Basic usage:
+```python
+from profpy.db import get_connection, execute_statement
+
+sql = "create table test (id int)"
+with get_connection("full_login", "db_password") as connection:
+    cursor = connection.cursor()
+    execute_statement(cursor, sql)
+    cursor.close()
+
+```
+
+<br>
+
+---
+
+#### execute_query ( <i>cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False</i> )
 <i>Returns a list of dictionaries from a resulting SQL query. This is in contrast to the normal behavior of cx_Oracle cursor
-executions which return a list of lists. This allows us to access data by column name, rather than having to keep track of indexes, leading to much more readable code.</i>
+executions which return a list of lists. This allows us to access data by column name, rather than having to keep track of indexes, leading to much more readable code. The "use_generator" parameter allows for the user to return a generator object rather than a list of dictionaries. This generator 
+object will yield dictionaries as needed. This option is highly recommended for use cases involving large datasets. </i>
 
 <b>Parameters:</b>
 
@@ -43,6 +72,7 @@ executions which return a list of lists. This allows us to access data by column
 | limit                | a limit on the number of rows returned               | int              | no       |
 | null_to_emtpy_string | whether or not to convert nulls to empty strings     | bool             | no       |
 | prefix               | a string to cut off of the front of each column name | str              | no       |
+| use_generator        | whether or not to return a generator                 | bool             | no       |
 
 
 Basic usage:
