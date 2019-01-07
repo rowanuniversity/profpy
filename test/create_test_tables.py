@@ -2,7 +2,7 @@ import re
 import os
 import cx_Oracle
 
-short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9]*@[a-zA-Z]+$")
+short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9_]*@[a-zA-Z_]+$")
 
 
 def get_connection(login_var, password_var):
