@@ -43,7 +43,7 @@ class ServiceNowTable(Api):
     @property
     def authentication_parameters(self):
         """
-        From parent class, not used in this API
+        From parent class, user/password credentials
         :return:
         """
         return self.public_key, self.private_key
