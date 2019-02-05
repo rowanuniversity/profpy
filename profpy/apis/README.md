@@ -6,3 +6,4 @@ Each API will get its own class, which will be a child of the abstract class fou
 ## Current APIs
 
 - BlackBoard Learn API
+- ServiceNow Table API
