@@ -7,3 +7,4 @@ Each API will get its own class, which will be a child of the abstract class fou
 
 - BlackBoard Learn API
 - ServiceNow Table API
+- 25Live API
