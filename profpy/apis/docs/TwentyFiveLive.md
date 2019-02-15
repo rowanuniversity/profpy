@@ -36,8 +36,12 @@ from profpy.apis import TwentyFiveLive
 api = TwentyFiveLive()
 ```
 
+---
+
 ## Properties
 No public properties defined in this class, see [parent class documentation](./Api.md) for parent's public properties.
+
+---
 
 ## Methods
 ### get_organizations( *as_xml_text=False, \*\*kwargs* ):
