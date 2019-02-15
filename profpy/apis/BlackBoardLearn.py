@@ -1,5 +1,6 @@
 import base64
 import requests
+from http.client import responses
 from . import Api, ApiException, ParameterException, Token
 
 
@@ -10,13 +11,6 @@ class BlackBoardLearn(Api):
     Documentation regarding individual endpoints can be found at:
     https://developer.blackboard.com/portal/displayApi
     """
-
-    # status code messages
-    __HTTP_ERRORS = {
-        400: "Bad Request",
-        403: "Invalid Credentials",
-        404: "Invalid endpoint"
-    }
 
     COLUMNS                    = "v1/courses/{0}/gradebook/columns"
     COLUMN_ATTEMPTS            = "v1/courses/{0}/gradebook/columns/{1}/attempts"
@@ -134,7 +128,7 @@ class BlackBoardLearn(Api):
                 raise ApiException("Internal Server Error")
             elif status >= 400:
                 try:
-                    raise ApiException(self.__HTTP_ERRORS[status])
+                    raise ApiException(responses[status])
                 except KeyError:
                     raise ApiException("Error processing request.")
             else:
