@@ -38,36 +38,6 @@ class BlackBoardLearn(Api):
         self._set_endpoints()
         self._set_args_mapping()
 
-    @property
-    def authentication_headers(self):
-        """
-        Returns the authentication header
-        :return: the auth header contained in the token
-        """
-        return self.token.header
-
-    @property
-    def authentication_parameters(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return {}
-
-    def _generate_hash_value(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    def _update_time(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
     def _set_endpoints(self):
         """
         Sets a list of valid endpoints for this API

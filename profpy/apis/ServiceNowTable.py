@@ -28,34 +28,12 @@ class ServiceNowTable(Api):
         self._set_args_mapping()
 
     @property
-    def authentication_headers(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    @property
     def authentication_parameters(self):
         """
         From parent class, user/password credentials
         :return:
         """
         return self.public_key, self.private_key
-
-    def _generate_hash_value(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    def _update_time(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
 
     def _set_endpoints(self):
         """

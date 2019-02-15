@@ -24,36 +24,6 @@ class TwentyFiveLive(Api):
         self._set_endpoints()
         self._set_args_mapping()
 
-    @property
-    def authentication_headers(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    @property
-    def authentication_parameters(self):
-        """
-        From parent class, user/password credentials
-        :return:
-        """
-        return
-
-    def _generate_hash_value(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    def _update_time(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
     def _set_endpoints(self):
         """
         Sets a list of valid endpoints for this API
@@ -89,7 +59,7 @@ class TwentyFiveLive(Api):
             r_type = request_type.upper()
             if r_type == "GET":
                 headers = {"Content-Type": "application/xml; charset=utf-8", "Accept": "application/xml"}
-                data = requests.get(full_url, params=kwargs, headers=headers, auth=self.authentication_parameters)
+                data = requests.get(full_url, params=kwargs, headers=headers)
                 status = int(data.status_code)
                 if 300 >= status >= 200:
                     return data
