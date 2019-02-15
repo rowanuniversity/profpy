@@ -21,9 +21,8 @@ organizations = api.get_organizations()
 org_types = api.get_organization_types()
 ```
 
----
 
-## Technical Documentation
+# Technical Documentation
 ##  Constructor
 ### profpy.apis.TwentyFiveLive(&nbsp;)
 Returns an API handler for the 25Live api for Rowan
