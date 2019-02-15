@@ -26,7 +26,9 @@ org_types = api.get_organization_types()
 ## Technical Documentation
 ##  Constructor
 ### profpy.apis.TwentyFiveLive(&nbsp;)
-Returns an api handler for the 25Live api for Rowan
+Returns an API handler for the 25Live api for Rowan
+
+Parent Class: [profpy.apis.Api](./Api.md)
 
 Parameters: *None*
 
