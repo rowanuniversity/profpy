@@ -43,6 +43,7 @@ No public properties defined in this class, see [parent class documentation](./A
 Returns organizations as json from 25Live.
 
 Parameters:
+
 | Name        | Description                                        | Type          | Required | Default |
 |-------------|----------------------------------------------------|---------------|----------|---------|
 | as_xml_text | if True, returns original xml from api as a string | bool          | no       | False   |
@@ -66,6 +67,7 @@ org = api.get_organizations(organization_id=2)
 Returns organization types as json from 25Live.
 
 Parameters:
+
 | Name        | Description                                        | Type          | Required | Default |
 |-------------|----------------------------------------------------|---------------|----------|---------|
 | as_xml_text | if True, returns original xml from api as a string | bool          | no       | False   |
