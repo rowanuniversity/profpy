@@ -56,7 +56,7 @@ Parameters:
 | as_xml_text | if True, returns original xml from api as a string | bool          | no       | False   |
 | **kwargs    | Keyword args to be used as url query parameters    | **kwargs dict | no       | N/A     |
 
-Accepted query parameters: organization_id
+**Accepted query parameters:** organization_id
 
 Example
 ```python
@@ -83,7 +83,7 @@ Parameters:
 | as_xml_text | if True, returns original xml from api as a string | bool          | no       | False   |
 | **kwargs    | Keyword args to be used as url query parameters    | **kwargs dict | no       | N/A     |
 
-Accepted query parameters: type_id
+**Accepted query parameters: type_id**
 
 Example
 ```python
@@ -110,7 +110,7 @@ Parameters:
 | as_xml_text | if True, returns original xml from api as a string | bool          | no       | False   |
 | **kwargs    | Keyword args to be used as url query parameters    | **kwargs dict | no       | N/A     |
 
-Accepted query parameters: space_id
+**Accepted query parameters: space_id**
 
 Example
 ```python
@@ -137,7 +137,7 @@ Parameters:
 | as_xml_text | if True, returns original xml from api as a string | bool          | no       | False   |
 | **kwargs    | Keyword args to be used as url query parameters    | **kwargs dict | no       | N/A     |
 
-Accepted query parameters: space_id
+**Accepted query parameters: space_id**
 
 Example
 ```python
