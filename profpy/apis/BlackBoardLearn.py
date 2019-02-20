@@ -102,7 +102,9 @@ class BlackBoardLearn(Api):
                              "name.family", "availability.available", "sort", "fields"]
             },
             "POST": {
-                self.USERS: []
+                self.USERS: ["dataSourceId", "gender", "externalId", "created", "institutionRoleIds", "name",
+                             "birthDate", "lastLogin", "address", "userName", "locale", "id", "educationLevel",
+                             "job", "contact", "systemRoleIds", "studentId", "uuid", "password", "availability"]
             }
         }
 
@@ -116,7 +118,7 @@ class BlackBoardLearn(Api):
         :return:
         """
         # only do work if all of the given parameters are valid
-        if all(arg in valid_args for arg in kwargs.keys()) or request_type != "GET":
+        if all(arg in valid_args for arg in kwargs.keys()):
 
             if self.token.is_expired:
                 self.token = self.__get_oauth2_token()
@@ -260,4 +262,6 @@ class BlackBoardLearn(Api):
     def put_users(self, in_json):
         endpoint = self.USERS
         valid_args = self.endpoint_to_args["POST"][endpoint]
+
+
         return self._hit_endpoint(valid_args, endpoint, request_type="POST", **in_json)
