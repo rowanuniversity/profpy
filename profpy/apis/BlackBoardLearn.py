@@ -1,6 +1,7 @@
 import base64
 import json
 import requests
+from http.client import responses
 from . import Api, ApiException, ParameterException, Token
 
 
@@ -11,13 +12,6 @@ class BlackBoardLearn(Api):
     Documentation regarding individual endpoints can be found at:
     https://developer.blackboard.com/portal/displayApi
     """
-
-    # status code messages
-    __HTTP_ERRORS = {
-        400: "Bad Request",
-        403: "Invalid Credentials",
-        404: "Invalid endpoint"
-    }
 
     COLUMNS                    = "v1/courses/{0}/gradebook/columns"
     COLUMN_ATTEMPTS            = "v1/courses/{0}/gradebook/columns/{1}/attempts"
@@ -44,36 +38,6 @@ class BlackBoardLearn(Api):
         self.token = self.__get_oauth2_token()
         self._set_endpoints()
         self._set_args_mapping()
-
-    @property
-    def authentication_headers(self):
-        """
-        Returns the authentication header
-        :return: the auth header contained in the token
-        """
-        return self.token.header
-
-    @property
-    def authentication_parameters(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return {}
-
-    def _generate_hash_value(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    def _update_time(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
 
     def _set_endpoints(self):
         """
