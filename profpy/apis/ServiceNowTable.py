@@ -1,6 +1,7 @@
 import requests
 from xml.dom import minidom
 from xml.etree.ElementTree import fromstring, tostring
+from http.client import responses
 from . import Api, ParameterException, ApiException
 
 
@@ -15,12 +16,6 @@ class ServiceNowTable(Api):
     """
 
     __URL = "https://support.rowan.edu/api/now/"
-    __HTTP_ERRORS = {
-        400: "Bad Request",
-        403: "Invalid Credentials",
-        404: "Invalid endpoint"
-    }
-
     GET_RECORDS    = "/table/{get_table_name}"
     DELETE_RECORDS = "/table/{delete_table_name}"
     GET_SINGLE_RECORD   = "/table/{get_table_name}/{get_record_id}"
@@ -33,34 +28,12 @@ class ServiceNowTable(Api):
         self._set_args_mapping()
 
     @property
-    def authentication_headers(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    @property
     def authentication_parameters(self):
         """
         From parent class, user/password credentials
         :return:
         """
         return self.public_key, self.private_key
-
-    def _generate_hash_value(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
-
-    def _update_time(self):
-        """
-        From parent class, not used in this API
-        :return:
-        """
-        return
 
     def _set_endpoints(self):
         """
@@ -106,7 +79,7 @@ class ServiceNowTable(Api):
                     raise ApiException("Internal Server Error.")
                 elif status >= 400:
                     try:
-                        raise ApiException(self.__HTTP_ERRORS[status])
+                        raise ApiException(responses[status])
                     except KeyError:
                         raise ApiException("Error processing request: {0}".format(data.text))
                 else:
