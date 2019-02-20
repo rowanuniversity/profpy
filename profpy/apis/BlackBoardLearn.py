@@ -1,4 +1,5 @@
 import base64
+import json
 import requests
 from . import Api, ApiException, ParameterException, Token
 
@@ -88,15 +89,21 @@ class BlackBoardLearn(Api):
         :return: A dict containing endpoints as keys and their valid parameters names (list) as values
         """
         self.endpoint_to_args = {
-            self.COURSES: ["offset", "limit", "courseId", "name", "description", "externalId", "created", "allowGuests",
-                           "createdCompare", "dataSourceId", "termId", "organization", "sort", "fields"],
-            self.COLUMNS: ["offset", "limit", "contentId", "fields"],
-            self.COLUMN_ATTEMPTS: ["offset", "limit", "userId", "attemptStatuses", "fields"],
-            self.COURSE_MEMBERS: ["offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
-                                  "lastAccessedCompare", "availability.available", "sort", "fields"],
-            self.COURSE_GRADE_COLUMNS_USERS: ["fields"],
-            self.USERS: ["offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
-                         "name.family", "availability.available", "sort", "fields"]
+            "GET": {
+                self.COURSES: ["offset", "limit", "courseId", "name", "description", "externalId", "created",
+                               "allowGuests", "createdCompare", "dataSourceId", "termId", "organization", "sort",
+                               "fields"],
+                self.COLUMNS: ["offset", "limit", "contentId", "fields"],
+                self.COLUMN_ATTEMPTS: ["offset", "limit", "userId", "attemptStatuses", "fields"],
+                self.COURSE_MEMBERS: ["offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
+                                      "lastAccessedCompare", "availability.available", "sort", "fields"],
+                self.COURSE_GRADE_COLUMNS_USERS: ["fields"],
+                self.USERS: ["offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
+                             "name.family", "availability.available", "sort", "fields"]
+            },
+            "POST": {
+                self.USERS: []
+            }
         }
 
     def _hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
@@ -109,7 +116,7 @@ class BlackBoardLearn(Api):
         :return:
         """
         # only do work if all of the given parameters are valid
-        if all(arg in valid_args for arg in kwargs.keys()):
+        if all(arg in valid_args for arg in kwargs.keys()) or request_type != "GET":
 
             if self.token.is_expired:
                 self.token = self.__get_oauth2_token()
@@ -123,7 +130,7 @@ class BlackBoardLearn(Api):
             elif r_type == "PUT":
                 data = requests.put(full_url, data=kwargs, headers=headers)
             elif r_type == "POST":
-                data = requests.post(full_url, data=kwargs, headers=headers)
+                data = requests.post(full_url, data=json.dumps(kwargs), headers=headers)
             else:
                 raise Exception("Invalid request type submitted.")
 
@@ -134,7 +141,7 @@ class BlackBoardLearn(Api):
                 raise ApiException("Internal Server Error")
             elif status >= 400:
                 try:
-                    raise ApiException(self.__HTTP_ERRORS[status])
+                    raise ApiException(data.content)
                 except KeyError:
                     raise ApiException("Error processing request.")
             else:
@@ -179,7 +186,7 @@ class BlackBoardLearn(Api):
         :return:       a list of courses from BlackBoard
         """
         endpoint = self.COURSES
-        return self._hit_endpoint(self.endpoint_to_args[endpoint], endpoint, **kwargs)["results"]
+        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint, **kwargs)["results"]
 
     def get_courses_columns(self, course_id, **kwargs):
         """
@@ -191,7 +198,7 @@ class BlackBoardLearn(Api):
         :return:          A list of gradebook columns for the given course id
         """
         endpoint = self.COLUMNS
-        return self._hit_endpoint(self.endpoint_to_args[endpoint], endpoint.format(course_id), **kwargs)["results"]
+        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format(course_id), **kwargs)["results"]
 
     def get_course_columns_attempts(self, course_id, column_id, **kwargs):
         """
@@ -202,7 +209,7 @@ class BlackBoardLearn(Api):
         :return:          The attempts for the given column
         """
         endpoint = self.COLUMN_ATTEMPTS
-        return self._hit_endpoint(self.endpoint_to_args[endpoint],
+        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint],
                                   endpoint.format(course_id, column_id), **kwargs)["results"]
 
     def get_course_members(self, course_id, role=None, **kwargs):
@@ -216,7 +223,7 @@ class BlackBoardLearn(Api):
         :return:          A list of gradebook columns for the given course id
         """
         endpoint = self.COURSE_MEMBERS
-        data = self._hit_endpoint(self.endpoint_to_args[endpoint], endpoint.format(course_id), **kwargs)["results"]
+        data = self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format(course_id), **kwargs)["results"]
         return list(filter(lambda x: x["courseRoleId"] == role, data)) if role else data
 
     def get_course_grade_columns_by_user(self, course_id, column_id, user_id, **kwargs):
@@ -231,7 +238,7 @@ class BlackBoardLearn(Api):
         :return:          A list of gradebook columns for the course-column-user combination
         """
         endpoint = self.COURSE_GRADE_COLUMNS_USERS
-        return self._hit_endpoint(self.endpoint_to_args[endpoint],
+        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint],
                                   endpoint.format(course_id, column_id, user_id), **kwargs)
 
     def get_users(self, user_id=None, **kwargs):
@@ -244,8 +251,13 @@ class BlackBoardLearn(Api):
         :return:        A list of users based on the input parameters
         """
         endpoint = self.USERS
-        valid_args = self.endpoint_to_args[endpoint]
+        valid_args = self.endpoint_to_args["GET"][endpoint]
         if user_id:
             endpoint += "/{0}".format(user_id)
             valid_args = ("fields", )
         return self._hit_endpoint(valid_args, endpoint, **kwargs)
+
+    def put_users(self, in_json):
+        endpoint = self.USERS
+        valid_args = self.endpoint_to_args["POST"][endpoint]
+        return self._hit_endpoint(valid_args, endpoint, request_type="POST", **in_json)
