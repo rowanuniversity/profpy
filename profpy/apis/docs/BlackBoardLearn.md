@@ -1,5 +1,5 @@
 # BlackBoard Learn API
-An wrapper to optimize calls to the BlackBoard Learn API. This class can be used to add/remove users and manage courses, course memberships, groups, etc.
+An API wrapper to optimize calls to the BlackBoard Learn API. This class can be used to add/remove users and manage courses, course memberships, groups, etc.
 
 ## Basic Usage
 This API is instantiated using developer keys in its constructor. These keys include an application ID, a public API key, and a secret key. 
