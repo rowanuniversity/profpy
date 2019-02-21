@@ -85,8 +85,8 @@ The Oauth token used to make calls to the api
 Note: "user_id" is equivalent to "banner id" for the purposes of this API. Anytime a method takes keyword arguments
 as an input parameter can take in any valid query parameter for the corresponding endpoint listed on the API documentation site.
 
-All endpoints and their corresponding documentation can be found [here](https://developer.blackboard.com/portal/displayApi). Each method below will specify the matching
-endpoint it matches up with. 
+All endpoints and their corresponding documentation can be found [here](https://developer.blackboard.com/portal/displayApi). Each method below will specify the
+endpoint it matches up with in the previously provided link. 
 
 
 ### get_course( *course_id* )
