@@ -37,6 +37,25 @@ courses = api.get_courses()
 
 # get one course based on id
 course = api.get_course(course_id="in_id")
+```
+
+#### Inserting/Updating Data
+```python
+from profpy.apis import BlackBoardLearn
+api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key")
+
+# create user
+in_user_data = {
+    "userName": "test_user_name",
+    "studentId": "test_student_id",
+    "externalId": "test_external_id",
+    "password": "",
+    "name": {
+        "given": "Dennis",
+        "family": "Nedry"
+    }
+}
+api.create_user(in_user_data)
 
 # enroll a user in a course, default role is student
 api.add_user_to_course(course_id="in_course_id", user_id="in_banner_id")
@@ -44,9 +63,6 @@ api.add_user_to_course(course_id="in_course_id", user_id="in_banner_id")
 # as an instructor
 api.add_user_to_course(course_id="in_course_id", user_id="in_banner_id", role="Instructor")
 ```
-
-
-
 
 # Technical Documentation
 ##  Constructor
