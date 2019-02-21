@@ -6,7 +6,7 @@ This API's core functionality currently does not require authentication.
 ```python
 from profpy.apis import TwentyFiveLive
 
-api = TwentyFiveLive()
+api = TwentyFiveLive(in_url="this-25live-api.com")
 
 # grab space json
 spaces = api.get_spaces()
@@ -34,7 +34,7 @@ Parameters: *None*
 Example:
 ```python
 from profpy.apis import TwentyFiveLive
-api = TwentyFiveLive()
+api = TwentyFiveLive(in_url="this-25live-api.com")
 ```
 
 ---
@@ -60,7 +60,7 @@ Parameters:
 Example
 ```python
 from profpy.apis import TwentyFiveLive
-api = TwentyFiveLive()
+api = TwentyFiveLive(in_url="this-25live-api.com")
 
 # get all organizations
 orgs = api.get_organizations()
@@ -87,7 +87,7 @@ Parameters:
 Example
 ```python
 from profpy.apis import TwentyFiveLive
-api = TwentyFiveLive()
+api = TwentyFiveLive(in_url="this-25live-api.com")
 
 # get all organization types
 org_types = api.get_organization_types()
@@ -114,7 +114,7 @@ Parameters:
 Example
 ```python
 from profpy.apis import TwentyFiveLive
-api = TwentyFiveLive()
+api = TwentyFiveLive(in_url="this-25live-api.com")
 
 # get all reservations
 reservations = api.get_reservations()
@@ -141,7 +141,7 @@ Parameters:
 Example
 ```python
 from profpy.apis import TwentyFiveLive
-api = TwentyFiveLive()
+api = TwentyFiveLive(in_url="this-25live-api.com")
 
 # get all spaces
 spaces = api.get_reservations()

@@ -5,17 +5,14 @@ An API wrapper to optimize calls to the BlackBoard Learn API. This class can be 
 This API is instantiated using developer keys in its constructor. These keys include an application ID, a public API key, and a secret key. 
 ```python
 from profpy.apis import BlackBoardLearn
-api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key")
-
-# if using test credentials, use the optional is_test parameter
-test_api = BlackBoardLearn(in_app_id="test_app_id", in_app_key="test_api_key", in_secret_key="test_secret_key", is_test=True)
+api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key", in_url="this-blackboard-api.com")
 ```
 
 #### Retrieving data
 There are many functions available for use. Most deal with users, courses, and memberships. 
 ```python
 from profpy.apis import BlackBoardLearn
-api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key")
+api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key", in_url="this-blackboard-api.com")
 
 # grab all users
 users = api.get_users()
@@ -30,7 +27,7 @@ users = api.get_users(**{"name.family": "in_last_name"})
 
 ```python
 from profpy.apis import BlackBoardLearn
-api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key")
+api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key", in_url="this-blackboard-api.com")
 
 # get all courses
 courses = api.get_courses()
@@ -42,7 +39,7 @@ course = api.get_course(course_id="in_id")
 #### Inserting/Updating Data
 ```python
 from profpy.apis import BlackBoardLearn
-api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key")
+api = BlackBoardLearn(in_app_id="app_id", in_app_key="api_key", in_secret_key="secret_key", in_url="this-blackboard-api.com")
 
 # create user
 in_user_data = {
@@ -78,12 +75,12 @@ Parameters:
 | in_app_key  | public api key | str          | yes       |    |
 | in_app_id   | public app id    | str | yes       |      |
 | in_secret_key | private api key | str | yes | |
-| is_test | whether or not this is hitting the test instance of the api | bool | no | False |
+| in_url | the API instance's url | str | yes |  |
 
 Example:
 ```python
 from profpy.apis import BlackBoardLearn
-api = BlackBoardLearn("api_public_key", "app_id", "api_secret_key")
+api = BlackBoardLearn("api_public_key", "app_id", "api_secret_key", "this-blackboard-api.com")
 ```
 
 ---

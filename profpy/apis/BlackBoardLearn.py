@@ -26,9 +26,6 @@ class BlackBoardLearn(Api):
     USERS                      = "v1/users"
     USER                       = "v1/users/{0}"
 
-    __TEST                     = "rowantest"
-    __PROD                     = "rowan"
-
     __REQUEST_FUNCTIONS        = {
         "GET": requests.get,
         "POST": requests.post,
@@ -37,17 +34,16 @@ class BlackBoardLearn(Api):
         "DELETE": requests.delete
     }
 
-    def __init__(self, in_app_key, in_app_id, in_secret_key, is_test=False):
+    def __init__(self, in_app_key, in_app_id, in_secret_key, in_url):
         """
         Constructor
         :param in_app_key:    The provided developer application key
         :param in_app_id:     The provided application id
         :param in_secret_key: The provided secret key
-        :param is_test:       Whether or not to use the test instance of Blackboard
+        :param in_url:        The url for this API
         """
 
-        url = "https://{0}.blackboard.com/learn/api/public/".format(self.__TEST if is_test else self.__PROD)
-        super().__init__(in_public_key=in_app_key, in_private_key=in_secret_key, in_url=url)
+        super().__init__(in_public_key=in_app_key, in_private_key=in_secret_key, in_url=in_url)
         self.app_id = in_app_id
         self.token = self.__get_oauth2_token()
         self._set_endpoints()

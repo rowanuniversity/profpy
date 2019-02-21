@@ -11,7 +11,6 @@ class TwentyFiveLive(Api):
     Class that optimizes api calls to the CollegeNet 25Live REST interface.
     """
 
-    __URL            = "https://25live.collegenet.com/25live/data/rowan/run"
     __NAMESPACE      = "{http://www.collegenet.com/r25}"
     GET_RESERVATIONS = "/reservations.xml"
     GET_SPACES       = "/spaces.xml"
@@ -19,8 +18,8 @@ class TwentyFiveLive(Api):
     GET_ORG_TYPES    = "/orgtypes.xml"
     GET_RATE_GROUPS  = "/rategrp.xml"
 
-    def __init__(self):
-        super().__init__(in_public_key=None, in_private_key=None, in_url=self.__URL)
+    def __init__(self, in_url):
+        super().__init__(in_public_key=None, in_private_key=None, in_url=in_url)
         self._set_endpoints()
         self._set_args_mapping()
 

@@ -15,15 +15,14 @@ class ServiceNowTable(Api):
     Currently only supporting GET requests
     """
 
-    __URL = "https://support.rowan.edu/api/now/"
     GET_RECORDS    = "/table/{get_table_name}"
     DELETE_RECORDS = "/table/{delete_table_name}"
     GET_SINGLE_RECORD   = "/table/{get_table_name}/{get_record_id}"
 
     GET_REQUESTS  = [GET_SINGLE_RECORD, GET_RECORDS]
 
-    def __init__(self, user, password):
-        super().__init__(in_public_key=user, in_private_key=password, in_url=self.__URL)
+    def __init__(self, user, password, in_url):
+        super().__init__(in_public_key=user, in_private_key=password, in_url=in_url)
         self._set_endpoints()
         self._set_args_mapping()
 
