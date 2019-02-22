@@ -191,7 +191,7 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format("courseId:" + course_id)
+        endpoint = endpoint.format("courseId:{0}".format(course_id))
         return self._hit_endpoint(valid_args, endpoint)
 
     def get_courses(self, **kwargs):
@@ -267,7 +267,7 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_GROUP
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format("courseId:" + course_id, "externalId:" + group_id)
+        endpoint = endpoint.format("courseId:{0}".format(course_id), "externalId:{0}".format(group_id))
         return self._hit_endpoint(valid_args, endpoint)
 
     def get_course_groups(self, course_id):
@@ -278,7 +278,7 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_GROUPS
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format("courseId:" + str(course_id))
+        endpoint = endpoint.format("courseId:{0}".format(course_id))
         return self._hit_endpoint(valid_args, endpoint)["results"]
 
     def get_course_roles(self, **kwargs):
@@ -299,7 +299,7 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.USER
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format("externalId:" + user_id)
+        endpoint = endpoint.format("externalId:{0}".format(user_id))
         return self._hit_endpoint(valid_args, endpoint)
 
     def get_users(self, **kwargs):
@@ -354,7 +354,7 @@ class BlackBoardLearn(Api):
 
         endpoint = self.COURSE_MEMBERSHIP
         valid_args = self.endpoint_to_args["PUT"][endpoint]
-        endpoint = endpoint.format("courseId:" + course_id, "externalId:" + user_id)
+        endpoint = endpoint.format("courseId:{0}".format(course_id), "externalId:{0}".format(user_id))
         return self._hit_endpoint(valid_args, endpoint, request_type="PUT", **dict(courseRoleId=role))
 
     def update_course_membership(self, user_id, course_id, in_json):
@@ -367,7 +367,7 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_MEMBERSHIP
         valid_roles = self.endpoint_to_args["PATCH"][endpoint]
-        endpoint = endpoint.format("courseId:" + course_id, "externalId" + user_id)
+        endpoint = endpoint.format("courseId:{0}".format(course_id), "externalId:{0}".format(user_id))
         return self._hit_endpoint(valid_roles, endpoint, request_type="PATCH", **in_json)
 
     def remove_user_from_course(self, user_id, course_id):
@@ -379,5 +379,5 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_MEMBERSHIP
         valid_args = self.endpoint_to_args["DELETE"][endpoint]
-        endpoint = endpoint.format("courseId:" + course_id, "externalId:" + user_id)
+        endpoint = endpoint.format("courseId:{0}".format(course_id), "externalId:{0}".format(user_id))
         return self._hit_endpoint(valid_args, endpoint, request_type="DELETE")
