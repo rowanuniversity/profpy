@@ -8,6 +8,17 @@ copy/pasted wherever needed. Rather than continue this trend of untracked code, 
 and classes. If a program or script needs to use a class or function, it can just import it from profpy rather than rewrite it. This will allow us
 to standardize some of our code practices moving forward. 
 
+### Installation
+Clone the repo to your machine (or pull down the latest version of master in your existing repo) and then do the following:
+```bash
+cd profpy
+pip3 install -r requirements.txt
+python3 setup.py install
+
+# if you don't need local copy of the repo, you can delete it
+cd ..
+sudo rm -rf profpy
+```
 
 ### Submodules
 The profpy library is organized into submodules. For instance, database-related functionality can be access by importing the 
