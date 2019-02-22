@@ -1,5 +1,5 @@
 # 25Live API
-An wrapper to optimize calls to the 25Live API. 25Live data includes information on spaces and reservations on campus.
+An API wrapper to optimize calls to the 25Live API. 25Live data includes information on spaces and reservations on campus.
 
 ## Basic Usage
 This API's core functionality currently does not require authentication.
