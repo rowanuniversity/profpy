@@ -84,17 +84,7 @@ Parameters:
 
 ---
 ## Properties
-        self.public_key       = in_public_key
-        self.private_key      = in_private_key
-        self.url              = in_url
-        self.ip_restriction   = in_ip_restriction
-        self.endpoints        = []
-        self.endpoint_to_args = {}
 
-        self.uuid  = None
-        self.time  = None
-        self.hash  = None
-        self.token = None
 ### public key
 The public API key 
 
