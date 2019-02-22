@@ -64,7 +64,7 @@ api.add_user_to_course(course_id="in_course_id", user_id="in_banner_id", role="I
 # Technical Documentation
 ##  Constructor
 ### profpy.apis.BlackBoardLearn( *in_app_key, in_app_id, in_secret_key, is_test=False* )
-Returns an API handler for the 25Live api for Rowan
+Returns an API handler for the 25Live API
 
 Parent Class: [profpy.apis.Api](./Api.md)
 

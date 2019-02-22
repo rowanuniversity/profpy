@@ -16,7 +16,6 @@ class ServiceNowTable(Api):
     """
 
     GET_RECORDS    = "/table/{get_table_name}"
-    DELETE_RECORDS = "/table/{delete_table_name}"
     GET_SINGLE_RECORD   = "/table/{get_table_name}/{get_record_id}"
 
     GET_REQUESTS  = [GET_SINGLE_RECORD, GET_RECORDS]
@@ -39,7 +38,7 @@ class ServiceNowTable(Api):
         Sets a list of valid endpoints for this API
         :return:
         """
-        self.endpoints = [self.GET_SINGLE_RECORD, self.GET_RECORDS, self.DELETE_RECORDS]
+        self.endpoints = [self.GET_SINGLE_RECORD, self.GET_RECORDS]
 
     def _set_args_mapping(self):
         """
@@ -51,8 +50,7 @@ class ServiceNowTable(Api):
                                "sysparm_limit", "sysparm_offset", "sysparm_exclude_reference_link",
                                "sysparm_suppress_pagination_header"],
             self.GET_SINGLE_RECORD: ["tableName", "sys_id", "sysparm_display_value", "sysparm_fields", "sysparm_view",
-                                     "sysparm_exclude_reference_link"],
-            self.DELETE_RECORDS: ["tableName", "sys_id"]
+                                     "sysparm_exclude_reference_link"]
         }
 
     def _hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
@@ -110,7 +108,7 @@ class ServiceNowTable(Api):
         xml_data = fromstring(self._hit_endpoint(valid_args, endpoint, **kwargs).content)
         return self.to_xml_text(xml_data) if as_text else xml_data
 
-    def get_one_record(self, table_name, sys_id, as_text=False, **kwargs):
+    def get_record(self, table_name, sys_id, as_text=False, **kwargs):
         """
         Returns a record based on table name, system id, and other specified keyword args.
         For information on the xml schema, see:
