@@ -215,7 +215,7 @@ class BlackBoardLearn(Api):
         :return:          A list of gradebook columns for the given course id
         """
         endpoint = self.COLUMNS
-        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format("externalId:" + course_id), **kwargs)["results"]
+        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format("externalId:" + str(course_id)), **kwargs)["results"]
 
     def get_course_columns_attempts(self, course_id, column_id, **kwargs):
         """
