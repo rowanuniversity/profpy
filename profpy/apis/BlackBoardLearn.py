@@ -215,7 +215,7 @@ class BlackBoardLearn(Api):
         :return:          A list of gradebook columns for the given course id
         """
         endpoint = self.COLUMNS
-        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format(course_id), **kwargs)["results"]
+        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format("externalId:" + course_id), **kwargs)["results"]
 
     def get_course_columns_attempts(self, course_id, column_id, **kwargs):
         """
@@ -227,7 +227,7 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COLUMN_ATTEMPTS
         return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint],
-                                  endpoint.format(course_id, column_id), **kwargs)["results"]
+                                  endpoint.format("externalId:" + str(course_id), column_id), **kwargs)["results"]
 
     def get_course_members(self, course_id, role=None, **kwargs):
         """
@@ -240,7 +240,7 @@ class BlackBoardLearn(Api):
         :return:          A list of gradebook columns for the given course id
         """
         endpoint = self.COURSE_MEMBERS
-        data = self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format(course_id), **kwargs)["results"]
+        data = self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint.format("externalId:" + str(course_id)), **kwargs)["results"]
         return list(filter(lambda x: x["courseRoleId"] == role, data)) if role else data
 
     def get_course_grade_columns_by_user(self, course_id, column_id, user_id, **kwargs):
