@@ -26,9 +26,13 @@ def get_person(connection, person_id):
     cursor = connection.cursor()
     cursor.execute("select * from general.people where id=:in_id", {"in_id": person_id})
     cursor.close()
+    
+    # alwasy explicitly commit changes when needed, connection rolls back after wrapped function is done executing.
+    connection.commit()
 ```
 
 <br>
+
 ---
 
 #### get_connection(<i> login_var, password_var </i>)
