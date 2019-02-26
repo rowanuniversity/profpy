@@ -1,5 +1,6 @@
 import os
 import cx_Oracle
+import re
 
 DEFAULT_ARRAY_SIZE = 1000
 
@@ -119,20 +120,44 @@ def row_to_dict(field_names, data, null_to_empty_string=False):
     return dict(zip(field_names, clean_data))
 
 
-def sql_file_to_text(in_file_path):
+def parse_multiline_sql(in_str):
+    """
+    Separates sql string composed of multiple statements into a list of strings
+    :param in_str: The sql str
+    :return:       A list of sql statements
+    """
+    regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+    results = []
+    for p in regex.split(in_str)[1::2]:
+        if p.strip() == "":
+            pass
+        else:
+            if p[0] == "\n":
+                results.append(p[1:])
+            elif p[-1:] == "\n":
+                results.append(p[:-1])
+            else:
+                results.append(p)
+    return results
+
+
+def sql_file_to_text(in_file_path, multiple_statements=False):
     """
     Reads in a sql file and returns it as a string
-    :param in_file_path: The file path
-    :return:             The contents of the file as a str object
+    :param in_file_path:        The file path
+    :param multiple_statements: Whether or not there are multiple statements in the code
+    :return:                    The contents of the file as a str object (or list of str objs if multiple statements)
     """
     if os.path.isfile(in_file_path):
         parts = in_file_path.split(".")
+
         try:
             if parts[len(parts) - 1] != "sql":
                 raise Exception("Invalid file type: Must be .sql file.")
             else:
                 with open(in_file_path, "r") as sql:
-                    return sql.read()
+                    return_str = sql.read()
+                    return parse_multiline_sql(return_str) if multiple_statements else return_str
         except IndexError:
             raise Exception("Invalid file type: Must be .sql file.")
     else:
