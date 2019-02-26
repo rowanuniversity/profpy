@@ -140,15 +140,19 @@ Returns the content of a sql file as a string variable.
 
 Parameters:
 
-| Name                 | Description                                          | Type             | Required |
-|----------------------|------------------------------------------------------|------------------|----------|
-| in_file_path               | the path to the sql file                              | str | yes      |
+| Name                 | Description                                          | Type             | Required | Default|
+|----------------------|------------------------------------------------------|------------------|----------|--------
+| in_file_path               | the path to the sql file                              | str | yes      | |
+| multiple_statements | whether or not this file contains multiple lines of sql | bool | no | False |
 
 <br>
 
 ```python
 from profpy.db import sql_file_to_text
 sql_str = sql_file_to_text("/tmp/some_query.sql")
+
+# a list of statements to execute
+sql_statements = sql_file_to_text("/tmp/some_sql.dml.sql", multiple_statements=True)
 ```
 
 ---
