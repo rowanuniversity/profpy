@@ -9,7 +9,7 @@ that was found across multiple projects and CVS repositories.
 
 ---
 #### with_oracle_connection( *login_var="full_login", password_var="db_password"*)
-<i>Decorator that passes a cx_Oracle connection to the wrapped function.
+<i>Decorator that passes a cx_Oracle connection to the wrapped function.</i>
 
 <b>Parameters:</b>
 
@@ -27,6 +27,9 @@ def get_person(connection, person_id):
     cursor.execute("select * from general.people where id=:in_id", {"in_id": person_id})
     cursor.close()
 ```
+
+<br>
+---
 
 #### get_connection(<i> login_var, password_var </i>)
 <i>Returns cx_Oracle connection object based on given environment variable names. Often "full_login" and "db_password"</i>.
@@ -124,6 +127,25 @@ with get_connection("full_login", "db_password") as connection:
     cursor.close()
 ```
 <br>
+
+---
+
+#### sql_file_to_text( *in_file_path* )
+
+Returns the content of a sql file as a string variable. 
+
+Parameters:
+
+| Name                 | Description                                          | Type             | Required |
+|----------------------|------------------------------------------------------|------------------|----------|
+| in_file_path               | the path to the sql file                              | str | yes      |
+
+<br>
+
+```python
+from profpy.db import sql_file_to_text
+sql_str = sql_file_to_text("/tmp/some_query.sql")
+```
 
 ---
 
