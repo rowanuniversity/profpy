@@ -8,6 +8,25 @@ that was found across multiple projects and CVS repositories.
 <br>
 
 ---
+#### with_oracle_connection( *login_var="full_login", password_var="db_password"*)
+<i>Decorator that passes a cx_Oracle connection to the wrapped function.
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login_var    | environment variable containing login connection string | str  | no      | full_login |
+| password_var | environment variable containing database password       | str  | no      | db_password |
+
+```python
+from profpy.db import with_oracle_connection
+
+@with_oracle_connection()
+def get_person(connection, person_id):
+    cursor = connection.cursor()
+    cursor.execute("select * from general.people where id=:in_id", {"in_id": person_id})
+    cursor.close()
+```
 
 #### get_connection(<i> login_var, password_var </i>)
 <i>Returns cx_Oracle connection object based on given environment variable names. Often "full_login" and "db_password"</i>.
