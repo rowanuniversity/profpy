@@ -128,24 +128,30 @@ def parse_multiline_sql(in_str):
     """
     regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
     results = []
+    bad = ["", "/"]
+
     for p in regex.split(in_str)[1::2]:
-        if p.strip() == "":
+        if p.strip() in bad:
             pass
         else:
             if p[0] == "\n":
                 results.append(p[1:])
+            elif p[:2] == "\r\n":
+                results.append(p[2:])
             elif p[-1:] == "\n":
                 results.append(p[:-1])
+            elif p[-2:] == "\r\n":
+                results.append(p[:-2])
             else:
                 results.append(p)
     return results
 
 
-def sql_file_to_text(in_file_path, multiple_statements=False):
+def sql_file_to_statements(in_file_path, as_one_string=False):
     """
     Reads in a sql file and returns it as a string
     :param in_file_path:        The file path
-    :param multiple_statements: Whether or not there are multiple statements in the code
+    :param as_one_string:       Returns the content of the file as a string
     :return:                    The contents of the file as a str object (or list of str objs if multiple statements)
     """
     if os.path.isfile(in_file_path):
@@ -156,8 +162,8 @@ def sql_file_to_text(in_file_path, multiple_statements=False):
                 raise Exception("Invalid file type: Must be .sql file.")
             else:
                 with open(in_file_path, "r") as sql:
-                    return_str = sql.read()
-                    return parse_multiline_sql(return_str) if multiple_statements else return_str
+                    sql_str = sql.read()
+                    return sql_str if as_one_string else parse_multiline_sql(sql_str)
         except IndexError:
             raise Exception("Invalid file type: Must be .sql file.")
     else:

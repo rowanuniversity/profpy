@@ -134,25 +134,23 @@ with get_connection("full_login", "db_password") as connection:
 
 ---
 
-#### sql_file_to_text( *in_file_path* )
+#### sql_file_to_statements( *in_file_path* )
 
-Returns the content of a sql file as a string variable. 
+Returns the content of a sql file as a list of statements found within the file
 
 Parameters:
 
 | Name                 | Description                                          | Type             | Required | Default|
 |----------------------|------------------------------------------------------|------------------|----------|--------
 | in_file_path               | the path to the sql file                              | str | yes      | |
-| multiple_statements | whether or not this file contains multiple lines of sql | bool | no | False |
+| as_one_string | whether or not to return the file's contents as a single string | bool | no | False |
 
 <br>
 
 ```python
-from profpy.db import sql_file_to_text
-sql_str = sql_file_to_text("/tmp/some_query.sql")
+from profpy.db import sql_file_to_statements
+sql_statements = sql_file_to_statements("/tmp/some_queries.sql")
 
-# a list of statements to execute
-sql_statements = sql_file_to_text("/tmp/some_sql.dml.sql", multiple_statements=True)
 ```
 
 ---
