@@ -1,7 +1,7 @@
 import unittest
 import random
 import types
-from profpy.db import get_connection, execute_query, sql_file_to_text
+from profpy.db import get_connection, execute_query
 
 # db stuff
 connection = get_connection("full_login", "db_password")

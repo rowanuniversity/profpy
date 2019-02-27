@@ -1,6 +1,7 @@
 import cx_Oracle
 import os
 import re
+import functools
 
 short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9_]*@[a-zA-Z_]+$")
 
@@ -40,3 +41,34 @@ def get_connection_raw(login, password):
             raise Exception("Invalid login string.")
 
     return cx_Oracle.connect(user=user, password=password, dsn=dsn)
+
+
+def with_oracle_connection(login_var="full_login", password_var="db_password"):
+    """
+    Decorator that feeds a cx_Oracle connection to the wrapped function
+    :param login_var:    The env. variable containing the login string (str), defaults to "full_login"
+    :param password_var: The env. variable containing the password (str), defaults to "db_password"
+    :return:             A wrapped function with a connection
+
+
+    Example:
+
+    @with_oracle_connection()
+    def database_task(connection, query):
+        cursor = connection.cursor()
+        # other code
+    """
+    def with_connection_(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            connection = get_connection(login_var, password_var)
+            result = f(connection, *args, **kwargs)
+
+            try:
+                connection.rollback()
+                connection.close()
+            except cx_Oracle.DatabaseError:
+                pass
+            return result
+        return wrapper
+    return with_connection_

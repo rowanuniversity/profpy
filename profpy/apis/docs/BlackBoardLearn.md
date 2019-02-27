@@ -101,8 +101,13 @@ as an input parameter can take in any valid query parameter for the correspondin
 **All endpoints and their corresponding documentation can be found at <a href='https://developer.blackboard.com/portal/displayApi'>https://developer.blackboard.com/portal/displayApi</a>**. Each method below will specify the
 endpoint it matches up with in the previously provided link. 
 
+Note: Any optional method input parameters such as "use_blackboard_\<object\>_id" are referring to BlackBoard's internal 
+primary keys. For instance, users may be identified by an organization one way (school id, ssn, etc.) that is stored as an
+"externalId" in each record. By default, user-related functions search on this field. However, if ```use_blackboard_user_id``` is
+set to ```True```, then the method will search on the primary BlackBoard key (often comprised of numbers and underscores).
 
-### get_course( *course_id* )
+
+### get_course( *course_id, use_blackboard_course_id=False*)
 Returns a course based on the given course id.
 
 Endpoint: GET /learn/api/v1/courses/{courseId}
@@ -112,32 +117,32 @@ Returns a list of courses based on the given query parameters.
 
 Endpoint: GET /learn/api/v1/courses
 
-### get_course_columns( *course_id, \*\*kwargs* )
+### get_course_columns( *course_id, use_blackboard_course_id=False, \*\*kwargs* )
 Returns course gradebook columns based on the course id and any query parameters.
 
 Endpoint: GET /learn/api/public/v1/courses/{courseId}/gradebook/columns
 
-### get_course_columns_attempts( *course_id, column_id, \*\*kwargs* )
+### get_course_columns_attempts( *course_id, column_id, use_blackboard_course_id=False, use_blackboard_column_id=False, \*\*kwargs* )
 Returns a list of attempts on a gradebook column based on course id, column id, and query parameters.
 
 Endpoint: GET /learn/api/public/v1/courses/{courseId}/gradebook/columns/{columnId}/attempts
 
-### get_course_members( *course_id, role=None, \*\*kwargs* )
+### get_course_members( *course_id, role=None, use_blackboard_course_id=False, \*\*kwargs* )
 Returns a list of users of a course based on course id and query parameters (and optionally a specified role)
 
 Endpoint: GET /learn/api/public/v1/courses/{courseId}/users
 
-### get_course_grade_columns_by_user( *course_id, column_id, user_id, \*\*kwargs* )
+### get_course_grade_columns_by_user( *course_id, column_id, user_id, use_blackboard_course_id=False, use_blackboard_column_id=False, use_blackboard_user_id=False, \*\*kwargs* )
 Returns a list of gradebook columns for a certain course-column-user id combination
 
 Endpoint: GET /learn/api/public/v1/courses/{courseId}/gradebook/columns/{columnId}/users/{userId}
 
-### get_course_group( *course_id, group_id* )
+### get_course_group( *course_id, group_id, use_blackboard_course_id=False, use_blackboard_group_id=False* )
 Returns a course group based on course id and group id
 
 Endpoint: GET /learn/api/public/v1/courses/{courseId}/groups/{groupId}
 
-### get_course_groups( *course_id* )
+### get_course_groups( *course_id, use_blackboard_course_id=False* )
 Returns a list of course groups for the given course id.
 
 Endpoint: GET /learn/api/public/v1/courses/{courseId}/groups
@@ -147,7 +152,7 @@ Returns a list of course roles based on the given query parameters.
 
 Endpoint: GET /learn/api/public/v1/courseRoles
 
-### get_user( *user_id* )
+### get_user( *user_id, use_blackboard_user_id=False* )
 Returns a user based on the given user id 
 
 Endpoint: GET /learn/api/public/v1/users/{userId}
@@ -162,22 +167,22 @@ Creates a user based on input json data. See corresponding documentation for mor
 
 Endpoint: POST /learn/api/public/v1/users
 
-### delete_user( *user_id* )
+### delete_user( *user_id, use_blackboard_user_id=False* )
 Deletes a user based on given user id.
 
 Endpoint: DELETE /learn/api/public/v1/users/{userId}
 
-### add_user_to_course( *user_id, course_id, role="Student"* )
+### add_user_to_course( *user_id, course_id, role="Student", use_blackboard_user_id=False,  use_blackboard_course_id=False* )
 Enrolls a user in a course based on the given user and course ids. Optionally, the caller can provide a role (defaults to "Student").
 
 Endpoint: PUT /learn/api/public/v1/courses/{courseId}/users/{userId}
 
-### update_course_membership( *user_id, course_id, in_json* )
+### update_course_membership( *user_id, course_id, in_json, use_blackboard_user_id=False, use_blackboard_course_id=False* )
 Updates a course membership with the given user and course ids, and the given input json.
 
 Endpoint: PATCH /learn/api/public/courses/{courseId}/users/{userId}
 
-### remove_user_from_course( *user_id, course_id* )
+### remove_user_from_course( *user_id, course_id, use_blackboard_user_id=False, use_blackboard_course_id=False* )
 Removes a user from a course based on user and course ids.
 
 Endpoint: DELETE /learn/api/public/courses/{courseId}/users/{userId}

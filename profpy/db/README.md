@@ -8,6 +8,32 @@ that was found across multiple projects and CVS repositories.
 <br>
 
 ---
+#### with_oracle_connection( *login_var="full_login", password_var="db_password"*)
+<i>Decorator that passes a cx_Oracle connection to the wrapped function.</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login_var    | environment variable containing login connection string | str  | no      | full_login |
+| password_var | environment variable containing database password       | str  | no      | db_password |
+
+```python
+from profpy.db import with_oracle_connection
+
+@with_oracle_connection()
+def get_person(connection, person_id):
+    cursor = connection.cursor()
+    cursor.execute("select * from general.people where id=:in_id", {"in_id": person_id})
+    cursor.close()
+    
+    # alwasy explicitly commit changes when needed, connection rolls back after wrapped function is done executing.
+    connection.commit()
+```
+
+<br>
+
+---
 
 #### get_connection(<i> login_var, password_var </i>)
 <i>Returns cx_Oracle connection object based on given environment variable names. Often "full_login" and "db_password"</i>.
@@ -105,6 +131,27 @@ with get_connection("full_login", "db_password") as connection:
     cursor.close()
 ```
 <br>
+
+---
+
+#### sql_file_to_statements( *in_file_path* )
+
+Returns the content of a sql file as a list of statements found within the file
+
+Parameters:
+
+| Name                 | Description                                          | Type             | Required | Default|
+|----------------------|------------------------------------------------------|------------------|----------|--------
+| in_file_path               | the path to the sql file                              | str | yes      | |
+| as_one_string | whether or not to return the file's contents as a single string | bool | no | False |
+
+<br>
+
+```python
+from profpy.db import sql_file_to_statements
+sql_statements = sql_file_to_statements("/tmp/some_queries.sql")
+
+```
 
 ---
 

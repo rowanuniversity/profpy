@@ -1,5 +1,6 @@
 import os
 import cx_Oracle
+import re
 
 DEFAULT_ARRAY_SIZE = 1000
 
@@ -119,20 +120,50 @@ def row_to_dict(field_names, data, null_to_empty_string=False):
     return dict(zip(field_names, clean_data))
 
 
-def sql_file_to_text(in_file_path):
+def parse_multiline_sql(in_str):
+    """
+    Separates sql string composed of multiple statements into a list of strings
+    :param in_str: The sql str
+    :return:       A list of sql statements
+    """
+    regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+    results = []
+    bad = ["", "/"]
+
+    for p in regex.split(in_str)[1::2]:
+        if p.strip() in bad:
+            pass
+        else:
+            if p[0] == "\n":
+                results.append(p[1:])
+            elif p[:2] == "\r\n":
+                results.append(p[2:])
+            elif p[-1:] == "\n":
+                results.append(p[:-1])
+            elif p[-2:] == "\r\n":
+                results.append(p[:-2])
+            else:
+                results.append(p)
+    return results
+
+
+def sql_file_to_statements(in_file_path, as_one_string=False):
     """
     Reads in a sql file and returns it as a string
-    :param in_file_path: The file path
-    :return:             The contents of the file as a str object
+    :param in_file_path:        The file path
+    :param as_one_string:       Returns the content of the file as a string
+    :return:                    The contents of the file as a str object (or list of str objs if multiple statements)
     """
     if os.path.isfile(in_file_path):
         parts = in_file_path.split(".")
+
         try:
             if parts[len(parts) - 1] != "sql":
                 raise Exception("Invalid file type: Must be .sql file.")
             else:
                 with open(in_file_path, "r") as sql:
-                    return sql.read()
+                    sql_str = sql.read()
+                    return sql_str if as_one_string else parse_multiline_sql(sql_str)
         except IndexError:
             raise Exception("Invalid file type: Must be .sql file.")
     else:
