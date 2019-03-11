@@ -14,6 +14,7 @@ setup(
     license='',
     author='Connor Hornibrook',
     author_email='hornibrookc@rowan.edu',
+    install_requires=["cx_Oracle", "requests"],
     description='',
     long_description=read("README.md")
 )
