@@ -11,13 +11,7 @@ to standardize some of our code practices moving forward.
 ### Installation
 Clone the repo to your machine (or pull down the latest version of master in your existing repo) and then do the following:
 ```bash
-cd profpy
-pip3 install -r requirements.txt
-python3 setup.py install
-
-# if you don't need local copy of the repo, you can delete it
-cd ..
-sudo rm -rf profpy
+pip3 install profpy
 ```
 
 ### Submodules
