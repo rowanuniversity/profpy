@@ -8,7 +8,7 @@ def read(file_name):
 
 setup(
     name='profpy',
-    version='0.3.2',
+    version='0.3.3',
     packages=['profpy', 'profpy.db', 'profpy.db.fauxrm', 'profpy.db.fauxrm.queries', 'profpy.db.fauxrm.handlers', 'profpy.db.general', 'profpy.apis', 'profpy.apis.utils'],
     url='',
     license='',
