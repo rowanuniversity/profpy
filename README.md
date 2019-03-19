@@ -9,7 +9,6 @@ and classes. If a program or script needs to use a class or function, it can jus
 to standardize some of our code practices moving forward. 
 
 ### Installation
-Clone the repo to your machine (or pull down the latest version of master in your existing repo) and then do the following:
 ```bash
 pip3 install profpy
 ```
@@ -24,9 +23,7 @@ connection = get_connection("full_login", "db_password")
 ```
 
 ### Dependencies
-Python 3.6.7 or above, as well as the following libraries:
-- cx_Oracle
-- requests
+Python 3.6.7 or above
 
 ##### Current Submodules
 For in-depth documentation, explore the submodules individually:

@@ -1,6 +1,4 @@
 import requests
-from xml.dom import minidom
-from xml.etree.ElementTree import fromstring, tostring
 from http.client import responses
 from . import Api, ParameterException, ApiException
 
@@ -15,12 +13,12 @@ class ServiceNowTable(Api):
     Currently only supporting GET requests
     """
 
-    GET_RECORDS    = "/table/{get_table_name}"
-    GET_SINGLE_RECORD   = "/table/{get_table_name}/{get_record_id}"
-
-    GET_REQUESTS  = [GET_SINGLE_RECORD, GET_RECORDS]
+    GET_RECORDS         = "/api/now/table/{get_table_name}"
+    GET_SINGLE_RECORD   = "/api/now/table/{get_table_name}/{get_record_id}"
+    GET_REQUESTS        = [GET_SINGLE_RECORD, GET_RECORDS]
 
     def __init__(self, user, password, in_url):
+
         super().__init__(in_public_key=user, in_private_key=password, in_url=in_url)
         self._set_endpoints()
         self._set_args_mapping()
@@ -67,11 +65,12 @@ class ServiceNowTable(Api):
             full_url = self.url + endpoint_name
             r_type = request_type.upper()
             if r_type == "GET":
-                headers = {"Content-Type": "application/xml; charset=utf-8", "Accept": "application/xml"}
+                headers = {"Content-Type": "application/xml", "Accept": "application/json"}
                 data = requests.get(full_url, params=kwargs, headers=headers, auth=self.authentication_parameters)
                 status = int(data.status_code)
                 if 300 >= status >= 200:
-                    return data
+                    json_obj = data.json()
+                    return json_obj["result"] if status == 200 else json_obj
                 elif status >= 500:
                     raise ApiException("Internal Server Error.")
                 elif status >= 400:
@@ -91,40 +90,40 @@ class ServiceNowTable(Api):
                   "Valid arguments: {1}.".format(bad_args, good_args)
             raise ParameterException(msg)
 
-    def get_records(self, table_name=None, as_text=False, **kwargs):
+    def get_records(self, table_name=None, **kwargs):
         """
         Returns a list of records based on table name and other specified keyword args.
         For information on the xml schema, see:
         https://docs.servicenow.com/bundle/london-application-development/page/integrate/inbound-rest/concept/c_TableAPI.html#r_TableAPI-GET
 
         :param table_name: The name of the table      (str)
-        :param as_text:    Whether or not to receive the XML as text (bool)
         :param kwargs:     Other keyword arguments    (**kwargs)
-        :return:           XML result of the API call (xml.etree.ElementTree.Element, or str see: as_text)
+        :return:           JSON result                (dict)
         """
         endpoint = self.GET_RECORDS
         valid_args = self.endpoint_to_args[endpoint]
         endpoint = endpoint.format(get_table_name=table_name) if table_name else endpoint.replace("{get_table_name}", "")
-        xml_data = fromstring(self._hit_endpoint(valid_args, endpoint, **kwargs).content)
-        return self.to_xml_text(xml_data) if as_text else xml_data
+        return self._hit_endpoint(valid_args, endpoint, **kwargs)
 
-    def get_record(self, table_name, sys_id, as_text=False, **kwargs):
+    def get_record(self, table_name, record_id, custom_id_field=None, **kwargs):
         """
         Returns a record based on table name, system id, and other specified keyword args.
         For information on the xml schema, see:
         https://docs.servicenow.com/bundle/london-application-development/page/integrate/inbound-rest/concept/c_TableAPI.html#r_TableAPI-GETid
-        :param table_name: The name of the table                     (str)
-        :param sys_id:     The id of the record                      (str)
-        :param as_text:    Whether or not to receive the XML as text (bool)
-        :param kwargs:     Additional request parameters             (**kwargs)
-        :return:           XML result of the API call                (xml.etree.ElementTree.Element, or str see: as_text)
+        :param table_name:      The name of the table                                        (str)
+        :param record_id:       The id number of the record, hits sys_id by default          (str)
+        :param custom_id_field: An id field to use other than the sys_id                     (str) (defaults to None)
+        :param kwargs:          Additional request parameters                                (**kwargs)
+        :return:                JSON result                                                  (dict)
         """
-        endpoint = self.GET_SINGLE_RECORD
-        valid_args = self.endpoint_to_args[endpoint]
-        endpoint = endpoint.format(get_table_name=table_name, get_record_id=sys_id)
-        xml_data = fromstring(self._hit_endpoint(valid_args, endpoint, **kwargs).content)
-        return self.to_xml_text(xml_data) if as_text else xml_data
 
-    @staticmethod
-    def to_xml_text(in_xml):
-        return minidom.parseString(tostring(in_xml)).toprettyxml(indent="    ")
+        if custom_id_field:
+            query = "{0}={1}".format(custom_id_field, record_id)
+            result = self.get_records(table_name, sysparm_query=query, sysparm_limit=1)
+            result = None if not result else result[0]
+        else:
+            endpoint = self.GET_SINGLE_RECORD
+            valid_args = self.endpoint_to_args[endpoint]
+            endpoint = endpoint.format(get_table_name=table_name, get_record_id=record_id)
+            result = self._hit_endpoint(valid_args, endpoint, **kwargs)
+        return result
