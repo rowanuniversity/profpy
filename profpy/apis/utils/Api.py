@@ -5,7 +5,7 @@ class Api(abc.ABC):
 
     def __init__(self, in_public_key, in_private_key, in_url, in_ip_restriction=None):
 
-        self.url              = in_url[:-1] if in_url[-1:] == "/" else in_url
+        self.url              = in_url
         self.public_key       = in_public_key
         self.private_key      = in_private_key
         self.ip_restriction   = in_ip_restriction

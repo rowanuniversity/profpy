@@ -19,7 +19,8 @@ class ServiceNowTable(Api):
 
     def __init__(self, user, password, in_url):
 
-        super().__init__(in_public_key=user, in_private_key=password, in_url=in_url)
+        parsed_url = in_url[:-1] if in_url[-1:] == "/" else in_url
+        super().__init__(in_public_key=user, in_private_key=password, in_url=parsed_url)
         self._set_endpoints()
         self._set_args_mapping()
 
