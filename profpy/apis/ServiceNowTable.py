@@ -1,4 +1,5 @@
 import requests
+import json
 from http.client import responses
 from . import Api, ParameterException, ApiException
 
@@ -13,8 +14,8 @@ class ServiceNowTable(Api):
     Currently only supporting GET requests
     """
 
-    GET_RECORDS         = "/api/now/table/{get_table_name}"
-    GET_SINGLE_RECORD   = "/api/now/table/{get_table_name}/{get_record_id}"
+    GET_RECORDS         = "/{get_table_name}"
+    GET_SINGLE_RECORD   = "/{get_table_name}/{get_record_id}"
     GET_REQUESTS        = [GET_SINGLE_RECORD, GET_RECORDS]
 
     def __init__(self, user, password, in_url):
@@ -70,8 +71,11 @@ class ServiceNowTable(Api):
                 data = requests.get(full_url, params=kwargs, headers=headers, auth=self.authentication_parameters)
                 status = int(data.status_code)
                 if 300 >= status >= 200:
-                    json_obj = data.json()
-                    return json_obj["result"] if status == 200 else json_obj
+                    try:
+                        json_obj = data.json()
+                        return json_obj["result"] if status == 200 else json_obj
+                    except json.JSONDecodeError:
+                        raise ApiException("Transaction cancelled: maximum execution time exceeded.", error_code=408)
                 elif status >= 500:
                     raise ApiException("Internal Server Error.")
                 elif status >= 400:
@@ -128,3 +132,22 @@ class ServiceNowTable(Api):
             endpoint = endpoint.format(get_table_name=table_name, get_record_id=record_id)
             result = self._hit_endpoint(valid_args, endpoint, **kwargs)
         return result
+
+    def load_table(self, table_name, limit=None):
+        """
+        Abstracted logic to fully load all fields for records in a table. This can be used to get around the
+        timeout error for larger tables
+        :param table_name:   The name of the table                          (str)
+        :param limit:        An optional cap on the number records returned (int)
+        :return:             JSON result                                    (dict)
+        """
+        keep_going = True
+        request_size_limit = 1500
+        results = self.get_records(table_name, sysparm_limit=request_size_limit)
+        if len(results) >= request_size_limit:
+            current_offset = request_size_limit
+            while keep_going:
+                results.extend(self.get_records(table_name, sysparm_offset=current_offset, sysparm_limit=request_size_limit))
+                current_offset += request_size_limit
+                keep_going = (len(results) >= current_offset) and ((limit and len(results) < limit) or not limit)
+        return results[:limit] if limit else results

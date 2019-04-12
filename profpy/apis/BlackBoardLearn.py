@@ -14,7 +14,7 @@ class BlackBoardLearn(Api):
     """
 
     COLUMNS                    = "v1/courses/{0}/gradebook/columns"
-    COLUMN_ATTEMPTS            = "v1/courses/{0}/gradebook/columns/{1}/attempts"
+    COLUMN_ATTEMPTS            = "v2/courses/{0}/gradebook/columns/{1}/attempts"
     COURSES                    = "v1/courses"
     COURSE                     = "v1/courses/{0}"
     COURSE_GROUP               = "v1/courses/{0}/groups/{1}"
