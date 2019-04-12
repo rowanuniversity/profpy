@@ -11,7 +11,7 @@ setup(
     version='0.4.0',
     packages=['profpy', 'profpy.db', 'profpy.db.fauxrm', 'profpy.db.fauxrm.queries', 'profpy.db.fauxrm.handlers', 'profpy.db.general', 'profpy.apis', 'profpy.apis.utils'],
     url='https://github.com/rowanuniversity/profpy/',
-    license=read("LICENSE"),
+    license="MIT",
     author='Connor Hornibrook',
     author_email='hornibrookc@rowan.edu',
     install_requires=["cx_Oracle", "requests"],
