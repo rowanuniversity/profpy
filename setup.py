@@ -8,10 +8,10 @@ def read(file_name):
 
 setup(
     name='profpy',
-    version='0.4.0',
+    version='0.4.1',
     packages=['profpy', 'profpy.db', 'profpy.db.fauxrm', 'profpy.db.fauxrm.queries', 'profpy.db.fauxrm.handlers', 'profpy.db.general', 'profpy.apis', 'profpy.apis.utils'],
     url='https://github.com/rowanuniversity/profpy/',
-    license=read("LICENSE"),
+    license="MIT",
     author='Connor Hornibrook',
     author_email='hornibrookc@rowan.edu',
     install_requires=["cx_Oracle", "requests"],
