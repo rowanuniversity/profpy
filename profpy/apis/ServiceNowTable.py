@@ -133,21 +133,30 @@ class ServiceNowTable(Api):
             result = self._hit_endpoint(valid_args, endpoint, **kwargs)
         return result
 
-    def load_table(self, table_name, limit=None):
+    def load_table(self, table_name, limit=None, **kwargs):
         """
         Abstracted logic to fully load all fields for records in a table. This can be used to get around the
         timeout error for larger tables
         :param table_name:   The name of the table                          (str)
         :param limit:        An optional cap on the number records returned (int)
+        :param kwargs:       Additional keyword arguments for the endpoint  (**kwargs)
         :return:             JSON result                                    (dict)
         """
+
+        if "sysparm_limit" in kwargs or "sysparm_offset" in kwargs:
+            raise ParameterException("ServiceNowTable.load_table method does not allow the use of \"sysparm_limit\" or "
+                                     "\"sysparm_offset\" query parameters.")
+
         keep_going = True
         request_size_limit = 1500
-        results = self.get_records(table_name, sysparm_limit=request_size_limit)
+
+        params = {**kwargs, **dict(sysparm_limit=request_size_limit)}
+        results = self.get_records(table_name, **params)
         if len(results) >= request_size_limit:
             current_offset = request_size_limit
             while keep_going:
-                results.extend(self.get_records(table_name, sysparm_offset=current_offset, sysparm_limit=request_size_limit))
+                params = {**kwargs, **dict(sysparm_offset=current_offset, sysparm_limit=request_size_limit)}
+                results.extend(self.get_records(table_name, **params))
                 current_offset += request_size_limit
                 keep_going = (len(results) >= current_offset) and ((limit and len(results) < limit) or not limit)
         return results[:limit] if limit else results

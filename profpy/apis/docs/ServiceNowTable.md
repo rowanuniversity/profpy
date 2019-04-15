@@ -105,4 +105,7 @@ all_records = api.get_records(table_name="this-table")
 
 # returns a list of json objects for matching results, with only specified field (other query parameters available in API documentation)
 all_records = api.get_records(table_name="this-table", sysparm_fields="field1")
+
+# alternatively, when dealing with larger tables that may require API paging, use the "load_table" function instead
+all_records = api.load_table(table_name="this-table", limit=100, any_other_query_params="some_value")
 ```
