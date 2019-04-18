@@ -20,9 +20,9 @@ will need to be installed.<br><br><br>
 ```python
 from profpy.db import fauxrm
 
-pprd = fauxrm.Database("login_environment_variable", "password_environment_variable")
-database_name = pprd.name  
-pprd.close()
+database = fauxrm.Database("login_environment_variable", "password_environment_variable")
+database_name = database.name  
+database.close()
 
 ```
 OR
@@ -30,34 +30,33 @@ OR
 from profpy.db import fauxrm
 
 # if no environment variables ar specified, "full_login" and "db_password" are used
-with fauxrm.Database() as pprd:
-    database_name = pprd.name
+with fauxrm.Database() as database:
+    database_name = database.name
 ```
 
 #### Execute Raw SQL
 ```python
 from profpy.db import fauxrm
 
-sql = "select full_name, pidm from spvname where last_name=:last_name"
+sql = "select full_name, user_id from users where last_name=:last_name"
 params = {"last_name": "Joe"}
 
 # compile list of pidms
-with fauxrm.Database() as pprd:
+with fauxrm.Database() as database:
     
-    pidms = []
-    for record in pprd.execute_query(sql, params):
+    user_ids = []
+    for record in database.execute_query(sql, params):
     
         # direct access to view's field names as attributes of "record"
-        pidms.append(record.pidm)
+        user_ids.append(record.user_id)
 ```
 
 #### Execute Oracle Functions
 ```python
 from profpy.db import fauxrm
 
-with fauxrm.Database() as pprd:
-    current_term_code = pprd.execute_function("rowan", "f_get_term_code")
-    pidm = pprd.execute_function("rowan", "id_to_pidm", 12345678)
+with fauxrm.Database() as database:
+    current_term_code = database.execute_function("owner", "get_term")
 ```
 
 ## Using model objects 
@@ -65,19 +64,19 @@ with fauxrm.Database() as pprd:
 ```python
 from profpy.db import fauxrm
 
-with fauxrm.Database() as pprd:
+with fauxrm.Database() as database:
 
     # using views
-    spvname = pprd.model("rowan", "spvname")
-    john_smith_list = spvname.find(first_name="John", last_name="Smith")
+    users = database.model("owner", "users")
+    john_smith_list = users.find(first_name="John", last_name="Smith")
     
     # using tables
-    sortest = pprd.model("saturn", "sortest")
+    test_scores = database.model("owner", "test_scores")
     keys = []
     
     # grab all the primary key values for the resulting rows
-    for chemistry_score in sortest.find(sortest_tesc_code="CPEA"):
-        keys.append(chemistry_score.key)
+    for sat_score in test_scores.find(test_code="SAT"):
+        keys.append(sat_score.key)
 ```
 
 #### Modifying tables
@@ -120,13 +119,13 @@ with fauxrm.Database() as database:
 import datetime
 from profpy.db import fauxrm
 
-with fauxrm.Database() as pprd:
-    sortest = pprd.model("saturn", "sortest")
-    for record in sortest.find(sortest_pidm=123456):
-        record.sortest_activity_date = datetime.datetime.now()
-        record.sortest_test_score = "100"
+with fauxrm.Database() as database:
+    test_scores = database.model("owner", "test_score")
+    for record in test_scores.find(user_id=123456):
+        record.activity_date = datetime.datetime.now()
+        record.test_score = 100
         record.save()
-    pprd.commit()
+    database.commit()
 ```
 
 #### Query functions
