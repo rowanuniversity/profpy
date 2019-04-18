@@ -226,11 +226,11 @@ class Data(object):
             if get_data:
                 rows = results_to_objs(self._db.cursor, self, limit, get_row_objs=get_row_objects)
                 return rows
-        except cx_Oracle.IntegrityError:
-            raise cx_Oracle.IntegrityError("Key constraint violated.")
+        except cx_Oracle.IntegrityError as ie:
+            raise ie
 
-        except cx_Oracle.DatabaseError:
-            raise cx_Oracle.DatabaseError("Database error with following statement: {0}".format(sql))
+        except cx_Oracle.DatabaseError as dbe:
+            raise dbe
 
     def _fix_field_casing(self, data):
         """
@@ -266,10 +266,6 @@ class Data(object):
             in_kwargs = self._fix_field_casing(in_kwargs)
             if in_kwargs is None:
                 raise ValueError("Invalid field.")
-
-            validated_type_results = self.__validate_arg_types(in_kwargs)
-            if not validated_type_results["validity"]:
-                raise TypeError(validated_type_results["message"])
 
             params = {}
             for column, value in in_kwargs.items():
@@ -316,10 +312,6 @@ class Data(object):
             q = Query(**in_kwargs)
             sql = "{prefix} from {table} where {w}".format(prefix=sql_prefix, table=self.name, w=q.sql)
             params = q.params
-
-            validated_type_results = self.__validate_arg_types(q.original_values)
-            if not validated_type_results["validity"]:
-                raise TypeError(validated_type_results["message"])
 
         return {"sql": sql, "params": params}
 
@@ -425,83 +417,10 @@ class Data(object):
             if not any(field in self.columns for field in original_fields.keys()):
                 raise ValueError("Invalid field specified in query.")
 
-            # elif not self.__entered_required_fields(original_fields):
-            #     raise Exception("Missing required fields.")
-
             else:
 
-                validation = self.__validate_arg_types(query.original_values)
-                has_valid_args, message = validation["validity"], validation["message"]
-                if has_valid_args:
-                    return self._execute_sql(query.get_full_sql(self.name), get_data=True, params=query.params,
-                                             get_row_objects=True, limit=limit)
-                else:
-                    raise TypeError(message)
-
-    def __validate_arg_types(self, in_kwargs):
-        """
-        Checks to see if the user input valid argument types, based on the tables field definitions/mapping.
-        If a conflict is found, an appropriate error message is crafted and passed on to the method that is calling
-        this one, as well as a boolean flag.
-
-        :param in_kwargs: The arguments being tested
-        :return:          A dictionary containing two keys:
-                            "validity" -> was this a valid input based on the type from the database (bool)
-                            "message"  -> an error message detailing the specific type or nullablity conflict
-        """
-
-        keys = list(in_kwargs)
-        num_args = len(keys)
-        i = 0
-
-        # check if all required fields are present
-        has_valid_args = True
-        message = "" if has_valid_args else "Missing required fields."
-        while i < num_args and has_valid_args:
-            this_key = keys[i]
-            mapping = self.mapping[this_key.lower()]
-            accepted_type, is_nullable = mapping["type"], mapping["nullable"]
-
-            this_entry = in_kwargs[this_key]
-            values = [this_entry] if type(this_entry) not in (list, tuple, set) else this_entry
-            type_error_message = "Invalid type: '{0}' for field '{1}', {2} required but {3} was given."
-            for value in values:
-
-                msg = type_error_message.format(value, this_key, str(accepted_type), str(type(value)))
-
-                # null value was attempted for non-nullable field
-                if value is None and not is_nullable:
-                    message = "Invalid type for field '{0}', NULL values are not allowed for this field.".format(this_key)
-                    has_valid_args = False
-
-                # invalid type was found for this field
-                elif not isinstance(value, accepted_type) and value is not None:
-                    value_type = type(value)
-
-                    # check if a list or tuple of values was entered
-                    if value_type in (list, tuple, set) and len(value) > 0:
-
-                        # all values in this collection must be valid to proceed
-                        if not all(isinstance(this_value, accepted_type) or this_value is None for this_value in value):
-                            message = msg
-                            has_valid_args = False
-
-                    elif value_type is bytes and accepted_type is cx_Oracle.BLOB:
-                        pass
-
-                    elif value_type is str and accepted_type is cx_Oracle.CLOB:
-                        pass
-
-                    # value had the wrong type
-                    else:
-                        message = msg
-                        has_valid_args = False
-                i += 1
-
-        return {
-            "validity": has_valid_args,
-            "message": message
-        }
+                return self._execute_sql(query.get_full_sql(self.name), get_data=True, params=query.params,
+                                         get_row_objects=True, limit=limit)
 
     def __validate_input_key(self, key):
         """
@@ -643,7 +562,6 @@ class Table(Data):
         :param kwargs:  If data is not used, the caller can specify individual field-value pairs as keyword arguments
         :return:        The Record object that was saved to the table (Record)
         """
-
         use_this = kwargs
         if data is not None:
             use_this = data
@@ -668,7 +586,6 @@ class Table(Data):
         try:
 
             self._execute_sql(components["sql"], params=params)
-
             if self.has_key:
 
                 return_sql = self.__get_key_sql_and_params(params)
@@ -717,10 +634,14 @@ class Table(Data):
 
             # lock the record for update
             lock_sql = "select * from {0} where {1} for update".format(self.name, self.primary_key.sql_where_clause)
-            self._execute_sql(lock_sql, params=key_params)
 
-            # update the record
-            self._execute_sql(update_sql, params=params)
+            try:
+                self._execute_sql(lock_sql, params=key_params)
+
+                # update the record
+                self._execute_sql(update_sql, params=params)
+            except cx_Oracle.DatabaseError as dbe:
+                raise dbe
 
             # return the updated Record object back to the caller
             try:

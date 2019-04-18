@@ -30,6 +30,7 @@ TEST_BAND_MEMBERS = [
 db_handler = fauxrm.Database()
 phonebook_table = db_handler.model("rowan", "fauxrm_test_phonebook")
 band_member_table  = db_handler.model("rowan", "fauxrm_test_band_members")
+medical_table = db_handler.model("rowan", "fauxrm_test_medical")
 sortest = db_handler.model("saturn", "sortest")
 
 
@@ -258,36 +259,24 @@ class TestCRUD(unittest.TestCase):
 
     # can the handler correctly prevent invalid data types being entered into fields
     def test_mapping_types(self):
-        phonebook_table.delete_from()
+        medical_table.delete_from()
+        test_record = dict(first_name="Dennis", last_name="Nedry", visit_date=datetime.datetime.now())
+        medical_table.save(**test_record)
 
-        # try to insert a decimal value into a string field
+        # try to insert a string value into a numeric field
         caught = False
         try:
-            phonebook_table.save(first_name=223.13)
+            update = {**test_record, **dict(age="This is a string, not a number")}
+            medical_table.save(**update)
         except:
             caught = True
         self.assertTrue(caught)
 
-        # try to delete by specifying an invalid value for a string field
+        # try to insert a datetime into a float field
         caught = False
         try:
-            phonebook_table.delete_from(first_name=223.14)
-        except:
-            caught = True
-        self.assertTrue(caught)
-
-        # try to insert a datetime into a string field
-        caught = False
-        try:
-            phonebook_table.save(first_name=datetime.datetime.now())
-        except:
-            caught = True
-        self.assertTrue(caught)
-
-        # try to delete by specifying an invalid datetime on a string field
-        caught = False
-        try:
-            phonebook_table.delete_from(first_name=datetime.datetime.now())
+            update = {**test_record, **dict(weight=datetime.datetime.now())}
+            medical_table.save(**update)
         except:
             caught = True
         self.assertTrue(caught)
@@ -334,14 +323,6 @@ class TestCRUD(unittest.TestCase):
         caught = False
         try:
             phonebook_table.save(id=None)
-        except:
-            caught = True
-        self.assertTrue(caught)
-
-        # try to delete by specifying a null on a non-nullable field
-        caught = False
-        try:
-            phonebook_table.delete_from(id=None)
         except:
             caught = True
         self.assertTrue(caught)

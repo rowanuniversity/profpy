@@ -44,13 +44,12 @@ def get_connection_raw(login, password):
 
 if __name__ == "__main__":
 
-    path = "./test/ddls"
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ddls")
     connection = get_connection("full_login", "db_password")
     cursor = connection.cursor()
 
     ddls = list(filter(lambda file_name: re.match(re.compile(r"[a-zA-Z_1-9]+\.ddl\.sql$"), file_name),
                        os.listdir(path)))
-
     for file in ddls:
         with open(os.path.join(path, file), "r") as sql:
             statements = sql.read().split(";")

@@ -28,20 +28,7 @@ class Query(object):
         "like": "like"
     }
 
-    __TYPE_VALIDATION = {
-        ">": [str, int, float, datetime.datetime],
-        "<": [str, int, float, datetime.datetime],
-        ">=": [str, int, float, datetime.datetime],
-        "<=": [str, int, float, datetime.datetime],
-        "=": [object],
-        "<>": [object],
-        "trunc": [datetime.datetime],
-        "like": [str],
-        "in": [str, int, float, bool, object]
-    }
-
     __SQL_FUNCTIONS = ("trunc", )
-
     __QUERY_TYPE_ERROR_MSG = "Other object must be of type 'Query'."
     __SQL_PARSING_ERROR_MSG = "Sql Parsing Error"
 
@@ -555,10 +542,6 @@ class Query(object):
 
             # validate the types
             value_list = [value] if value_type not in COLLECTION_TYPES else value
-            valid_types = self.__TYPE_VALIDATION[operator]
-            for v in value_list:
-                if not any(isinstance(v, t) for t in valid_types) and v is not None:
-                    raise TypeError("Invalid type for '{0}'.".format(attribute))
 
             # special case for parsing a sql "in" statement
             if is_in_statement:
