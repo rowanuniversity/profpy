@@ -71,7 +71,7 @@ Example:
 ```python
 from profpy.db import fauxrm
 with fauxrm.Database() as database:
-    spvname = database.model("rowan", "spvname")
+    users = database.model(owner="owner", object_name="users")
 ```
 
 ---
@@ -95,15 +95,13 @@ Example:
 ```python
 from profpy.db import fauxrm
 
-sql = "select n.first_name as first_name, n.last_name as last_name, n.pidm as pidm, t.sortest_test_score as score " \
-      "from sortest t left join spvname n on t.sortest_pidm=n.pidm " \
-      "where t.sortest_pidm=:p_pidm"
+sql = "select first_name, last_name, user_id from admin.users where last_name like :p_last"
       
-params = {"p_pidm": 123456789}      
+params = {"p_last": "%ith"}      
 
 with fauxrm.Database() as database:
     for row in database.execute_query(sql, params=params):
-        print(row.pidm, row.first_name, row.last_name)
+        print(row.first_name, row.user_id)
 ```
 ---
 #### execute_function ( *owner, function_name, \*args* )
@@ -122,8 +120,13 @@ Example:
 from profpy.db import fauxrm
 
 with fauxrm.Database as database:
-    current_term_code = database.execute_function("rowan", "f_get_term_code")
-    last_term_code = database.execute_function("rowan", "f_get_term_code", -1)
+    
+    # say there is some function that returns the current term code for a college, with an optional offset parameter
+    # to go n-terms forward or backward
+    current_term_code = database.execute_function("owner", "get_term")
+    last_term_code = database.execute_function("owner", "get_term", -1)
+    next_term_code = database.execute_function("owner", "get_term", 1)
+    
 ```
 ---
 #### commit ( )
@@ -134,7 +137,7 @@ Example:
 from profpy.db import fauxrm
 
 with fauxrm.Database() as database:
-    phonebook = database.model("rowan", "phonebook")
+    phonebook = database.model("owner", "phonebook")
     phonebook.save(first_name="Dennis", last_name="Nedry", phone="555-555-5555") 
     database.commit()
 ```
@@ -149,19 +152,17 @@ Example:
 ```python
 from profpy.db import fauxrm
 
-# set all test scores associated with a list of banners to 100
+# set all test scores associated with a list of user ids to 100
 with fauxrm.Database() as database:
-    sortest = database.model("saturn", "sortest")
-    banners = [313123123, 4442342, 1231123, 5243243]
+    test_scores = database.model("owner", "test_scores")
+    user_ids = [313123123, 4442342, 1231123, 5243243]
     try:
-        for banner_id in banners:
-            pidm = database.execute_function("rowan", "id_to_pidm", banner_id)
-            for record in sortest.find(sortest_pidm=pidm):
-                record.sortest_test_score = "100"
+        for user_id in user_ids:
+            for record in test_scores.find(user_id=user_id):
+                record.test_score = 100
                 record.save()
 
         database.commit()
-    
     # error found, rollback
     except:
         database.rollback()

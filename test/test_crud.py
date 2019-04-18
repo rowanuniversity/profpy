@@ -184,7 +184,6 @@ class TestCRUD(unittest.TestCase):
             phonebook_table.save(first_name=name[0], last_name=name[1], phone=phone)
         self.assertEqual(phonebook_table.count, 5000)
 
-
     # can the handler access records using their primary keys correctly
     def test_get(self):
         test_id = create_new_phonebook_test_record(phonebook_table, clear_table=True)
@@ -330,32 +329,31 @@ class TestCRUD(unittest.TestCase):
 
 class TestDates(unittest.TestCase):
     """
-    The date testing will use the SORTEST table. Frequent test values/fields will include:
-
-        Fields:
-        sortest_tesc_code: a code corresponding with the test type
-        sortest_test_date: the date the test was taken
-        sortest_pidm: the student pidm id for this test record
-
-        Values (From database):
-        sortest_tesc_code: "S98"
-        sortest_test_date: October 18, 2005
-                           December 1, 2005
-                           January  4, 2010
-
+    The date testing will use the medical test table.
     """
 
     test_dates = [datetime.datetime.strptime('18-OCT-05', DATE_FMT),
                   datetime.datetime.strptime('01-DEC-05', DATE_FMT),
                   datetime.datetime.strptime('04-JAN-10', DATE_FMT)]
     single_test_date = datetime.datetime.strptime('18-OCT-05', DATE_FMT)
-    test_code = "S98"
+    test_value = dict(first_name="Dennis", last_name="Nedry", visit_date=single_test_date)
+    test_date_fmt = "%d-%b-%y"
 
     # can the handler find a record using a list of possible dates
     def test_find_date_in_collection(self):
-        manual_sql_result_count = 2020  # value grabbed from oracle db using old test scores that won't change
-        results = sortest.find(sortest_test_date___trunc=self.test_dates, sortest_tesc_code=self.test_code)
-        self.assertEqual(len(list(results)), manual_sql_result_count)
+
+        medical_table.delete_from()
+        medical_table.save(**self.test_value)
+
+        results = medical_table.find(visit_date=self.test_dates)
+        self.assertEqual(len(list(results)), 1)
+
+    # can the handlers handle date strings
+    def test_date_string(self):
+        medical_table.delete_from()
+        medical_table.save(**self.test_value)
+        results = medical_table.find_one(visit_date=self.single_test_date.strftime(self.test_date_fmt))
+        self.assertIsNotNone(results)
 
 
 class RandomGenerators(object):

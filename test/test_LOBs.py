@@ -1,4 +1,5 @@
 import unittest
+import datetime
 from profpy.db import fauxrm
 
 
@@ -38,7 +39,8 @@ class TestLOB(unittest.TestCase):
 
     def test_bad_clob_insert(self):
         try:
-            lobs.save(test_clob=2222)
+            # datetime object should trigger a fail
+            lobs.save(test_clob=datetime.datetime.now())
             caught = False
         except:
             caught = True

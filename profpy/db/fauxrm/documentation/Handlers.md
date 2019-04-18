@@ -10,9 +10,9 @@ Example:
 ```python
 from profpy.db import fauxrm
 
-with fauxrm.Database() as pprd:
-    spvname = pprd.model("rowan", "spvname")  # returns a View handler for the SPVNAME view
-    sortest = pprd.model("saturn", "sortest") # returns a Table handler for the SORTEST table
+with fauxrm.Database() as database:
+    users = database.model("owner", "users")  # returns a View handler for a users table
+    test_scores = database.model("owner", "test_scores") # returns a Table handler for a test score table
 ```
 
 ## Properties
@@ -77,13 +77,13 @@ Example:
 from profpy.db import fauxrm
 
 # print everyone's pidms
-with fauxrm.Database() as pprd:
-    spvname = pprd.model("rowan", "spvname")
-    for record in spvname.all():
+with fauxrm.Database() as database:
+    users = database.model("owner", "users")
+    for record in users.all():
     
         # records are of type Row, and therefore allow for direct access to field names as attributes of the object.
-        # "pidm" is a field name in the spvname view.
-        print(record.pidm)  
+        # user_id is a column in our hypothetical user table
+        record.user_id
 ```
 
 ---
@@ -106,15 +106,15 @@ Examples:
 from profpy.db import fauxrm
 
 # get all people named Dennis
-with fauxrm.Database() as pprd:
-    spvname = pprd.model("rowan", "spvname")
+with fauxrm.Database() as database:
+    users = database.model("owner", "users")
     
     # using keyword args
-    dennis_list = spvname.find(first_name="Dennis")
+    dennis_list = users.find(first_name="Dennis")
     
     # using raw dictionaries
-    dennis_list = spvname.find({"first_name": "Dennis"})
-    dennis_list = spvname.find(dict(first_name="Dennis")) 
+    dennis_list = users.find({"first_name": "Dennis"})
+    dennis_list = users.find(dict(first_name="Dennis")) 
 ```
 <br>
 
@@ -141,23 +141,24 @@ Currently supported operators/functions:
 from profpy.db import fauxrm
 
 # Find all names similar to a certain Jurassic Park character
-with fauxrm.Database() as pprd:
-    spvname = pprd.model("rowan", "spvname")
-    dennis_list = spvname.find(last_name___like="%edry", first_name___like="%ennis")
+with fauxrm.Database() as database:
+    users = database.model("park_admin", "users")
+    dennis_list = users.find(last_name___like="%edry", first_name___like="%ennis")
 ```
 
 ```python
 import datetime
 from profpy.db import fauxrm
 
-# Find all test scores from people named John from the last year
-with fauxrm.Database() as pprd:
+# Find all doctor's office visits by dates greater than a certain date
+with fauxrm.Database() as database:
     one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
-    spvname = pprd.model("rowan", "spvname")
-    sortest = pprd.model("saturn", "sortest")
+    office_visits = database.model("owner", "office_visits")
+
+    visits = office_visits.find(visit_date___gt=datetime.date(2019, 3, 1))
     
-    pidms = [record.pidm for record in spvname.find(first_name="John")]
-    scores = sortest.find(sortest_test_date___trunc___gt=one_year_ago, sortest_pidm___in=pidms)
+    # you can also use valid oracle date strings
+    visits = office_visits.find(visit_date___gt="01-MAR-19")
 ```
 
 ##### Using find method with Query Functions
@@ -168,14 +169,14 @@ from profpy.db import fauxrm
 from profpy.db.fauxrm import And, Or
 
 # Find all John Smiths or Jane Does
-with fauxrm.Database() as pprd:
+with fauxrm.Database() as database:
 
     john_smith_query = And(first_name="John", last_name="Smith")
     jane_doe_query = And(first_name="Jane", last_name="Doe")
     query = Or(john_smith_query, jane_doe_query)
     
-    spvname = pprd.model("rowan", "spvname")
-    people = spvname.find(query)
+    users = database.model("owner", "users")
+    people = users.find(query)
 ```
 
 ---
@@ -197,10 +198,9 @@ Example:
 from profpy.db import fauxrm
 
 # find Dennis Nedry
-with fauxrm.Database() as pprd:
-    spvname = pprd.model("rowan", "spvname")
-    dennis = spvname.find_one(first_name="Dennis", last_name="Nedry")
-    print(dennis.full_name)
+with fauxrm.Database() as database:
+    users = database.model("owner", "users")
+    dennis = users.find_one(first_name="Dennis", last_name="Nedry")
 ```
 
 ## Table Objects
@@ -228,12 +228,12 @@ Example:
 from profpy.db import fauxrm
 
 # delete all test scores for certain pidms
-with fauxrm.Database() as pprd:
-    sortest = pprd.model("saturn", "sortest")
-    pidms = [12345, 6789]
+with fauxrm.Database() as database:
+    test_scores = database.model("owner", "test_scores")
+    ids = [12345, 6789]
     
-    sortest.delete_from(sortest_pidm___in=pidms)
-    pprd.commit()
+    test_scores.delete_from(user_id___in=ids)
+    database.commit()
 ```
 ---
 #### get ( *key=None, \*\*kwargs* )
@@ -272,13 +272,12 @@ with fauxrm.Database() as database:
 import datetime
 from profpy.db import fauxrm
 
-with fauxrm.Database() as pprd:
-    sortest = pprd.model("saturn", "sortest")
+with fauxrm.Database() as database:
+    test_scores = database.model("owner", "test_scores")
     one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
     
-    # sortest has a composite key on sortest_test_date, sortest_pidm, and sortest_tesc_code
-    # None will be returned if nothing is found that the supplied key.
-    record = sortest.get(sortest_pidm=1234, sortest_test_date=one_year_ago, sortest_tesc_code="A")
+    # select a test score based on a composite key of user id, date, and test code
+    record = test_scores.get(user_id=1234, test_date=one_year_ago, test_code="A")
 ```
 ---
 #### save ( *data=None, \*\*kwargs* )
@@ -295,7 +294,7 @@ Parameters:
 Examples:
 
 ```python
-from python.db import fauxrm
+from profpy.db import fauxrm
 
 # say we have a phonebook table with a generated "id" column
 with fauxrm.Database() as database:
@@ -314,15 +313,15 @@ An alternative to the above is modifying the attributes of Row objects and calli
 
 Example:
 ```python
-from python.db import fauxrm
+from profpy.db import fauxrm
 
 # change every test score to 100 for people named Dennis Nedry
-with fauxrm.Database() as pprd:
+with fauxrm.Database() as database:
     
-    sortest = pprd.model("saturn", "sortest")
+    test_scores = database.model("owner", "test_scores")
     
-    for test_record in sortest.find(first_name="Dennis", last_name="Nedry"):
-        test_record.sortest_test_score = "100"
+    for test_record in test_scores.find(first_name="Dennis", last_name="Nedry"):
+        test_record.score = "100"
         test_record.save()
 ```
 

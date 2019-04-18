@@ -269,34 +269,13 @@ class Data(object):
 
             params = {}
             for column, value in in_kwargs.items():
-
-                this_mapping = self.mapping[column]
-                acceptable_type = this_mapping["type"]
-
-                # handle CLOBs and BLOBs
-                if column in self.lob_fields:
-                    value_type = type(value)
-                    if value_type is not str and acceptable_type is cx_Oracle.CLOB:
-                        raise Exception("Invalid insert/update on CLOB field '{0}'".format(column))
-                    elif value_type is not bytes and acceptable_type is cx_Oracle.BLOB:
-                        raise Exception("Invalid insert/update on BLOB field '{0}'".format(column))
-                    else:
-                        params[column] = value
-                else:
-                    params[column] = value
+                params[column] = value
 
             column_list = []
             params_list = []
             for column in in_kwargs.keys():
                 column_list.append(column)
                 param_list_sql = ":" + column
-                mapping = self.mapping[column]
-
-                if mapping["type"] is cx_Oracle.BLOB:
-                    param_list_sql = "to_blob(" + param_list_sql + ")"
-                elif mapping["type"] is cx_Oracle.CLOB:
-                    param_list_sql = "to_clob(" + param_list_sql + ")"
-
                 params_list.append(param_list_sql)
             column_list = ", ".join(column_list)
             params_list = ", ".join(params_list)
