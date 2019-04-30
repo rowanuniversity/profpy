@@ -7,6 +7,7 @@ Rowan University
 import random
 import datetime
 import unittest
+import cx_Oracle
 from profpy.db import fauxrm
 
 
@@ -39,8 +40,8 @@ def create_new_band_test_record(in_handler, clear_table=False):
         in_handler.delete_from()
 
     test_dict = TEST_BAND_MEMBERS[0]
-    in_handler.save(first_name=test_dict["first_name"], last_name=test_dict["last_name"],
-                    instrument=test_dict["instrument"], band_name=TEST_BAND)
+    in_handler.new(first_name=test_dict["first_name"], last_name=test_dict["last_name"],
+                   instrument=test_dict["instrument"], band_name=TEST_BAND).save()
     return dict(band_name=TEST_BAND, last_name=test_dict["last_name"], instrument=test_dict["instrument"])
 
 
@@ -55,8 +56,8 @@ def create_new_phonebook_test_record(in_handler, clear_table=False):
 
     if clear_table:
         in_handler.delete_from()
-
-    record = in_handler.save(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)
+    record = in_handler.new(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)
+    record.save()
     return record.key
 
 
@@ -158,7 +159,7 @@ class TestCRUD(unittest.TestCase):
     def test_insert_one(self):
         phonebook_table.delete_from()
         name, phone = RandomGenerators.get_random_name(), RandomGenerators.get_random_phone_number()
-        phonebook_table.save(first_name=name[0], last_name=name[1], phone=phone)
+        phonebook_table.new(first_name=name[0], last_name=name[1], phone=phone).save()
         self.assertEqual(phonebook_table.count, 1)
 
     # can the handler correctly identify a bad input keyword in a raw dictionary
@@ -168,9 +169,9 @@ class TestCRUD(unittest.TestCase):
         for insert in ({"zzzz": TEST_FIRST, "last_name": TEST_LAST}, dict(zzzz=TEST_FIRST, last_name=TEST_LAST)):
 
             try:
-                phonebook_table.save(insert)
+                phonebook_table.new(**insert).save()
                 results.append(False)
-            except ValueError:
+            except cx_Oracle.DatabaseError:
                 results.append(True)
 
         self.assertTrue(all(r is True for r in results))
@@ -181,7 +182,7 @@ class TestCRUD(unittest.TestCase):
         self.test_delete_from()
         for i in range(5000):
             name, phone = RandomGenerators.get_random_name(), RandomGenerators.get_random_phone_number()
-            phonebook_table.save(first_name=name[0], last_name=name[1], phone=phone)
+            phonebook_table.new(first_name=name[0], last_name=name[1], phone=phone).save()
         self.assertEqual(phonebook_table.count, 5000)
 
     # can the handler access records using their primary keys correctly
@@ -203,16 +204,15 @@ class TestCRUD(unittest.TestCase):
         old_version = phonebook_table.get(test_key)
 
         new_last_name = "Jones"
-        phonebook_table.save(id=old_version.id, last_name=new_last_name)
-        new_version = phonebook_table.get(test_key)
-
-        self.assertNotEqual(old_version.last_name, new_version.last_name)
-        self.assertEqual(new_version.last_name, new_last_name)
+        old_version.last_name = new_last_name
+        old_version.save()
+        self.assertEqual(old_version.last_name, new_last_name)
 
     # can the handler search on null values correctly
     def test_find_on_null_value(self):
         phonebook_table.delete_from()
-        phonebook_table.save(first_name=TEST_FIRST, last_name=TEST_LAST)  # phone number will be null
+        new_record = phonebook_table.new(first_name=TEST_FIRST, last_name=TEST_LAST) # phone number will be null
+        new_record.save()
         results = list(phonebook_table.find(phone=None))
         num_results = len(results)
 
@@ -230,28 +230,29 @@ class TestCRUD(unittest.TestCase):
 
         # kwargs
         try:
-            phonebook_table.save(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)
+            phonebook_table.new(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE).save()
         except:
             success_one = False
         self.assertTrue(success_one)
 
         # dict constructor
         try:
-            phonebook_table.save(data=dict(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE))
-        except:
+            phonebook_table.new(**dict(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)).save()
+        except Exception as e:
+            print(e)
             success_two = False
         self.assertTrue(success_two)
 
         # raw dict with matching case keys to the handler's fields
         try:
-            phonebook_table.save(data={"first_name": TEST_FIRST, "last_name": TEST_LAST, "phone": TEST_PHONE})
+            phonebook_table.new(**{"first_name": TEST_FIRST, "last_name": TEST_LAST, "phone": TEST_PHONE}).save()
         except:
             success_three = False
         self.assertTrue(success_three)
 
         # raw dict with upper cased keys that don't match the handler's fields (should still work)
         try:
-            phonebook_table.save(data={"FIRST_NAME": TEST_FIRST, "LAST_NAME": TEST_LAST, "PHONE": TEST_PHONE})
+            phonebook_table.new(**{"FIRST_NAME": TEST_FIRST, "LAST_NAME": TEST_LAST, "PHONE": TEST_PHONE}).save()
         except:
             success_four = False
         self.assertTrue(success_four)
@@ -260,13 +261,13 @@ class TestCRUD(unittest.TestCase):
     def test_mapping_types(self):
         medical_table.delete_from()
         test_record = dict(first_name="Dennis", last_name="Nedry", visit_date=datetime.datetime.now())
-        medical_table.save(**test_record)
+        test_record = medical_table.new(**test_record).save()
 
         # try to insert a string value into a numeric field
         caught = False
         try:
-            update = {**test_record, **dict(age="This is a string, not a number")}
-            medical_table.save(**update)
+            test_record.age = "this is a string"
+            test_record.save()
         except:
             caught = True
         self.assertTrue(caught)
@@ -274,44 +275,10 @@ class TestCRUD(unittest.TestCase):
         # try to insert a datetime into a float field
         caught = False
         try:
-            update = {**test_record, **dict(weight=datetime.datetime.now())}
-            medical_table.save(**update)
+            test_record.weight = datetime.datetime.now()
+            test_record.save()
         except:
             caught = True
-        self.assertTrue(caught)
-
-    # can the Record class correctly prevent incorrect value types from being entered as attributes
-    def test_mapping_types_in_place(self):
-        test_id = create_new_phonebook_test_record(phonebook_table, clear_table=True)
-        record = phonebook_table.get(key=test_id)
-
-        # the first name field should only allow strings
-        caught = False
-        try:
-            record.first_name = "New First Name"
-        except:
-            caught = True
-        self.assertFalse(caught)
-
-        caught = False
-        try:
-            record.first_name = 44.4
-        except:
-            caught = True
-        self.assertTrue(caught)
-
-    # can the Record class correctly prevent non-nullable fields from being set to null
-    def test_mapping_nulls_in_place(self):
-        test_id = create_new_phonebook_test_record(phonebook_table, clear_table=True)
-        record = phonebook_table.get(key=test_id)
-
-        # the id field is non-nullable
-        caught = False
-        try:
-            record.id = None
-        except:
-            caught = True
-
         self.assertTrue(caught)
 
     # can the handler correctly prevent null values from being inserted into non-nullable fields
@@ -321,7 +288,8 @@ class TestCRUD(unittest.TestCase):
         # try to insert a null on a non-nullable field
         caught = False
         try:
-            phonebook_table.save(id=None)
+            x = phonebook_table.new(id=None)
+            x.save()
         except:
             caught = True
         self.assertTrue(caught)
@@ -343,7 +311,7 @@ class TestDates(unittest.TestCase):
     def test_find_date_in_collection(self):
 
         medical_table.delete_from()
-        medical_table.save(**self.test_value)
+        medical_table.new(**self.test_value).save()
 
         results = medical_table.find(visit_date=self.test_dates)
         self.assertEqual(len(list(results)), 1)
@@ -351,7 +319,7 @@ class TestDates(unittest.TestCase):
     # can the handlers handle date strings
     def test_date_string(self):
         medical_table.delete_from()
-        medical_table.save(**self.test_value)
+        medical_table.new(**self.test_value).save()
         results = medical_table.find_one(visit_date=self.single_test_date.strftime(self.test_date_fmt))
         self.assertIsNotNone(results)
 

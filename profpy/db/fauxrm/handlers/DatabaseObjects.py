@@ -1,5 +1,6 @@
 import datetime
 import cx_Oracle
+from .Row import Row, SpecialValue, GeneratedValue, UnsetValue, BlankValue
 from .KeyHandler import PrimaryKey
 from .utils import results_to_objs, validate_params
 from ..queries import Query
@@ -179,7 +180,7 @@ class Data(object):
         :param limit:           A limit on the number of records returned (int)
         :param get_row_objects: Whether or not to return Row objects, as opposed to dicts (bool)
         :param kwargs:          Fields to search on, i.e. first_name="Joe" (used instead of "data" arg)
-        :return:                A result set from the database (list of Result objects)
+        :return:                A result set from the database (list of Row objects)
         """
 
         if data is None and len(kwargs) == 0:
@@ -243,7 +244,7 @@ class Data(object):
         cleaned_data = {}
         bad_data = False
         for key, value in data.items():
-            new_key = self.__validate_input_key(key)
+            new_key = self._validate_input_key(key)
 
             if new_key is None:
                 bad_data = True
@@ -253,7 +254,7 @@ class Data(object):
 
         return None if bad_data else cleaned_data
 
-    def _prepare_kwargs(self, in_kwargs, sql_prefix, is_change=False):
+    def _prepare_kwargs(self, in_kwargs, sql_prefix, is_change=False, primary_key=None):
         """
         Converts kwargs inputs to sql and packages it with a corresponding parameter dictionary
         :param in_kwargs:   user-input kwargs
@@ -282,10 +283,12 @@ class Data(object):
 
             # parse parameterized query ex) "INSERT INTO OWNER.TABLE (NAME, ADDRESS) VALUES (:NAME, :ADDRESS)"
             sql = "insert into {0} ({1}) values ({2})".format(self.name, column_list, params_list)
+            if primary_key:
+                params["out_key_string"] = self._db.cursor.var(cx_Oracle.STRING)
+                sql += " " + primary_key.key_return
 
         else:
             if any(self.mapping[k.split("___")[0]]["type"] in [cx_Oracle.BLOB, cx_Oracle.CLOB] for k in list(in_kwargs.keys())):
-
                 raise Exception("Cannot query on LOB fields.")
 
             q = Query(**in_kwargs)
@@ -293,6 +296,24 @@ class Data(object):
             params = q.params
 
         return {"sql": sql, "params": params}
+
+    def _validate_input_key(self, key):
+        """
+        Checks to see if a column name exists in the table, in the provided form or in a similar form (capitalized or
+        in lowercase form). The correct version is returned.
+        :param key: An input column name, often from a dictionary key
+        :return: The corrected column name, or None if the column name does not exist in the table
+        """
+
+        if key in self.columns:
+            return key
+        elif key.upper() in self.columns:
+            return key.upper()
+
+        elif key.lower() in self.columns:
+            return key.lower()
+        else:
+            return None
 
     ####################################################################################################################
     # PRIVATE METHODS
@@ -400,24 +421,6 @@ class Data(object):
 
                 return self._execute_sql(query.get_full_sql(self.name), get_data=True, params=query.params,
                                          get_row_objects=True, limit=limit)
-
-    def __validate_input_key(self, key):
-        """
-        Checks to see if a column name exists in the table, in the provided form or in a similar form (capitalized or
-        in lowercase form). The correct version is returned.
-        :param key: An input column name, often from a dictionary key
-        :return: The corrected column name, or None if the column name does not exist in the table
-        """
-
-        if key in self.columns:
-            return key
-        elif key.upper() in self.columns:
-            return key.upper()
-
-        elif key.lower() in self.columns:
-            return key.lower()
-        else:
-            return None
 
 
 class Table(Data):
@@ -534,16 +537,52 @@ class Table(Data):
                     else:
                         return results[0]
 
-    def save(self, data=None, **kwargs):
+    def new(self, **kwargs):
         """
-        Inserts or updates a record, depending on if a primary key is given
-        :param data     A Record in the form of a dictionary object (dict)
-        :param kwargs:  If data is not used, the caller can specify individual field-value pairs as keyword arguments
-        :return:        The Record object that was saved to the table (Record)
+        The driving function for fauxrm's handlers. The "new" method allows us to create new records and modify them
+        as python objects.
+        :param kwargs: Any field-value pairs to be modified at object instantiation (dict)
+        :return:       The object                                                   (profpy.db.fauxrm.Row)
         """
-        use_this = kwargs
-        if data is not None:
-            use_this = data
+        new_data = {}
+        used_cols = []
+        for col, value in kwargs.items():
+            clean_col = self._validate_input_key(col)
+            if clean_col:
+                if clean_col in self.generated_fields:
+                    new_data[clean_col] = GeneratedValue(self.owner, self.table_name, col, self.mapping[col]["type"], value)
+                else:
+                    new_data[clean_col] = value
+                used_cols.append(clean_col)
+            else:
+                raise cx_Oracle.DatabaseError("Invalid Column Name")
+        for col in self.columns:
+            if col in self.generated_fields:
+                if col not in used_cols:
+                    new_data[col] = GeneratedValue(self.owner, self.table_name, col, self.mapping[col]["type"])
+            elif col not in used_cols:
+                new_data[col] = UnsetValue(self.owner, self.table_name, col, self.mapping[col]["type"])
+        return Row(new_data, self)
+
+    def persist_to_database(self, **kwargs):
+        """
+        Persists data to the database
+        :param kwargs:  individual field-value pairs as keyword arguments (dict)
+        :return:        The Record object that was saved to the table     (profpy.db.fauxrm.Row)
+        """
+        use_this = {}
+        for key, value in kwargs.items():
+
+            if isinstance(value, SpecialValue):
+                if isinstance(value, GeneratedValue):
+                    if isinstance(value.value, BlankValue):
+                        pass
+                    else:
+                        use_this[key] = value.value
+                else:
+                    use_this[key] = None
+            else:
+                use_this[key] = value
 
         if self.__pk_in_kwargs(use_this):
             if self.__record_exists_in_table(use_this):
@@ -556,14 +595,16 @@ class Table(Data):
 
     def __insert(self, **kwargs):
         """
-        Inserts a row of values into the table associated with this TableHandler instance using parameterized sql
+        Inserts a row of values into the table associated with this handler instance using parameterized sql
         :param values: The values to be inserted (dict)
         :return:
         """
-        components = self._prepare_kwargs(kwargs, sql_prefix=None, is_change=True)
+        components = self._prepare_kwargs(kwargs, sql_prefix=None, is_change=True, primary_key=self.primary_key)
         params = components["params"]
         try:
-
+            no_data_msg = "No new data input."
+            if len(params) == 0:
+                raise Exception(no_data_msg)
             self._execute_sql(components["sql"], params=params)
             if self.has_key:
 
@@ -588,7 +629,6 @@ class Table(Data):
     def __update(self, **kwargs):
         """
         Updates a record at the given primary key
-        :param primary_key: The key corresponding with record to update
         :param kwargs:      Keyword arguments corresponding to field value updates, e.g. last_name="Smith"
         :return:
         """
@@ -596,26 +636,21 @@ class Table(Data):
             raise Exception(self.__PK_ERROR_MSG)
         else:
 
-            params = self._prepare_kwargs(kwargs, "", is_change=True)["params"]
+            params = self._prepare_kwargs(kwargs, "", is_change=True, primary_key=self.primary_key)["params"]
             update_sql = "update {table} set ".format(table=self.name)
 
             keys = params.keys()
             param_sql = []
             for i, param in enumerate(keys):
-                if param not in self.primary_key.columns:
+                if param not in self.primary_key.columns and param != "out_key_string":
                     param_sql.append("{param}=:{param}".format(param=param))
             param_sql = ", ".join(param_sql)
-
-            update_sql += param_sql + " where " + self.primary_key.sql_where_clause
-            return_sql_code_and_params = self.__get_key_sql_and_params(params)
-            key_params = return_sql_code_and_params["params"]
-            return_sql = return_sql_code_and_params["sql"]
-
-            # lock the record for update
-            lock_sql = "select * from {0} where {1} for update".format(self.name, self.primary_key.sql_where_clause)
-
+            update_sql += param_sql + " where " + self.primary_key.sql_where_clause + " " + self.primary_key.key_return
             try:
-                self._execute_sql(lock_sql, params=key_params)
+
+                # lock the record for update
+                lock_sql_and_params = self.__get_lock_sql_and_params(params)
+                self._execute_sql(lock_sql_and_params["sql"], params=lock_sql_and_params["params"])
 
                 # update the record
                 self._execute_sql(update_sql, params=params)
@@ -624,9 +659,24 @@ class Table(Data):
 
             # return the updated Record object back to the caller
             try:
+                return_sql_code_and_params = self.__get_key_sql_and_params(params)
+                key_params = return_sql_code_and_params["params"]
+                return_sql = return_sql_code_and_params["sql"]
                 return self._execute_sql(return_sql, params=key_params, get_data=True, get_row_objects=True)[0]
             except IndexError:
                 return
+
+    def __get_lock_sql_and_params(self, update_parameters):
+        """
+        Parses sql to lock a record for updating
+        :param update_parameters: The parameters to select the record        (dict)
+        :return:                  The sql and parameters to lock the record  (dict)
+        """
+        lock_params = {}
+        for col in self.primary_key.columns:
+            lock_params[col] = update_parameters[col]
+        lock_sql = "select * from {0} where {1} for update".format(self.name, self.primary_key.sql_where_clause)
+        return dict(sql=lock_sql, params=lock_params)
 
     def __record_exists_in_table(self, in_args):
         """
@@ -657,42 +707,23 @@ class Table(Data):
         :param in_kwargs: The input keywords (dict)
         :return:          Whether or not the primary key is present (boolean)
         """
-
-        if self.primary_key:
-            return all(f in in_kwargs.keys() for f in self.primary_key.columns)
-        else:
-            return False
+        return self.primary_key and all(f in in_kwargs.keys() for f in self.primary_key.columns)
 
     def __get_key_sql_and_params(self, parameters):
         """
-        Used to parse sql and params to find newly created table entries.
-        :param parameters:  Parameters that were used to create the table entry
-        :return:            A dictionary containing sql to retrieve the new entry and the parameters for the query
+        Parses sql for grabbing a newly created record after database persistence
+        :param parameters: The parameters used to create the record
+        :return:           The sql for grabbing the new record, as well as the params for the key fields
         """
-
-        key_params = {}
-        gen_field_sql = None
-        if len(self.generated_fields) > 0:
-            gen_field_statements = []
-            for gf in self.generated_fields:
-
-                sql = "select max({field}) as gen_col from {table}".format(field=gf, table=self.name)
-                value = self._execute_sql(sql, get_data=True, limit=1)[0]["gen_col"]
-                key_params[gf] = value
-                gen_field_statements.append("{field}=:{field}".format(field=gf))
-
-            gen_field_sql = " and ".join(gen_field_statements)
-
-        sql = "select * from {table} where ".format(table=self.name) + self.primary_key.sql_where_clause
-        if gen_field_sql and (gen_field_sql != self.primary_key.sql_where_clause):
-            sql += " and " + gen_field_sql
-
-        for field in self.primary_key.columns:
-
-            # if the field was not already handled by the generated key check above, deal with it here
-            if field not in key_params.keys():
-                key_params[field] = parameters[field]
-        return {"sql": sql, "params": key_params}
+        out_keys = parameters["out_key_string"].getvalue().split(",")
+        sql = "select * from {0} where ".format(self.name)
+        out_params = {}
+        for i, kf in enumerate(self.primary_key.columns):
+            if i >= 1:
+                sql += " and "
+            sql += "{0}=:p_{0}".format(kf)
+            out_params["p_{0}".format(kf)] = out_keys[i]
+        return dict(sql=sql, params=out_params)
 
     def __get_primary_key_object(self):
         """

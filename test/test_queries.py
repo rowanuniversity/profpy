@@ -30,8 +30,10 @@ def create_new_medical_test_record(in_handler, clear_table=False):
 
     if clear_table:
         in_handler.delete_from()
-    return in_handler.save(first_name=TEST_FIRST, last_name=TEST_LAST, age=TEST_AGE, weight=TEST_WEIGHT,
-                           visit_date=TEST_DATE)
+    obj = in_handler.new(first_name=TEST_FIRST, last_name=TEST_LAST, age=TEST_AGE, weight=TEST_WEIGHT,
+                         visit_date=TEST_DATE)
+    obj.save()
+    return obj
 
 
 class TestQueryObjects(unittest.TestCase):

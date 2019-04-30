@@ -19,12 +19,10 @@ class Database(object):
         """
 
         self.__connection   = get_connection(user_var, password_var)
-        self.cursor         = self.__connection.cursor()  # a private cursor for internal sql calls
+        self.cursor         = self.__connection.cursor()  # a cursor for internal sql calls
         self.user           = self.__get_current_user()
         self.tables         = {}
         self.views          = {}
-        self.lobs           = []
-
 
     ####################################################################################################################
     # OVERRIDES
@@ -45,9 +43,6 @@ class Database(object):
         """
         self.close()
     ####################################################################################################################
-
-    def clear_lobs(self):
-        self.lobs.clear()
 
     def model(self, owner, object_name):
         """
@@ -185,8 +180,6 @@ class Database(object):
         :return:
         """
         try:
-            self.clear_lobs()
-            self.lobs = None
             self.rollback()
             self.cursor.close()
             self.cursor = None

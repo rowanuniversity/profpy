@@ -49,10 +49,6 @@ class Row(object):
             if isinstance(value, cx_Oracle.LOB):
                 self.__data[field] = value.read()
 
-        if handler.has_key:
-            for field in handler.primary_key.columns:
-                self.__key[field] = self.__data[field]
-
     ####################################################################################################################
     # OVERRIDES
     def __eq__(self, other):
@@ -147,7 +143,11 @@ class Row(object):
         """
         :return: The value of this Row's primary key (dict)
         """
-        return self.__key
+        key = {}
+        if self.__handler and self.__handler.has_key:
+            for col in self.__handler.primary_key.columns:
+                key[col] = self.__data[col]
+        return key
 
     ####################################################################################################################
     # PUBLIC METHODS
@@ -157,14 +157,14 @@ class Row(object):
         :return:
         """
         if self.__handler is None:
-            raise AttributeError("Cannot save this record to the database.")
+            raise AttributeError("Table handler no longer exists, can not persist to database.")
         else:
 
             if self.__handler.is_table:
                 if not self.__handler.has_key:
                     raise Exception("Cannot perform 'update' operation without primary key.")
-                self.__handler.save(**self.__data)
-                new_object = self.__handler.get(self.key)
+
+                new_object = self.__handler.persist_to_database(**self.__data)
                 if self.__state_changed():
                     self.__handler.delete_from(**self.__original_values)
                 self.__dict__.update(new_object.__dict__)
@@ -220,13 +220,52 @@ class Row(object):
 
     def __set_data(self, field, value):
         """
-        Sets the value of a field to the input value parameter after validation
+        Sets the value of a field to the input value parameter
         :param field:  The field to be set (str)
         :param value:  The input value (obj)
         :return:
         """
-        validity = self.__is_valid_type(field, value)
-        if validity["valid"]:
-            self.__data[field] = value
-        else:
-            raise TypeError(validity["message"])
+        self.__data[field] = value
+
+
+class ColumnValue(object):
+    """
+    Abstracted code for housing data for a row
+    """
+    def __init__(self, owner_name, table_name, column_name):
+        self._owner  = owner_name
+        self._table  = table_name
+        self._column = column_name
+
+
+class SpecialValue(ColumnValue):
+    """
+    Helper class for special database column values prior to saving. This is mainly used as a placeholder for
+    generated columns prior to database persistence.
+    """
+    def __init__(self, owner_name, table_name, column_name, expected_type, category):
+        super().__init__(owner_name, table_name, column_name)
+        self.__expected_type = expected_type
+        self._category = category
+
+    def __repr__(self):
+        return "{0} ({1})".format(self._category, self.__expected_type)
+
+
+class BlankValue(object):
+    pass
+
+
+class GeneratedValue(SpecialValue):
+    def __init__(self, owner_name, table_name, column_name, expected_type, value=BlankValue()):
+        super().__init__(owner_name, table_name, column_name, expected_type, "generated")
+        self.value = value
+
+
+class UnsetValue(SpecialValue):
+    def __init__(self, owner_name, table_name, column_name, expected_type, value=None):
+        super().__init__(owner_name, table_name, column_name, expected_type, "null")
+        self.value = value
+
+
+
