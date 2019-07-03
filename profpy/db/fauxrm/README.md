@@ -15,6 +15,7 @@ Note: The [Oracle Instant Client](http://www.oracle.com/technetwork/database/dat
 will need to be installed.<br><br><br>
 
 # Quick Start
+For a quick reference on using this tool to develop Flask applications, see [this documentation](./documentation/flask.md). However, it is recommended that you read this page first. 
 ## Basic Functionality
 #### Connecting to the database
 ```python
@@ -88,6 +89,41 @@ def demo(database):
     # grab all the primary key values for the resulting rows
     for sat_score in test_scores.find(test_code="SAT"):
         keys.append(sat_score.key)
+```
+
+#### Using the with_model decorator
+The fauxrm module also supports a with_model decorator that could be useful in streamlining code.
+```python
+from profpy.db.fauxrm import with_model, Database
+
+database = Database()
+
+@with_model(database, owner_name="table_owner", object_name="phonebook")
+def get_phone_number(phonebook, name):
+    return phonebook.find(name=name)
+    
+if __name__ == "__main__":
+    get_phone_number("Dennis Nedry")
+    database.close()
+
+```
+
+You can string them together to use multiple models in one function:
+```python
+from profpy.db.fauxrm import with_model, Database
+
+database = Database()
+
+@with_model(database, owner_name="table_owner", object_name="phonebook")
+@with_model(database, owner_name="table_owner", object_name="addresses")
+def get_user_info(addresses, phonebook, name):
+    phone_info = phonebook.find(name=name)
+    address_info = addresses.find(name=name)
+    return dict(addresses=address_info, phones=phone_info)
+    
+if __name__ == "__main__":
+    get_user_info("Dennis Nedry")
+    database.close()
 ```
 
 #### Modifying tables

@@ -9,7 +9,11 @@ short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9_]*@[a-zA-Z_]+$")
 def get_connection(login_var, password_var):
 
     if not all(variable in os.environ for variable in (login_var, password_var)):
-        raise Exception("Missing environment variables: '{0}', '{1}'".format(login_var, password_var))
+        raise Exception(
+            "Missing environment variables: '{0}', '{1}'".format(
+                login_var, password_var
+            )
+        )
     else:
         return _get_connection_raw(os.environ[login_var], os.environ[password_var])
 
@@ -21,7 +25,7 @@ def _get_connection_raw(login, password):
     # user@sid
     if re.match(short_form_regex, login):
         user = login_parts[0]
-        dsn  = login_parts[1].replace("//", "")
+        dsn = login_parts[1].replace("//", "")
 
     # user@//host:port/service_name
     else:
@@ -49,7 +53,9 @@ def _cleanup_connection(in_connection):
         in_connection.close()
 
 
-def with_oracle_connection(login_var="full_login", password_var="db_password", auto_commit=False):
+def with_oracle_connection(
+    login_var="full_login", password_var="db_password", auto_commit=False
+):
     """
     Decorator that feeds a cx_Oracle connection to the wrapped function
     :param login_var:    The env. variable containing the login string (str), defaults to "full_login"
@@ -65,6 +71,7 @@ def with_oracle_connection(login_var="full_login", password_var="db_password", a
         cursor = connection.cursor()
         # other code
     """
+
     def with_connection_(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
@@ -84,5 +91,7 @@ def with_oracle_connection(login_var="full_login", password_var="db_password", a
                 if exception:
                     raise exception
             return result
+
         return wrapper
+
     return with_connection_
