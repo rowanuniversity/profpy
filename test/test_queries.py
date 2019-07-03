@@ -29,9 +29,14 @@ def create_new_medical_test_record(in_handler, clear_table=False):
     """
 
     if clear_table:
-        in_handler.delete_from()
-    obj = in_handler.new(first_name=TEST_FIRST, last_name=TEST_LAST, age=TEST_AGE, weight=TEST_WEIGHT,
-                         visit_date=TEST_DATE)
+        in_handler.delete_where()
+    obj = in_handler.new(
+        first_name=TEST_FIRST,
+        last_name=TEST_LAST,
+        age=TEST_AGE,
+        weight=TEST_WEIGHT,
+        visit_date=TEST_DATE,
+    )
     obj.save()
     return obj
 
@@ -73,16 +78,10 @@ class TestQueryObjects(unittest.TestCase):
         record = create_new_medical_test_record(medical, clear_table=True)
 
         # and
-        and_ = Query(
-            first_name=TEST_FIRST,
-            last_name=TEST_LAST
-        )
+        and_ = Query(first_name=TEST_FIRST, last_name=TEST_LAST)
 
         # or
-        or_ = Query(
-            first_name=TEST_FIRST,
-            last_name="zzzz",
-        )
+        or_ = Query(first_name=TEST_FIRST, last_name="zzzz")
 
         and_result = medical.find_one(and_)
         or_result = medical.find_one(or_)
@@ -92,7 +91,9 @@ class TestQueryObjects(unittest.TestCase):
     def test_and(self):
 
         record = create_new_medical_test_record(medical, clear_table=True)
-        and_ = medical.find_one(And(first_name=TEST_FIRST, last_name=TEST_LAST, visit_date=TEST_DATE))
+        and_ = medical.find_one(
+            And(first_name=TEST_FIRST, last_name=TEST_LAST, visit_date=TEST_DATE)
+        )
         bad = medical.find_one(And(first_name=TEST_FIRST, last_name="x"))
 
         self.assertEqual(record, and_)
@@ -141,21 +142,12 @@ class TestQueryObjects(unittest.TestCase):
 
         record = create_new_medical_test_record(medical, clear_table=True)
         statement_1 = And(first_name=TEST_FIRST, last_name=TEST_LAST)  # True
-        statement_2 = And(first_name=TEST_FIRST, last_name="x")        # False
-        statement_3 = Or(first_name=TEST_FIRST, last_name="x")         # True
-        statement_4 = Or(first_name="x", last_name___like="x%")                # False
+        statement_2 = And(first_name=TEST_FIRST, last_name="x")  # False
+        statement_3 = Or(first_name=TEST_FIRST, last_name="x")  # True
+        statement_4 = Or(first_name="x", last_name___like="x%")  # False
 
         # should give us our test record
-        q = And(
-            Or(
-                statement_1,
-                statement_2
-            ),
-            Or(
-                statement_3,
-                statement_4
-            )
-        )
+        q = And(Or(statement_1, statement_2), Or(statement_3, statement_4))
 
         result = medical.find_one(q)
         self.assertEqual(record, result)
@@ -163,54 +155,39 @@ class TestQueryObjects(unittest.TestCase):
     def test_deeply_nested_query(self):
 
         record = create_new_medical_test_record(medical, clear_table=True)
-        statement_1 = And(first_name=TEST_FIRST, last_name=TEST_LAST)                        # True
-        statement_2 = And(first_name=TEST_FIRST, last_name="x")                              # False
-        statement_3 = And(first_name=TEST_FIRST, last_name=TEST_LAST, visit_date=TEST_DATE)  # True
+        statement_1 = And(first_name=TEST_FIRST, last_name=TEST_LAST)  # True
+        statement_2 = And(first_name=TEST_FIRST, last_name="x")  # False
+        statement_3 = And(
+            first_name=TEST_FIRST, last_name=TEST_LAST, visit_date=TEST_DATE
+        )  # True
 
         q = Or(
+            Or(
                 Or(
                     Or(
-                        Or(
-                            Or(
-                                And(
-                                        statement_1,
-                                        statement_3
-                                    ),
-                                statement_1,
-                                statement_2
-                            ),
-                            statement_2
-                        ),
-                        statement_2
+                        Or(And(statement_1, statement_3), statement_1, statement_2),
+                        statement_2,
                     ),
-                    statement_2
+                    statement_2,
                 ),
-                statement_2
+                statement_2,
+            ),
+            statement_2,
         )
         self.assertEqual(record, medical.find_one(q))
 
         q = And(
             And(
-                And(
-                    And(
-                        And(
-                            statement_1,
-                            statement_3
-                        ),
-                        statement_1
-                    ),
-                    statement_1
-                ),
-                statement_1
+                And(And(And(statement_1, statement_3), statement_1), statement_1),
+                statement_1,
             ),
-            statement_1
+            statement_1,
         )
 
         self.assertEqual(record, medical.find_one(q))
 
 
 class TestOperators(unittest.TestCase):
-
     def test_gt(self):
 
         record = create_new_medical_test_record(medical, clear_table=True)
@@ -315,7 +292,9 @@ class TestOperators(unittest.TestCase):
     def test_trunc_date(self):
 
         record = create_new_medical_test_record(medical, clear_table=True)
-        truncated_datetime = datetime.datetime.strptime(TEST_DATE.strftime("%Y-%m-%d"), "%Y-%m-%d")
+        truncated_datetime = datetime.datetime.strptime(
+            TEST_DATE.strftime("%Y-%m-%d"), "%Y-%m-%d"
+        )
 
         good_1 = medical.find_one(visit_date=TEST_DATE)
         good_2 = medical.find_one(visit_date___trunc=truncated_datetime)

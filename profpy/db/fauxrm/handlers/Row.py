@@ -30,7 +30,13 @@ class Row(object):
     __KEY_ATTR = "key"
     __MAPPING_TYPE_KEY = "type"
     __MAPPING_NULLABLE_KEY = "nullable"
-    __RESERVED_ATTRS = ("_Row__data", "_Row__mapping", "_Row__key", "_Row__handler", "_Row__original_values")
+    __RESERVED_ATTRS = (
+        "_Row__data",
+        "_Row__mapping",
+        "_Row__key",
+        "_Row__handler",
+        "_Row__original_values",
+    )
 
     def __init__(self, data, handler):
         """
@@ -128,6 +134,7 @@ class Row(object):
 
     def __repr__(self):
         return str(self.data)
+
     ####################################################################################################################
     # PROPERTIES
 
@@ -157,16 +164,20 @@ class Row(object):
         :return:
         """
         if self.__handler is None:
-            raise AttributeError("Table handler no longer exists, can not persist to database.")
+            raise AttributeError(
+                "Table handler no longer exists, can not persist to database."
+            )
         else:
 
             if self.__handler.is_table:
                 if not self.__handler.has_key:
-                    raise Exception("Cannot perform 'update' operation without primary key.")
+                    raise Exception(
+                        "Cannot perform 'update' operation without primary key."
+                    )
 
                 new_object = self.__handler.persist_to_database(**self.__data)
                 if self.__state_changed():
-                    self.__handler.delete_from(**self.__original_values)
+                    self.__handler.delete_where(**self.__original_values)
                 self.__dict__.update(new_object.__dict__)
             else:
                 raise Exception("Can only perform 'save' on a record in a table.")
@@ -177,7 +188,9 @@ class Row(object):
         """
         :return: Whether or not the original values from this row have been altered (bool)
         """
-        return any(self.__original_values[key] != self.__data[key] for key in self.__data)
+        return any(
+            self.__original_values[key] != self.__data[key] for key in self.__data
+        )
 
     def __is_valid_type(self, field, value):
         """
@@ -201,7 +214,10 @@ class Row(object):
             null_valid = value is not None
 
         valid_types = in_type == required_type
-        if in_type in (bytes, str) and required_type in (cx_Oracle.CLOB, cx_Oracle.BLOB):
+        if in_type in (bytes, str) and required_type in (
+            cx_Oracle.CLOB,
+            cx_Oracle.BLOB,
+        ):
             valid_types = True
 
         if is_nullable and value is None:
@@ -215,8 +231,7 @@ class Row(object):
         else:
             message = ""
 
-        return {"valid": valid_types and null_valid,
-                "message": message}
+        return {"valid": valid_types and null_valid, "message": message}
 
     def __set_data(self, field, value):
         """
@@ -232,9 +247,10 @@ class ColumnValue(object):
     """
     Abstracted code for housing data for a row
     """
+
     def __init__(self, owner_name, table_name, column_name):
-        self._owner  = owner_name
-        self._table  = table_name
+        self._owner = owner_name
+        self._table = table_name
         self._column = column_name
 
 
@@ -243,6 +259,7 @@ class SpecialValue(ColumnValue):
     Helper class for special database column values prior to saving. This is mainly used as a placeholder for
     generated columns prior to database persistence.
     """
+
     def __init__(self, owner_name, table_name, column_name, expected_type, category):
         super().__init__(owner_name, table_name, column_name)
         self.__expected_type = expected_type
@@ -257,8 +274,12 @@ class BlankValue(object):
 
 
 class GeneratedValue(SpecialValue):
-    def __init__(self, owner_name, table_name, column_name, expected_type, value=BlankValue()):
-        super().__init__(owner_name, table_name, column_name, expected_type, "generated")
+    def __init__(
+        self, owner_name, table_name, column_name, expected_type, value=BlankValue()
+    ):
+        super().__init__(
+            owner_name, table_name, column_name, expected_type, "generated"
+        )
         self.value = value
 
 
@@ -266,6 +287,3 @@ class UnsetValue(SpecialValue):
     def __init__(self, owner_name, table_name, column_name, expected_type, value=None):
         super().__init__(owner_name, table_name, column_name, expected_type, "null")
         self.value = value
-
-
-

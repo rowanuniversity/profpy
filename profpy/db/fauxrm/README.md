@@ -126,6 +126,9 @@ if __name__ == "__main__":
     database.close()
 ```
 
+#### Querying with Other SQL Operators
+The [technical docs](./documentation/Handlers.md#find--datanone-limitnone-rawfalse-kwargs-) for the find method have examples using other sql operators such as LIKE and IN. 
+
 #### Modifying tables
 
 *Saving*
@@ -147,7 +150,7 @@ from profpy.db.fauxrm import with_fauxrm
 @with_fauxrm()
 def demo(database):
    phonebook = database.model("owner", "phonebook")
-   phonebook.delete_from(first_name="Dennis")
+   phonebook.delete_where(first_name="Dennis")
    database.commit() 
 ```
 

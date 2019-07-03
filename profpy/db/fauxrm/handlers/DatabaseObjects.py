@@ -16,26 +16,26 @@ class Data(object):
     __REQUIRED_FIELDS_MSG = "Did not enter required fields. Required: {0}"
 
     __TYPE_MAPPING = {
-        "VARCHAR2":             str,
-        "VARCHAR":              str,
-        "NCHAR":                str,
-        "NVARCHAR":             str,
-        "RAW":                  str,
-        "NUMBER":               int,
-        "INTEGER":              int,
-        "INT":                  int,
-        "SMALLINT":             int,
-        "REAL":                 int,
-        "NUMERIC":              int,
-        "LONG":                 int,
-        "FLOAT":                float,
-        "DEC":                  float,
-        "DECIMAL":              float,
-        "DOUBLE PRECISION":     float,
-        "DATE":                 datetime.datetime,
-        "TIMESTAMP":            datetime.datetime,
-        "CLOB":                 cx_Oracle.CLOB,
-        "BLOB":                 cx_Oracle.BLOB
+        "VARCHAR2": str,
+        "VARCHAR": str,
+        "NCHAR": str,
+        "NVARCHAR": str,
+        "RAW": str,
+        "NUMBER": int,
+        "INTEGER": int,
+        "INT": int,
+        "SMALLINT": int,
+        "REAL": int,
+        "NUMERIC": int,
+        "LONG": int,
+        "FLOAT": float,
+        "DEC": float,
+        "DECIMAL": float,
+        "DOUBLE PRECISION": float,
+        "DATE": datetime.datetime,
+        "TIMESTAMP": datetime.datetime,
+        "CLOB": cx_Oracle.CLOB,
+        "BLOB": cx_Oracle.BLOB,
     }
     __DB_TRUE = ("Y", "y", "YES", "yes")
     __DB_FALSE = ("N", "n", "NO", "no")
@@ -100,8 +100,10 @@ class Data(object):
         """
         :return: Any LOB-type field
         """
-        sql = "select lower(column_name) as column_name from all_tab_cols " \
-              "where lower(owner)=:in_owner and lower(table_name)=:in_table and data_type in ('CLOB', 'BLOB')"
+        sql = (
+            "select lower(column_name) as column_name from all_tab_cols "
+            "where lower(owner)=:in_owner and lower(table_name)=:in_table and data_type in ('CLOB', 'BLOB')"
+        )
 
         params = {"in_owner": self.owner, "in_table": self.table_name}
         results = self._db.execute_query(sql, params=params)
@@ -123,7 +125,9 @@ class Data(object):
         string = ""
         for field, mapping in self.mapping.items():
             string += field + "\n\tType:\t\t{0}\n".format(mapping["type"].__name__)
-            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\n".format(mapping["nullable"], mapping["generated"])
+            string += "\tNullable:\t{0}\n\tGenerated:\t{1}\n\n".format(
+                mapping["nullable"], mapping["generated"]
+            )
         return string
 
     @property
@@ -191,9 +195,16 @@ class Data(object):
 
         else:
             use_this = kwargs if data is None else data
-            prepared_kwargs = self._prepare_kwargs(use_this, "select {0}".format(", ".join(self.columns)))
-            result = self._execute_sql(prepared_kwargs["sql"], get_data=True, params=prepared_kwargs["params"],
-                                       get_row_objects=get_row_objects, limit=limit)
+            prepared_kwargs = self._prepare_kwargs(
+                use_this, "select {0}".format(", ".join(self.columns))
+            )
+            result = self._execute_sql(
+                prepared_kwargs["sql"],
+                get_data=True,
+                params=prepared_kwargs["params"],
+                get_row_objects=get_row_objects,
+                limit=limit,
+            )
 
         return result
 
@@ -207,13 +218,17 @@ class Data(object):
         :return:                If it exists, the Record found at the specified field-value pairs.
         """
 
-        results = self.find(data=data, limit=1, get_row_objects=get_row_objects, **kwargs)
+        results = self.find(
+            data=data, limit=1, get_row_objects=get_row_objects, **kwargs
+        )
         return results[0] if results else None
 
     ####################################################################################################################
     # PROTECTED METHODS
 
-    def _execute_sql(self, sql, get_data=False, params=None, get_row_objects=False, limit=None):
+    def _execute_sql(
+        self, sql, get_data=False, params=None, get_row_objects=False, limit=None
+    ):
         """
         Executes a given sql statement
         :param sql:                  The sql statement/query to be executed (str)
@@ -225,7 +240,9 @@ class Data(object):
         try:
             self._db.cursor.execute(sql, validate_params(params))
             if get_data:
-                rows = results_to_objs(self._db.cursor, self, limit, get_row_objs=get_row_objects)
+                rows = results_to_objs(
+                    self._db.cursor, self, limit, get_row_objs=get_row_objects
+                )
                 return rows
         except cx_Oracle.IntegrityError as ie:
             raise ie
@@ -282,17 +299,25 @@ class Data(object):
             params_list = ", ".join(params_list)
 
             # parse parameterized query ex) "INSERT INTO OWNER.TABLE (NAME, ADDRESS) VALUES (:NAME, :ADDRESS)"
-            sql = "insert into {0} ({1}) values ({2})".format(self.name, column_list, params_list)
+            sql = "insert into {0} ({1}) values ({2})".format(
+                self.name, column_list, params_list
+            )
             if primary_key:
                 params["out_key_string"] = self._db.cursor.var(cx_Oracle.STRING)
                 sql += " " + primary_key.key_return
 
         else:
-            if any(self.mapping[k.split("___")[0]]["type"] in [cx_Oracle.BLOB, cx_Oracle.CLOB] for k in list(in_kwargs.keys())):
+            if any(
+                self.mapping[k.split("___")[0]]["type"]
+                in [cx_Oracle.BLOB, cx_Oracle.CLOB]
+                for k in list(in_kwargs.keys())
+            ):
                 raise Exception("Cannot query on LOB fields.")
 
             q = Query(**in_kwargs)
-            sql = "{prefix} from {table} where {w}".format(prefix=sql_prefix, table=self.name, w=q.sql)
+            sql = "{prefix} from {table} where {w}".format(
+                prefix=sql_prefix, table=self.name, w=q.sql
+            )
             params = q.params
 
         return {"sql": sql, "params": params}
@@ -331,8 +356,10 @@ class Data(object):
         :return: A dictionary -> key: field, value: comment
         """
 
-        sql = "select lower(column_name) as c_name, comments from all_col_comments " \
-              "where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
+        sql = (
+            "select lower(column_name) as c_name, comments from all_col_comments "
+            "where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
+        )
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
         raw_comments = self._execute_sql(sql, get_data=True, params=params)
         comment_dict = {}
@@ -349,8 +376,10 @@ class Data(object):
                         "nullable" : whether or not this field is nullable
                         "generated" (only for keys) : whether or not a primary key field is generated by the database
         """
-        sql = "select lower(column_name) as c_name, data_type, nullable, identity_column from all_tab_columns " \
-              "where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
+        sql = (
+            "select lower(column_name) as c_name, data_type, nullable, identity_column from all_tab_columns "
+            "where lower(table_name)=:in_table_name and lower(owner)=:in_owner"
+        )
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
         result = self._execute_sql(sql, get_data=True, params=params)
         definitions = {}
@@ -359,13 +388,18 @@ class Data(object):
             nullable_value = row["nullable"] in self.__DB_TRUE
             is_generated = row["identity_column"] in self.__DB_TRUE
 
-            if "(" in type_value:  # remove memory or length specifiers i.e. VARCHAR2(100)
+            if (
+                "(" in type_value
+            ):  # remove memory or length specifiers i.e. VARCHAR2(100)
                 type_value = type_value.split("(")
                 type_value = type_value[0]
 
             column_name = row["c_name"]
-            definition = {"type": self.__TYPE_MAPPING[type_value], "nullable": nullable_value,
-                          "generated": is_generated}
+            definition = {
+                "type": self.__TYPE_MAPPING[type_value],
+                "nullable": nullable_value,
+                "generated": is_generated,
+            }
             pk_attr = "_Table__primary_key_object"
             if hasattr(self, pk_attr) and column_name in getattr(self, pk_attr).columns:
                 definition["generated"] = is_generated
@@ -380,9 +414,14 @@ class Data(object):
         :return: The field names (list)
         """
 
-        sql = "select lower(column_name) as field_name from all_tab_columns where lower(owner)=:in_owner and " \
-              "lower(table_name)=:in_table"
-        params = {"in_owner": self.__owner.lower(), "in_table": self.__table_name.lower()}
+        sql = (
+            "select lower(column_name) as field_name from all_tab_columns where lower(owner)=:in_owner and "
+            "lower(table_name)=:in_table"
+        )
+        params = {
+            "in_owner": self.__owner.lower(),
+            "in_table": self.__table_name.lower(),
+        }
         result = self._execute_sql(sql, get_data=True, params=params)
         return [row["field_name"] for row in result]
 
@@ -396,7 +435,9 @@ class Data(object):
         params = {"in_table_name": self.table_name, "in_owner": self.owner}
         result = self._execute_sql(sql, get_data=True, params=params)
         if result:
-            return result[0]["comments"]  # result will be a one-item list with a single dict
+            return result[0][
+                "comments"
+            ]  # result will be a one-item list with a single dict
         else:
             return ""
 
@@ -419,12 +460,16 @@ class Data(object):
 
             else:
 
-                return self._execute_sql(query.get_full_sql(self.name), get_data=True, params=query.params,
-                                         get_row_objects=True, limit=limit)
+                return self._execute_sql(
+                    query.get_full_sql(self.name),
+                    get_data=True,
+                    params=query.params,
+                    get_row_objects=True,
+                    limit=limit,
+                )
 
 
 class Table(Data):
-
     def __init__(self, owner, name, db):
 
         super().__init__(owner=owner, name=name, db=db)
@@ -454,7 +499,7 @@ class Table(Data):
     def has_key(self):
         return self.__primary_key_object.exists
 
-    def delete_from(self, **kwargs):
+    def delete_where(self, **kwargs):
         """
         Truncates the table associated with this Table instance
         :return:
@@ -474,7 +519,9 @@ class Table(Data):
         :return:        If it exists, the Record found at that key, else null (type Record)
         """
         if not self.has_key:
-            raise Exception("Cannot perform 'get' operation on table with no primary key.")
+            raise Exception(
+                "Cannot perform 'get' operation on table with no primary key."
+            )
 
         # key validation
         cleaned_key = None
@@ -519,7 +566,9 @@ class Table(Data):
             else:
 
                 # make sure that the caller supplied the correct field names for the composite field
-                if not all(in_field in self.primary_key.columns for in_field in use_this.keys()):
+                if not all(
+                    in_field in self.primary_key.columns for in_field in use_this.keys()
+                ):
                     raise Exception("Invalid composite key fields specified.")
 
                 # since the composite key utilizes a combination of fields, we can utilize the find method to retrieve
@@ -550,7 +599,13 @@ class Table(Data):
             clean_col = self._validate_input_key(col)
             if clean_col:
                 if clean_col in self.generated_fields:
-                    new_data[clean_col] = GeneratedValue(self.owner, self.table_name, col, self.mapping[col]["type"], value)
+                    new_data[clean_col] = GeneratedValue(
+                        self.owner,
+                        self.table_name,
+                        col,
+                        self.mapping[col]["type"],
+                        value,
+                    )
                 else:
                     new_data[clean_col] = value
                 used_cols.append(clean_col)
@@ -559,9 +614,13 @@ class Table(Data):
         for col in self.columns:
             if col in self.generated_fields:
                 if col not in used_cols:
-                    new_data[col] = GeneratedValue(self.owner, self.table_name, col, self.mapping[col]["type"])
+                    new_data[col] = GeneratedValue(
+                        self.owner, self.table_name, col, self.mapping[col]["type"]
+                    )
             elif col not in used_cols:
-                new_data[col] = UnsetValue(self.owner, self.table_name, col, self.mapping[col]["type"])
+                new_data[col] = UnsetValue(
+                    self.owner, self.table_name, col, self.mapping[col]["type"]
+                )
         return Row(new_data, self)
 
     def persist_to_database(self, **kwargs):
@@ -599,7 +658,9 @@ class Table(Data):
         :param values: The values to be inserted (dict)
         :return:
         """
-        components = self._prepare_kwargs(kwargs, sql_prefix=None, is_change=True, primary_key=self.primary_key)
+        components = self._prepare_kwargs(
+            kwargs, sql_prefix=None, is_change=True, primary_key=self.primary_key
+        )
         params = components["params"]
         try:
             no_data_msg = "No new data input."
@@ -620,7 +681,9 @@ class Table(Data):
                 params_sql = " and ".join(params_sql)
                 return_sql += params_sql
 
-            results = self._execute_sql(return_sql, params=params, get_data=True, get_row_objects=True, limit=1)
+            results = self._execute_sql(
+                return_sql, params=params, get_data=True, get_row_objects=True, limit=1
+            )
             return results[0] if self.has_key else results
 
         except cx_Oracle.DatabaseError as db_error:
@@ -636,7 +699,9 @@ class Table(Data):
             raise Exception(self.__PK_ERROR_MSG)
         else:
 
-            params = self._prepare_kwargs(kwargs, "", is_change=True, primary_key=self.primary_key)["params"]
+            params = self._prepare_kwargs(
+                kwargs, "", is_change=True, primary_key=self.primary_key
+            )["params"]
             update_sql = "update {table} set ".format(table=self.name)
 
             keys = params.keys()
@@ -645,12 +710,20 @@ class Table(Data):
                 if param not in self.primary_key.columns and param != "out_key_string":
                     param_sql.append("{param}=:{param}".format(param=param))
             param_sql = ", ".join(param_sql)
-            update_sql += param_sql + " where " + self.primary_key.sql_where_clause + " " + self.primary_key.key_return
+            update_sql += (
+                param_sql
+                + " where "
+                + self.primary_key.sql_where_clause
+                + " "
+                + self.primary_key.key_return
+            )
             try:
 
                 # lock the record for update
                 lock_sql_and_params = self.__get_lock_sql_and_params(params)
-                self._execute_sql(lock_sql_and_params["sql"], params=lock_sql_and_params["params"])
+                self._execute_sql(
+                    lock_sql_and_params["sql"], params=lock_sql_and_params["params"]
+                )
 
                 # update the record
                 self._execute_sql(update_sql, params=params)
@@ -662,7 +735,9 @@ class Table(Data):
                 return_sql_code_and_params = self.__get_key_sql_and_params(params)
                 key_params = return_sql_code_and_params["params"]
                 return_sql = return_sql_code_and_params["sql"]
-                return self._execute_sql(return_sql, params=key_params, get_data=True, get_row_objects=True)[0]
+                return self._execute_sql(
+                    return_sql, params=key_params, get_data=True, get_row_objects=True
+                )[0]
             except IndexError:
                 return
 
@@ -675,7 +750,9 @@ class Table(Data):
         lock_params = {}
         for col in self.primary_key.columns:
             lock_params[col] = update_parameters[col]
-        lock_sql = "select * from {0} where {1} for update".format(self.name, self.primary_key.sql_where_clause)
+        lock_sql = "select * from {0} where {1} for update".format(
+            self.name, self.primary_key.sql_where_clause
+        )
         return dict(sql=lock_sql, params=lock_params)
 
     def __record_exists_in_table(self, in_args):
@@ -707,7 +784,9 @@ class Table(Data):
         :param in_kwargs: The input keywords (dict)
         :return:          Whether or not the primary key is present (boolean)
         """
-        return self.primary_key and all(f in in_kwargs.keys() for f in self.primary_key.columns)
+        return self.primary_key and all(
+            f in in_kwargs.keys() for f in self.primary_key.columns
+        )
 
     def __get_key_sql_and_params(self, parameters):
         """
@@ -715,7 +794,7 @@ class Table(Data):
         :param parameters: The parameters used to create the record
         :return:           The sql for grabbing the new record, as well as the params for the key fields
         """
-        out_keys = parameters["out_key_string"].getvalue().split(",")
+        out_keys = parameters["out_key_string"].getvalue()[0].split(",")
         sql = "select * from {0} where ".format(self.name)
         out_params = {}
         for i, kf in enumerate(self.primary_key.columns):
@@ -731,13 +810,22 @@ class Table(Data):
         :return: a PrimaryKey object for this table
         """
 
-        sql = "select lower(column_name) as column_name from all_cons_columns where " \
-              "constraint_name = (select constraint_name from all_constraints where " \
-              "lower(table_name)=:in_table and lower(owner)=:in_owner and constraint_type=:in_type)"
-        parameters = {"in_table": self.table_name.lower(), "in_type": "P", "in_owner": self.owner}
+        sql = (
+            "select lower(column_name) as column_name from all_cons_columns where "
+            "constraint_name = (select constraint_name from all_constraints where "
+            "lower(table_name)=:in_table and lower(owner)=:in_owner and constraint_type=:in_type)"
+        )
+        parameters = {
+            "in_table": self.table_name.lower(),
+            "in_type": "P",
+            "in_owner": self.owner,
+        }
 
         try:
-            pk = [row["column_name"] for row in self._execute_sql(sql, get_data=True, params=parameters)]
+            pk = [
+                row["column_name"]
+                for row in self._execute_sql(sql, get_data=True, params=parameters)
+            ]
         except IndexError:
             # no primary key found for the table
             pk = None

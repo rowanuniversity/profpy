@@ -220,7 +220,7 @@ Returns all generated fields for this table
 Returns whether or not this table has a primary key
 
 ### Table-exclusive methods
-#### delete_from ( *\*\*kwargs* )
+#### delete_where ( *\*\*kwargs* )
 Deletes rows from a table based on keyword args. If none are specified, it deletes everything. 
 
 Example:
@@ -232,7 +232,7 @@ with fauxrm.Database() as database:
     test_scores = database.model("owner", "test_scores")
     ids = [12345, 6789]
     
-    test_scores.delete_from(user_id___in=ids)
+    test_scores.delete_where(user_id___in=ids)
     database.commit()
 ```
 ---

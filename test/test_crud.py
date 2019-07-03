@@ -21,28 +21,47 @@ TEST_LAST = "Nedry"
 
 TEST_BAND = "The Beatles"
 TEST_BAND_MEMBERS = [
-    dict(first_name="John", last_name="Lennon", instrument="Guitar", band_name=TEST_BAND),
-    dict(first_name="Paul", last_name="McCartney", instrument="Bass", band_name=TEST_BAND),
-    dict(first_name="George", last_name="Harrison", instrument="Guitar", band_name=TEST_BAND),
-    dict(first_name="Ringo", last_name="Starr", instrument="Drums", band_name=TEST_BAND)
+    dict(
+        first_name="John", last_name="Lennon", instrument="Guitar", band_name=TEST_BAND
+    ),
+    dict(
+        first_name="Paul", last_name="McCartney", instrument="Bass", band_name=TEST_BAND
+    ),
+    dict(
+        first_name="George",
+        last_name="Harrison",
+        instrument="Guitar",
+        band_name=TEST_BAND,
+    ),
+    dict(
+        first_name="Ringo", last_name="Starr", instrument="Drums", band_name=TEST_BAND
+    ),
 ]
 
 
 db_handler = fauxrm.Database()
 phonebook_table = db_handler.model("rowan", "fauxrm_test_phonebook")
-band_member_table  = db_handler.model("rowan", "fauxrm_test_band_members")
+band_member_table = db_handler.model("rowan", "fauxrm_test_band_members")
 medical_table = db_handler.model("rowan", "fauxrm_test_medical")
 sortest = db_handler.model("saturn", "sortest")
 
 
 def create_new_band_test_record(in_handler, clear_table=False):
     if clear_table:
-        in_handler.delete_from()
+        in_handler.delete_where()
 
     test_dict = TEST_BAND_MEMBERS[0]
-    in_handler.new(first_name=test_dict["first_name"], last_name=test_dict["last_name"],
-                   instrument=test_dict["instrument"], band_name=TEST_BAND).save()
-    return dict(band_name=TEST_BAND, last_name=test_dict["last_name"], instrument=test_dict["instrument"])
+    in_handler.new(
+        first_name=test_dict["first_name"],
+        last_name=test_dict["last_name"],
+        instrument=test_dict["instrument"],
+        band_name=TEST_BAND,
+    ).save()
+    return dict(
+        band_name=TEST_BAND,
+        last_name=test_dict["last_name"],
+        instrument=test_dict["instrument"],
+    )
 
 
 def create_new_phonebook_test_record(in_handler, clear_table=False):
@@ -55,8 +74,10 @@ def create_new_phonebook_test_record(in_handler, clear_table=False):
     """
 
     if clear_table:
-        in_handler.delete_from()
-    record = in_handler.new(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)
+        in_handler.delete_where()
+    record = in_handler.new(
+        first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE
+    )
     record.save()
     return record.key
 
@@ -92,7 +113,11 @@ class TestCompositeKeys(unittest.TestCase):
         key = create_new_band_test_record(band_member_table, clear_table=True)
         caught = False
         try:
-            band_member_table.get(band_name=key["band_name"], last_name=key["last_name"], instrument=key["instrument"])
+            band_member_table.get(
+                band_name=key["band_name"],
+                last_name=key["last_name"],
+                instrument=key["instrument"],
+            )
         except:
             caught = True
         self.assertFalse(caught)
@@ -151,14 +176,17 @@ class TestCRUD(unittest.TestCase):
     """
 
     # can the handler clear the table correctly without a where clause
-    def test_delete_from(self):
-        phonebook_table.delete_from()
+    def test_delete_where(self):
+        phonebook_table.delete_where()
         self.assertEqual(phonebook_table.count, 0)
 
     # can the handler correctly insert one record using keyword arguments
     def test_insert_one(self):
-        phonebook_table.delete_from()
-        name, phone = RandomGenerators.get_random_name(), RandomGenerators.get_random_phone_number()
+        phonebook_table.delete_where()
+        name, phone = (
+            RandomGenerators.get_random_name(),
+            RandomGenerators.get_random_phone_number(),
+        )
         phonebook_table.new(first_name=name[0], last_name=name[1], phone=phone).save()
         self.assertEqual(phonebook_table.count, 1)
 
@@ -166,7 +194,10 @@ class TestCRUD(unittest.TestCase):
     def test_bad_keywords(self):
 
         results = []
-        for insert in ({"zzzz": TEST_FIRST, "last_name": TEST_LAST}, dict(zzzz=TEST_FIRST, last_name=TEST_LAST)):
+        for insert in (
+            {"zzzz": TEST_FIRST, "last_name": TEST_LAST},
+            dict(zzzz=TEST_FIRST, last_name=TEST_LAST),
+        ):
 
             try:
                 phonebook_table.new(**insert).save()
@@ -179,10 +210,15 @@ class TestCRUD(unittest.TestCase):
     # can the handler correctly insert a bunch of records (5000) using keyword arguments
     def test_insert_5000(self):
 
-        self.test_delete_from()
+        self.test_delete_where()
         for i in range(5000):
-            name, phone = RandomGenerators.get_random_name(), RandomGenerators.get_random_phone_number()
-            phonebook_table.new(first_name=name[0], last_name=name[1], phone=phone).save()
+            name, phone = (
+                RandomGenerators.get_random_name(),
+                RandomGenerators.get_random_phone_number(),
+            )
+            phonebook_table.new(
+                first_name=name[0], last_name=name[1], phone=phone
+            ).save()
         self.assertEqual(phonebook_table.count, 5000)
 
     # can the handler access records using their primary keys correctly
@@ -194,7 +230,7 @@ class TestCRUD(unittest.TestCase):
     # can the handler appropriately return null when the user tries to get a record that no longer exists at a key
     def test_null_id(self):
         test_id = create_new_phonebook_test_record(phonebook_table, clear_table=True)
-        self.test_delete_from()
+        self.test_delete_where()
         should_be_null = phonebook_table.get(test_id)
         self.assertIsNone(should_be_null)
 
@@ -210,8 +246,10 @@ class TestCRUD(unittest.TestCase):
 
     # can the handler search on null values correctly
     def test_find_on_null_value(self):
-        phonebook_table.delete_from()
-        new_record = phonebook_table.new(first_name=TEST_FIRST, last_name=TEST_LAST) # phone number will be null
+        phonebook_table.delete_where()
+        new_record = phonebook_table.new(
+            first_name=TEST_FIRST, last_name=TEST_LAST
+        )  # phone number will be null
         new_record.save()
         results = list(phonebook_table.find(phone=None))
         num_results = len(results)
@@ -225,19 +263,23 @@ class TestCRUD(unittest.TestCase):
 
     # can the handler correctly insert new data using all of the different accepted argument types
     def test_insert_types(self):
-        phonebook_table.delete_from()
+        phonebook_table.delete_where()
         success_one, success_two, success_three, success_four = True, True, True, True
 
         # kwargs
         try:
-            phonebook_table.new(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE).save()
+            phonebook_table.new(
+                first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE
+            ).save()
         except:
             success_one = False
         self.assertTrue(success_one)
 
         # dict constructor
         try:
-            phonebook_table.new(**dict(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)).save()
+            phonebook_table.new(
+                **dict(first_name=TEST_FIRST, last_name=TEST_LAST, phone=TEST_PHONE)
+            ).save()
         except Exception as e:
             print(e)
             success_two = False
@@ -245,22 +287,36 @@ class TestCRUD(unittest.TestCase):
 
         # raw dict with matching case keys to the handler's fields
         try:
-            phonebook_table.new(**{"first_name": TEST_FIRST, "last_name": TEST_LAST, "phone": TEST_PHONE}).save()
+            phonebook_table.new(
+                **{
+                    "first_name": TEST_FIRST,
+                    "last_name": TEST_LAST,
+                    "phone": TEST_PHONE,
+                }
+            ).save()
         except:
             success_three = False
         self.assertTrue(success_three)
 
         # raw dict with upper cased keys that don't match the handler's fields (should still work)
         try:
-            phonebook_table.new(**{"FIRST_NAME": TEST_FIRST, "LAST_NAME": TEST_LAST, "PHONE": TEST_PHONE}).save()
+            phonebook_table.new(
+                **{
+                    "FIRST_NAME": TEST_FIRST,
+                    "LAST_NAME": TEST_LAST,
+                    "PHONE": TEST_PHONE,
+                }
+            ).save()
         except:
             success_four = False
         self.assertTrue(success_four)
 
     # can the handler correctly prevent invalid data types being entered into fields
     def test_mapping_types(self):
-        medical_table.delete_from()
-        test_record = dict(first_name="Dennis", last_name="Nedry", visit_date=datetime.datetime.now())
+        medical_table.delete_where()
+        test_record = dict(
+            first_name="Dennis", last_name="Nedry", visit_date=datetime.datetime.now()
+        )
         test_record = medical_table.new(**test_record).save()
 
         # try to insert a string value into a numeric field
@@ -283,7 +339,7 @@ class TestCRUD(unittest.TestCase):
 
     # can the handler correctly prevent null values from being inserted into non-nullable fields
     def test_mapping_nulls(self):
-        phonebook_table.delete_from()
+        phonebook_table.delete_where()
 
         # try to insert a null on a non-nullable field
         caught = False
@@ -300,17 +356,21 @@ class TestDates(unittest.TestCase):
     The date testing will use the medical test table.
     """
 
-    test_dates = [datetime.datetime.strptime('18-OCT-05', DATE_FMT),
-                  datetime.datetime.strptime('01-DEC-05', DATE_FMT),
-                  datetime.datetime.strptime('04-JAN-10', DATE_FMT)]
-    single_test_date = datetime.datetime.strptime('18-OCT-05', DATE_FMT)
-    test_value = dict(first_name="Dennis", last_name="Nedry", visit_date=single_test_date)
+    test_dates = [
+        datetime.datetime.strptime("18-OCT-05", DATE_FMT),
+        datetime.datetime.strptime("01-DEC-05", DATE_FMT),
+        datetime.datetime.strptime("04-JAN-10", DATE_FMT),
+    ]
+    single_test_date = datetime.datetime.strptime("18-OCT-05", DATE_FMT)
+    test_value = dict(
+        first_name="Dennis", last_name="Nedry", visit_date=single_test_date
+    )
     test_date_fmt = "%d-%b-%y"
 
     # can the handler find a record using a list of possible dates
     def test_find_date_in_collection(self):
 
-        medical_table.delete_from()
+        medical_table.delete_where()
         medical_table.new(**self.test_value).save()
 
         results = medical_table.find(visit_date=self.test_dates)
@@ -318,9 +378,11 @@ class TestDates(unittest.TestCase):
 
     # can the handlers handle date strings
     def test_date_string(self):
-        medical_table.delete_from()
+        medical_table.delete_where()
         medical_table.new(**self.test_value).save()
-        results = medical_table.find_one(visit_date=self.single_test_date.strftime(self.test_date_fmt))
+        results = medical_table.find_one(
+            visit_date=self.single_test_date.strftime(self.test_date_fmt)
+        )
         self.assertIsNotNone(results)
 
 
@@ -337,10 +399,33 @@ class RandomGenerators(object):
         :return: A testing name
         """
 
-        first_names = ["Ian", "Alan", "Dennis", "John", "Ellie", "Robert", "Lex",
-                       "Ray", "Tim", "Donald", "Lewis", "Henry"]
-        last_names = ["Sattler", "Malcolm", "Grant", "Nedry", "Muldoon", "Hammond",
-                      "Wu", "Gennaro", "Dodgson", "Murphy", "Arnold"]
+        first_names = [
+            "Ian",
+            "Alan",
+            "Dennis",
+            "John",
+            "Ellie",
+            "Robert",
+            "Lex",
+            "Ray",
+            "Tim",
+            "Donald",
+            "Lewis",
+            "Henry",
+        ]
+        last_names = [
+            "Sattler",
+            "Malcolm",
+            "Grant",
+            "Nedry",
+            "Muldoon",
+            "Hammond",
+            "Wu",
+            "Gennaro",
+            "Dodgson",
+            "Murphy",
+            "Arnold",
+        ]
 
         first_name = first_names[random.randint(0, len(first_names) - 1)]
         last_name = last_names[random.randint(0, len(last_names) - 1)]
