@@ -1,5 +1,5 @@
 ## fauxrm with Flask
-One of the benefits of fauxrm's decorator functions, is that they can be easily integrated into web applications and microservices. 
+One of the benefits of fauxrm's decorator functions is that they can be easily integrated into web applications and microservices. 
 These functions were designed with usage with Flask in mind, but they could be potentially integrated with any Python web framework.
 
 ## App-context Handlers
@@ -8,14 +8,14 @@ models within the application "context" for our endpoints to use.
 
 ```python
 from flask import Flask, g, jsonify
-from profpy.db import fauxrm
+from profpy.db.fauxrm import Database
 
 app = Flask(__name__)
 
 
 def get_handler():
     if "db" not in g:
-        g.db = fauxrm.Database()
+        g.db = Database()
     return g.db
     
 @app.route("/rest/person/<id_number>")
@@ -31,22 +31,22 @@ either created or retrieved (if it already exists) to be used for the endpoint's
 
 ## Using the with_model decorator
 We also could use the fauxrm.with_model decorator to have some cleaner, more "pythonic" code. The with_model function 
-takes in a database handler, the owner of the table/view, and the name of the owner/view as parameters.
+takes in a database handler, the owner of the table/view, and the name of the table/view as parameters.
 
 ```python
 from flask import Flask, g, jsonify
-from profpy.db import fauxrm
+from profpy.db.fauxrm import Database, with_model
 
 app = Flask(__name__)
 
 
 def get_handler():
     if "db" not in g:
-        g.db = fauxrm.Database()
+        g.db = Database()
     return g.db
     
 
-@fauxrm.with_model(get_handler(), "table_owner", "people")    
+@with_model(get_handler(), "table_owner", "people")    
 @app.route("/rest/person/<id_number>")
 def person(id_number, model):
     return jsonify(model.find(id=id_number))
@@ -54,11 +54,16 @@ def person(id_number, model):
 
 We can string decorators together if we need to use multiple models:
 ```python
-@fauxrm.with_model(get_handler(), "table_owner", "people")    
-@fauxrm.with_model(get_handler(), "table_owner", "phonebook")
+@with_model(get_handler(), "table_owner", "people")    
+@with_model(get_handler(), "table_owner", "phonebook")
 @app.route("/rest/person/<id_number>")
 def person(id_number, phonebook_model, people_model):
-    return jsonify(dict(biographic=people_model.find(id=id_number), phone=phonebook_model.find(id=id_number)))
+    return jsonify(
+        dict(
+            biographic=people_model.find(id=id_number), 
+            phone=phonebook_model.find(id=id_number)
+        )
+    )
 ```
 
 ### Further Reading

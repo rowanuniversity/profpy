@@ -46,4 +46,5 @@ Python 3.6.7 or above
 ##### Current Submodules
 For in-depth documentation, explore the submodules individually:
 - [db](./profpy/db)
+    * [fauxrm](./profpy/db/fauxrm)
 - [apis](./profpy/apis)
