@@ -25,6 +25,12 @@ Notice that we simply called `app.admin.users` as a property of the application.
 to create higher-level properties for owners and sub-properties for object names so you can access them like you would 
 with SQL syntax. This also helps avoid any issues with duplicate table/view names under different owners. 
 
+The `login_var` and `password_var` arguments are optional, and default to "full_login" and "db_password", respectively.
+App instantiation can be as simple as this:
+```python
+app = FauxrmApp(__name__, ["admin.users", "admin.roles", "payroll.timesheets"])
+```
+
 
 
    
