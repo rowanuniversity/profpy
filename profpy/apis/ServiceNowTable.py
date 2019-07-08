@@ -14,9 +14,9 @@ class ServiceNowTable(Api):
     Currently only supporting GET requests
     """
 
-    GET_RECORDS         = "/{get_table_name}"
-    GET_SINGLE_RECORD   = "/{get_table_name}/{get_record_id}"
-    GET_REQUESTS        = [GET_SINGLE_RECORD, GET_RECORDS]
+    GET_RECORDS = "/{get_table_name}"
+    GET_SINGLE_RECORD = "/{get_table_name}/{get_record_id}"
+    GET_REQUESTS = [GET_SINGLE_RECORD, GET_RECORDS]
 
     def __init__(self, user, password, in_url):
 
@@ -46,14 +46,30 @@ class ServiceNowTable(Api):
         :return:
         """
         self.endpoint_to_args = {
-            self.GET_RECORDS: ["tableName", "sysparm_query", "sysparm_display_value", "sysparm_fields", "sysparm_view",
-                               "sysparm_limit", "sysparm_offset", "sysparm_exclude_reference_link",
-                               "sysparm_suppress_pagination_header"],
-            self.GET_SINGLE_RECORD: ["tableName", "sys_id", "sysparm_display_value", "sysparm_fields", "sysparm_view",
-                                     "sysparm_exclude_reference_link"]
+            self.GET_RECORDS: [
+                "tableName",
+                "sysparm_query",
+                "sysparm_display_value",
+                "sysparm_fields",
+                "sysparm_view",
+                "sysparm_limit",
+                "sysparm_offset",
+                "sysparm_exclude_reference_link",
+                "sysparm_suppress_pagination_header",
+            ],
+            self.GET_SINGLE_RECORD: [
+                "tableName",
+                "sys_id",
+                "sysparm_display_value",
+                "sysparm_fields",
+                "sysparm_view",
+                "sysparm_exclude_reference_link",
+            ],
         }
 
-    def _hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
+    def _hit_endpoint(
+        self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs
+    ):
         """
         Abstracted logic for hitting REST endpoints for this API
         :param valid_args:    Valid keyword arguments for this endpoint (list)
@@ -67,22 +83,35 @@ class ServiceNowTable(Api):
             full_url = self.url + endpoint_name
             r_type = request_type.upper()
             if r_type == "GET":
-                headers = {"Content-Type": "application/xml", "Accept": "application/json"}
-                data = requests.get(full_url, params=kwargs, headers=headers, auth=self.authentication_parameters)
+                headers = {
+                    "Content-Type": "application/xml",
+                    "Accept": "application/json",
+                }
+                data = requests.get(
+                    full_url,
+                    params=kwargs,
+                    headers=headers,
+                    auth=self.authentication_parameters,
+                )
                 status = int(data.status_code)
                 if 300 >= status >= 200:
                     try:
                         json_obj = data.json()
                         return json_obj["result"] if status == 200 else json_obj
                     except json.JSONDecodeError:
-                        raise ApiException("Transaction cancelled: maximum execution time exceeded.", error_code=408)
+                        raise ApiException(
+                            "Transaction cancelled: maximum execution time exceeded.",
+                            error_code=408,
+                        )
                 elif status >= 500:
                     raise ApiException("Internal Server Error.")
                 elif status >= 400:
                     try:
                         raise ApiException(responses[status])
                     except KeyError:
-                        raise ApiException("Error processing request: {0}".format(data.text))
+                        raise ApiException(
+                            "Error processing request: {0}".format(data.text)
+                        )
                 else:
                     raise ApiException("Unknown error.")
             else:
@@ -91,8 +120,10 @@ class ServiceNowTable(Api):
         else:
             bad_args = ", ".join(list(kwargs.keys()))
             good_args = ", ".join(valid_args)
-            msg = "Invalid parameter supplied at ServiceNowTable::_hit_endpoint(). Arguments provided: {0}. " \
-                  "Valid arguments: {1}.".format(bad_args, good_args)
+            msg = (
+                "Invalid parameter supplied at ServiceNowTable::_hit_endpoint(). Arguments provided: {0}. "
+                "Valid arguments: {1}.".format(bad_args, good_args)
+            )
             raise ParameterException(msg)
 
     def get_records(self, table_name=None, **kwargs):
@@ -107,7 +138,11 @@ class ServiceNowTable(Api):
         """
         endpoint = self.GET_RECORDS
         valid_args = self.endpoint_to_args[endpoint]
-        endpoint = endpoint.format(get_table_name=table_name) if table_name else endpoint.replace("{get_table_name}", "")
+        endpoint = (
+            endpoint.format(get_table_name=table_name)
+            if table_name
+            else endpoint.replace("{get_table_name}", "")
+        )
         return self._hit_endpoint(valid_args, endpoint, **kwargs)
 
     def get_record(self, table_name, record_id, custom_id_field=None, **kwargs):
@@ -129,7 +164,9 @@ class ServiceNowTable(Api):
         else:
             endpoint = self.GET_SINGLE_RECORD
             valid_args = self.endpoint_to_args[endpoint]
-            endpoint = endpoint.format(get_table_name=table_name, get_record_id=record_id)
+            endpoint = endpoint.format(
+                get_table_name=table_name, get_record_id=record_id
+            )
             result = self._hit_endpoint(valid_args, endpoint, **kwargs)
         return result
 
@@ -144,8 +181,10 @@ class ServiceNowTable(Api):
         """
 
         if "sysparm_limit" in kwargs or "sysparm_offset" in kwargs:
-            raise ParameterException("ServiceNowTable.load_table method does not allow the use of \"sysparm_limit\" or "
-                                     "\"sysparm_offset\" query parameters.")
+            raise ParameterException(
+                'ServiceNowTable.load_table method does not allow the use of "sysparm_limit" or '
+                '"sysparm_offset" query parameters.'
+            )
 
         keep_going = True
         request_size_limit = 1500
@@ -155,8 +194,15 @@ class ServiceNowTable(Api):
         if len(results) >= request_size_limit:
             current_offset = request_size_limit
             while keep_going:
-                params = {**kwargs, **dict(sysparm_offset=current_offset, sysparm_limit=request_size_limit)}
+                params = {
+                    **kwargs,
+                    **dict(
+                        sysparm_offset=current_offset, sysparm_limit=request_size_limit
+                    ),
+                }
                 results.extend(self.get_records(table_name, **params))
                 current_offset += request_size_limit
-                keep_going = (len(results) >= current_offset) and ((limit and len(results) < limit) or not limit)
+                keep_going = (len(results) >= current_offset) and (
+                    (limit and len(results) < limit) or not limit
+                )
         return results[:limit] if limit else results

@@ -13,25 +13,25 @@ class BlackBoardLearn(Api):
     https://developer.blackboard.com/portal/displayApi
     """
 
-    COLUMNS                    = "v1/courses/{0}/gradebook/columns"
-    COLUMN_ATTEMPTS            = "v1/courses/{0}/gradebook/columns/{1}/attempts"
-    COURSES                    = "v1/courses"
-    COURSE                     = "v1/courses/{0}"
-    COURSE_GROUP               = "v1/courses/{0}/groups/{1}"
-    COURSE_GROUPS              = "v1/courses/{0}/groups"
-    COURSE_MEMBERS             = "v1/courses/{0}/users"
-    COURSE_MEMBERSHIP          = "v1/courses/{0}/users/{1}"
+    COLUMNS = "v1/courses/{0}/gradebook/columns"
+    COLUMN_ATTEMPTS = "v1/courses/{0}/gradebook/columns/{1}/attempts"
+    COURSES = "v1/courses"
+    COURSE = "v1/courses/{0}"
+    COURSE_GROUP = "v1/courses/{0}/groups/{1}"
+    COURSE_GROUPS = "v1/courses/{0}/groups"
+    COURSE_MEMBERS = "v1/courses/{0}/users"
+    COURSE_MEMBERSHIP = "v1/courses/{0}/users/{1}"
     COURSE_GRADE_COLUMNS_USERS = "v1/courses/{0}/gradebook/columns/{1}/users/{2}"
-    COURSE_ROLES               = "v1/courseRoles"
-    USERS                      = "v1/users"
-    USER                       = "v1/users/{0}"
+    COURSE_ROLES = "v1/courseRoles"
+    USERS = "v1/users"
+    USER = "v1/users/{0}"
 
-    __REQUEST_FUNCTIONS        = {
+    __REQUEST_FUNCTIONS = {
         "GET": requests.get,
         "POST": requests.post,
         "PUT": requests.put,
         "PATCH": requests.patch,
-        "DELETE": requests.delete
+        "DELETE": requests.delete,
     }
 
     def __init__(self, in_app_key, in_app_id, in_secret_key, in_url):
@@ -43,7 +43,9 @@ class BlackBoardLearn(Api):
         :param in_url:        The url for this API
         """
 
-        super().__init__(in_public_key=in_app_key, in_private_key=in_secret_key, in_url=in_url)
+        super().__init__(
+            in_public_key=in_app_key, in_private_key=in_secret_key, in_url=in_url
+        )
         self.app_id = in_app_id
         self.token = self.__get_oauth2_token()
         self._set_endpoints()
@@ -54,8 +56,14 @@ class BlackBoardLearn(Api):
         Sets a list of valid endpoints for this API
         :return: a list of valid endpoints for this API
         """
-        self.endpoints = [self.COURSES, self.COLUMNS, self.COLUMN_ATTEMPTS, self.COURSE_MEMBERS,
-                          self.COURSE_GRADE_COLUMNS_USERS, self.USERS]
+        self.endpoints = [
+            self.COURSES,
+            self.COLUMNS,
+            self.COLUMN_ATTEMPTS,
+            self.COURSE_MEMBERS,
+            self.COURSE_GRADE_COLUMNS_USERS,
+            self.USERS,
+        ]
 
     def _set_args_mapping(self):
         """
@@ -65,39 +73,100 @@ class BlackBoardLearn(Api):
         self.endpoint_to_args = {
             "GET": {
                 self.COURSE: ["fields"],
-                self.COURSES: ["offset", "limit", "courseId", "name", "description", "externalId", "created",
-                               "allowGuests", "createdCompare", "dataSourceId", "termId", "organization", "sort",
-                               "fields"],
-                self.COURSE_ROLES: ["offset", "limit", "sort", "custom", "roleId", "fields"],
+                self.COURSES: [
+                    "offset",
+                    "limit",
+                    "courseId",
+                    "name",
+                    "description",
+                    "externalId",
+                    "created",
+                    "allowGuests",
+                    "createdCompare",
+                    "dataSourceId",
+                    "termId",
+                    "organization",
+                    "sort",
+                    "fields",
+                ],
+                self.COURSE_ROLES: [
+                    "offset",
+                    "limit",
+                    "sort",
+                    "custom",
+                    "roleId",
+                    "fields",
+                ],
                 self.COLUMNS: ["offset", "limit", "contentId", "fields"],
-                self.COLUMN_ATTEMPTS: ["offset", "limit", "userId", "attemptStatuses", "fields"],
-                self.COURSE_MEMBERS: ["offset", "limit", "created", "createdCompare", "dataSourceId", "lastAccessed",
-                                      "lastAccessedCompare", "availability.available", "sort", "fields"],
+                self.COLUMN_ATTEMPTS: [
+                    "offset",
+                    "limit",
+                    "userId",
+                    "attemptStatuses",
+                    "fields",
+                ],
+                self.COURSE_MEMBERS: [
+                    "offset",
+                    "limit",
+                    "created",
+                    "createdCompare",
+                    "dataSourceId",
+                    "lastAccessed",
+                    "lastAccessedCompare",
+                    "availability.available",
+                    "sort",
+                    "fields",
+                ],
                 self.COURSE_GRADE_COLUMNS_USERS: ["fields"],
-                self.USERS: ["offset", "limit", "userName", "externalId", "created", "createdCompare", "dataSourceId",
-                             "name.family", "availability.available", "sort", "fields"],
+                self.USERS: [
+                    "offset",
+                    "limit",
+                    "userName",
+                    "externalId",
+                    "created",
+                    "createdCompare",
+                    "dataSourceId",
+                    "name.family",
+                    "availability.available",
+                    "sort",
+                    "fields",
+                ],
                 self.USER: ["fields"],
                 self.COURSE_GROUP: ["fields"],
-                self.COURSE_GROUPS: ["offset", "limit", "sort", "fields"]
+                self.COURSE_GROUPS: ["offset", "limit", "sort", "fields"],
             },
             "POST": {
-                self.USERS: ["dataSourceId", "gender", "externalId", "created", "institutionRoleIds", "name",
-                             "birthDate", "lastLogin", "address", "userName", "locale", "id", "educationLevel",
-                             "job", "contact", "systemRoleIds", "studentId", "uuid", "password", "availability"]
+                self.USERS: [
+                    "dataSourceId",
+                    "gender",
+                    "externalId",
+                    "created",
+                    "institutionRoleIds",
+                    "name",
+                    "birthDate",
+                    "lastLogin",
+                    "address",
+                    "userName",
+                    "locale",
+                    "id",
+                    "educationLevel",
+                    "job",
+                    "contact",
+                    "systemRoleIds",
+                    "studentId",
+                    "uuid",
+                    "password",
+                    "availability",
+                ]
             },
-            "DELETE": {
-                self.USER: [],
-                self.COURSE_MEMBERSHIP: []
-            },
-            "PATCH": {
-                self.COURSE_MEMBERSHIP: []
-            },
-            "PUT": {
-                self.COURSE_MEMBERSHIP: []
-            }
+            "DELETE": {self.USER: [], self.COURSE_MEMBERSHIP: []},
+            "PATCH": {self.COURSE_MEMBERSHIP: []},
+            "PUT": {self.COURSE_MEMBERSHIP: []},
         }
 
-    def _hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
+    def _hit_endpoint(
+        self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs
+    ):
         """
         Method used to abstract the calling of REST endpoints
         :param valid_args:    A collection of valid parameter names for this endpoint
@@ -113,7 +182,10 @@ class BlackBoardLearn(Api):
                 self.token = self.__get_oauth2_token()
 
             auth_header = "Bearer {0}".format(self.token.token)
-            headers = {"Authorization": auth_header, "Content-Type": "application/json; charset=utf-8"}
+            headers = {
+                "Authorization": auth_header,
+                "Content-Type": "application/json; charset=utf-8",
+            }
             full_url = self.url + endpoint_name
             r_type = request_type.upper()
 
@@ -122,7 +194,11 @@ class BlackBoardLearn(Api):
                 if r_type == "GET":
                     data = request_function(full_url, params=kwargs, headers=headers)
                 else:
-                    in_data = json.dumps(kwargs) if r_type in ["POST", "PATCH", "PUT"] else kwargs
+                    in_data = (
+                        json.dumps(kwargs)
+                        if r_type in ["POST", "PATCH", "PUT"]
+                        else kwargs
+                    )
                     data = request_function(full_url, data=in_data, headers=headers)
             except KeyError:
                 raise Exception("Invalid request type submitted.")
@@ -149,8 +225,10 @@ class BlackBoardLearn(Api):
         else:
             bad_args = ", ".join(list(kwargs.keys()))
             good_args = ", ".join(valid_args)
-            msg = "Invalid parameter supplied at BlackBoardLearn::_hit_endpoint(). Arguments provided: {0}. " \
-                  "Valid arguments: {1}.".format(bad_args, good_args)
+            msg = (
+                "Invalid parameter supplied at BlackBoardLearn::_hit_endpoint(). Arguments provided: {0}. "
+                "Valid arguments: {1}.".format(bad_args, good_args)
+            )
             raise ParameterException(msg)
 
     def __get_oauth2_token(self):
@@ -161,10 +239,17 @@ class BlackBoardLearn(Api):
         """
 
         body = {"grant_type": "client_credentials"}
-        auth_str = base64.b64encode("{0}:{1}".format(self.public_key, self.private_key).encode("ascii"))
+        auth_str = base64.b64encode(
+            "{0}:{1}".format(self.public_key, self.private_key).encode("ascii")
+        )
         auth = "Basic {0}".format(auth_str.decode("ascii"))
-        headers = {"Content-Type": "application/x-www-form-urlencoded", "Authorization": auth}
-        raw_token = requests.post(self.url + "v1/oauth2/token", data=body, headers=headers)
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": auth,
+        }
+        raw_token = requests.post(
+            self.url + "v1/oauth2/token", data=body, headers=headers
+        )
         status = int(raw_token.status_code)
 
         if status >= 400:
@@ -175,7 +260,9 @@ class BlackBoardLearn(Api):
         else:
             raw_token = raw_token.json()
 
-        return Token(raw_token["expires_in"], raw_token["access_token"], raw_token["token_type"])
+        return Token(
+            raw_token["expires_in"], raw_token["access_token"], raw_token["token_type"]
+        )
 
     def __get_valid_roles(self):
         """
@@ -192,7 +279,9 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format(course_id if use_blackboard_course_id else "courseId:{0}".format(course_id))
+        endpoint = endpoint.format(
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
         return self._hit_endpoint(valid_args, endpoint)
 
     def get_courses(self, **kwargs):
@@ -204,7 +293,9 @@ class BlackBoardLearn(Api):
         :return:       a list of courses from BlackBoard
         """
         endpoint = self.COURSES
-        return self._hit_endpoint(self.endpoint_to_args["GET"][endpoint], endpoint, **kwargs)["results"]
+        return self._hit_endpoint(
+            self.endpoint_to_args["GET"][endpoint], endpoint, **kwargs
+        )["results"]
 
     def get_courses_columns(self, course_id, use_blackboard_course_id=False, **kwargs):
         """
@@ -218,11 +309,19 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COLUMNS
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format(course_id if use_blackboard_course_id else "courseId:{0}".format(course_id))
+        endpoint = endpoint.format(
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
         return self._hit_endpoint(valid_args, endpoint, **kwargs)["results"]
 
-    def get_course_columns_attempts(self, course_id, column_id, use_blackboard_course_id=False,
-                                    use_blackboard_column_id=False, **kwargs):
+    def get_course_columns_attempts(
+        self,
+        course_id,
+        column_id,
+        use_blackboard_course_id=False,
+        use_blackboard_column_id=False,
+        **kwargs
+    ):
         """
         Returns a list of attempts for a column in a given course's gradebook.
         See /learn/api/public/v1/courses/{courseId}/gradebook/columns/{columnId}/attempts for more info
@@ -235,11 +334,21 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COLUMN_ATTEMPTS
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        course_param = course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
-        col_param = column_id if use_blackboard_column_id else "externalId:{0}".format(column_id)
-        return self._hit_endpoint(valid_args, endpoint.format(course_param, col_param), **kwargs)["results"]
+        course_param = (
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
+        col_param = (
+            column_id
+            if use_blackboard_column_id
+            else "externalId:{0}".format(column_id)
+        )
+        return self._hit_endpoint(
+            valid_args, endpoint.format(course_param, col_param), **kwargs
+        )["results"]
 
-    def get_course_members(self, course_id, role=None, use_blackboard_course_id=False, **kwargs):
+    def get_course_members(
+        self, course_id, role=None, use_blackboard_course_id=False, **kwargs
+    ):
         """
         Returns a list of members for a given course.
         See documentation for /learn/api/public/v1/courses/{courseId}/users for more info
@@ -252,12 +361,24 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_MEMBERS
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format(course_id if use_blackboard_course_id else "externalId:{0}".format(course_id))
+        endpoint = endpoint.format(
+            course_id
+            if use_blackboard_course_id
+            else "externalId:{0}".format(course_id)
+        )
         data = self._hit_endpoint(valid_args, endpoint, **kwargs)["results"]
         return list(filter(lambda x: x["courseRoleId"] == role, data)) if role else data
 
-    def get_course_grade_columns_by_user(self, course_id, column_id, user_id, use_blackboard_course_id=False,
-                                         use_blackboard_column_id=False, use_blackboard_user_id=False, **kwargs):
+    def get_course_grade_columns_by_user(
+        self,
+        course_id,
+        column_id,
+        user_id,
+        use_blackboard_course_id=False,
+        use_blackboard_column_id=False,
+        use_blackboard_user_id=False,
+        **kwargs
+    ):
         """
         Returns a list of gradebook columns for a certain course-column-user id combination
         See /learn/api/public/v1/courses/{courseId}/gradebook/columns/{columnId}/users/{userId} for more info
@@ -273,13 +394,27 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_GRADE_COLUMNS_USERS
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        course_param = course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
-        column_param = column_id if use_blackboard_column_id else "externalId:{0}".format(column_id)
-        user_param = user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        course_param = (
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
+        column_param = (
+            column_id
+            if use_blackboard_column_id
+            else "externalId:{0}".format(column_id)
+        )
+        user_param = (
+            user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        )
         endpoint = endpoint.format(course_param, column_param, user_param)
         return self._hit_endpoint(valid_args, endpoint, **kwargs)
 
-    def get_course_group(self, course_id, group_id, use_blackboard_course_id=False, use_blackboard_group_id=False):
+    def get_course_group(
+        self,
+        course_id,
+        group_id,
+        use_blackboard_course_id=False,
+        use_blackboard_group_id=False,
+    ):
         """
         Returns a group object for the specified course id and group id
         :param course_id:                The course id
@@ -290,9 +425,15 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_GROUP
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        course_param = course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
-        group_param = group_id if use_blackboard_group_id else "externalId:{0}".format(group_id)
-        return self._hit_endpoint(valid_args, endpoint.format(course_param, group_param))
+        course_param = (
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
+        group_param = (
+            group_id if use_blackboard_group_id else "externalId:{0}".format(group_id)
+        )
+        return self._hit_endpoint(
+            valid_args, endpoint.format(course_param, group_param)
+        )
 
     def get_course_groups(self, course_id, use_blackboard_course_id=False):
         """
@@ -303,7 +444,9 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_GROUPS
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format(course_id if use_blackboard_course_id else "courseId:{0}".format(course_id))
+        endpoint = endpoint.format(
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
         return self._hit_endpoint(valid_args, endpoint)["results"]
 
     def get_course_roles(self, **kwargs):
@@ -325,7 +468,9 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.USER
         valid_args = self.endpoint_to_args["GET"][endpoint]
-        endpoint = endpoint.format(user_id if use_blackboard_user_id else "externalId:{0}".format(user_id))
+        endpoint = endpoint.format(
+            user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        )
         return self._hit_endpoint(valid_args, endpoint)
 
     def get_users(self, **kwargs):
@@ -364,8 +509,14 @@ class BlackBoardLearn(Api):
         endpoint = endpoint.format(user_id)
         return self._hit_endpoint(valid_args, endpoint, request_type="DELETE")
 
-    def add_user_to_course(self, user_id, course_id, role="Student", use_blackboard_user_id=False,
-                           use_blackboard_course_id=False):
+    def add_user_to_course(
+        self,
+        user_id,
+        course_id,
+        role="Student",
+        use_blackboard_user_id=False,
+        use_blackboard_course_id=False,
+    ):
         """
         Enrolls a user into a course
         Valid roles: Student, Instructor, TeachingAssistant, CourseBuilder, Grader, Guest
@@ -379,17 +530,33 @@ class BlackBoardLearn(Api):
         """
         valid_roles = self.__get_valid_roles()
         if role not in valid_roles:
-            raise ParameterException("Invalid role: \"{0}\". Valid roles: {1}".format(role, ", ".join(valid_roles)))
+            raise ParameterException(
+                'Invalid role: "{0}". Valid roles: {1}'.format(
+                    role, ", ".join(valid_roles)
+                )
+            )
 
         endpoint = self.COURSE_MEMBERSHIP
         valid_args = self.endpoint_to_args["PUT"][endpoint]
-        course_param = course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
-        user_param = user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        course_param = (
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
+        user_param = (
+            user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        )
         endpoint = endpoint.format(course_param, user_param)
-        return self._hit_endpoint(valid_args, endpoint, request_type="PUT", **dict(courseRoleId=role))
+        return self._hit_endpoint(
+            valid_args, endpoint, request_type="PUT", **dict(courseRoleId=role)
+        )
 
-    def update_course_membership(self, user_id, course_id, in_json, use_blackboard_user_id=False,
-                                 use_blackboard_course_id=False):
+    def update_course_membership(
+        self,
+        user_id,
+        course_id,
+        in_json,
+        use_blackboard_user_id=False,
+        use_blackboard_course_id=False,
+    ):
         """
         Updates a user's course membership with a PATCH request
         :param user_id:                  The user's banner id
@@ -401,12 +568,24 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_MEMBERSHIP
         valid_roles = self.endpoint_to_args["PATCH"][endpoint]
-        course_param = course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
-        user_param = user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        course_param = (
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
+        user_param = (
+            user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        )
         endpoint = endpoint.format(course_param, user_param)
-        return self._hit_endpoint(valid_roles, endpoint, request_type="PATCH", **in_json)
+        return self._hit_endpoint(
+            valid_roles, endpoint, request_type="PATCH", **in_json
+        )
 
-    def remove_user_from_course(self, user_id, course_id, use_blackboard_user_id=False, use_blackboard_course_id=False):
+    def remove_user_from_course(
+        self,
+        user_id,
+        course_id,
+        use_blackboard_user_id=False,
+        use_blackboard_course_id=False,
+    ):
         """
         Removes a user from a course
         :param user_id:                  User's banner id (str)
@@ -417,6 +596,12 @@ class BlackBoardLearn(Api):
         """
         endpoint = self.COURSE_MEMBERSHIP
         valid_args = self.endpoint_to_args["DELETE"][endpoint]
-        course_param = course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
-        user_param = user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
-        return self._hit_endpoint(valid_args, endpoint.format(course_param, user_param), request_type="DELETE")
+        course_param = (
+            course_id if use_blackboard_course_id else "courseId:{0}".format(course_id)
+        )
+        user_param = (
+            user_id if use_blackboard_user_id else "externalId:{0}".format(user_id)
+        )
+        return self._hit_endpoint(
+            valid_args, endpoint.format(course_param, user_param), request_type="DELETE"
+        )

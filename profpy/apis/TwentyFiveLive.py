@@ -3,6 +3,7 @@ import datetime
 from xml.etree.ElementTree import fromstring
 from http.client import responses
 from . import Api, ParameterException, ApiException
+
 NAMESPACE = "{http://www.collegenet.com/r25}"
 
 
@@ -11,12 +12,12 @@ class TwentyFiveLive(Api):
     Class that optimizes api calls to the CollegeNet 25Live REST interface.
     """
 
-    __NAMESPACE      = "{http://www.collegenet.com/r25}"
+    __NAMESPACE = "{http://www.collegenet.com/r25}"
     GET_RESERVATIONS = "/reservations.xml"
-    GET_SPACES       = "/spaces.xml"
-    GET_ORGS         = "/organizations.xml"
-    GET_ORG_TYPES    = "/orgtypes.xml"
-    GET_RATE_GROUPS  = "/rategrp.xml"
+    GET_SPACES = "/spaces.xml"
+    GET_ORGS = "/organizations.xml"
+    GET_ORG_TYPES = "/orgtypes.xml"
+    GET_RATE_GROUPS = "/rategrp.xml"
 
     def __init__(self, in_url):
         super().__init__(in_public_key=None, in_private_key=None, in_url=in_url)
@@ -28,7 +29,12 @@ class TwentyFiveLive(Api):
         Sets a list of valid endpoints for this API
         :return:
         """
-        self.endpoints = [self.GET_RESERVATIONS, self.GET_ORGS, self.GET_SPACES, self.GET_RATE_GROUPS]
+        self.endpoints = [
+            self.GET_RESERVATIONS,
+            self.GET_ORGS,
+            self.GET_SPACES,
+            self.GET_RATE_GROUPS,
+        ]
 
     def _set_args_mapping(self):
         """
@@ -37,13 +43,15 @@ class TwentyFiveLive(Api):
         """
         self.endpoint_to_args = {
             self.GET_RESERVATIONS: ["space_id"],
-            self.GET_SPACES:       ["space_id"],
-            self.GET_ORGS:         ["organization_id"],
-            self.GET_ORG_TYPES:    ["type_id"],
-            self.GET_RATE_GROUPS:  ["rate_group_id"]
+            self.GET_SPACES: ["space_id"],
+            self.GET_ORGS: ["organization_id"],
+            self.GET_ORG_TYPES: ["type_id"],
+            self.GET_RATE_GROUPS: ["rate_group_id"],
         }
 
-    def _hit_endpoint(self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs):
+    def _hit_endpoint(
+        self, valid_args, endpoint_name, get_one=False, request_type="GET", **kwargs
+    ):
         """
         Abstracted logic for hitting REST endpoints for this API
         :param valid_args:    Valid keyword arguments for this endpoint (list)
@@ -57,7 +65,10 @@ class TwentyFiveLive(Api):
             full_url = self.url + endpoint_name
             r_type = request_type.upper()
             if r_type == "GET":
-                headers = {"Content-Type": "application/xml; charset=utf-8", "Accept": "application/xml"}
+                headers = {
+                    "Content-Type": "application/xml; charset=utf-8",
+                    "Accept": "application/xml",
+                }
                 data = requests.get(full_url, params=kwargs, headers=headers)
                 status = int(data.status_code)
                 if 300 >= status >= 200:
@@ -68,7 +79,9 @@ class TwentyFiveLive(Api):
                     try:
                         raise ApiException(responses[status])
                     except KeyError:
-                        raise ApiException("Error processing request: {0}".format(data.text))
+                        raise ApiException(
+                            "Error processing request: {0}".format(data.text)
+                        )
                 else:
                     raise ApiException("Unknown error.")
             else:
@@ -77,8 +90,10 @@ class TwentyFiveLive(Api):
         else:
             bad_args = ", ".join(list(kwargs.keys()))
             good_args = ", ".join(valid_args)
-            msg = "Invalid parameter supplied at ServiceNowTable::_hit_endpoint(). Arguments provided: {0}. " \
-                  "Valid arguments: {1}.".format(bad_args, good_args)
+            msg = (
+                "Invalid parameter supplied at ServiceNowTable::_hit_endpoint(). Arguments provided: {0}. "
+                "Valid arguments: {1}.".format(bad_args, good_args)
+            )
             raise ParameterException(msg)
 
     def get_organizations(self, as_xml_text=False, **kwargs):
@@ -95,7 +110,9 @@ class TwentyFiveLive(Api):
             result = data
         else:
             result = []
-            for organization in fromstring(data).findall(self.__NAMESPACE + "organization"):
+            for organization in fromstring(data).findall(
+                self.__NAMESPACE + "organization"
+            ):
                 result.append(parse_organization_from_xml(organization))
         return result
 
@@ -200,10 +217,14 @@ def parse_organization_from_xml(in_xml):
             type_json = {}
             for type_child in type_element:
                 type_tag = type_child.tag.replace(NAMESPACE, "")
-                type_json[type_tag] = get_text_from_element(type_element, type_tag, NAMESPACE)
+                type_json[type_tag] = get_text_from_element(
+                    type_element, type_tag, NAMESPACE
+                )
             result[tag] = type_json
         else:
-            result[tag] = get_text_from_element(in_xml, tag, NAMESPACE, is_dt=tag == "last_mod_dt")
+            result[tag] = get_text_from_element(
+                in_xml, tag, NAMESPACE, is_dt=tag == "last_mod_dt"
+            )
     return result
 
 
@@ -224,7 +245,9 @@ def parse_organization_type_from_xml(in_xml):
                 rg_json[rg_tag] = get_text_from_element(rg_element, rg_tag, NAMESPACE)
             result[tag] = rg_json
         else:
-            result[tag] = get_text_from_element(in_xml, tag, NAMESPACE, is_dt=tag == "last_mod_dt")
+            result[tag] = get_text_from_element(
+                in_xml, tag, NAMESPACE, is_dt=tag == "last_mod_dt"
+            )
     return result
 
 
@@ -237,7 +260,9 @@ def parse_space_from_xml(in_xml):
     result = {}
     for child in in_xml:
         tag = child.tag.replace(NAMESPACE, "")
-        result[tag] = get_text_from_element(in_xml, tag, NAMESPACE, is_dt=tag == "last_mod_dt")
+        result[tag] = get_text_from_element(
+            in_xml, tag, NAMESPACE, is_dt=tag == "last_mod_dt"
+        )
     return result
 
 
@@ -247,8 +272,15 @@ def parse_reservation_from_xml(in_xml):
     :param in_xml: The 25Live reservation xml object (xml.etree.ElementTree.Element)
     :return:       The parsed JSON                   (dict)
     """
-    dates = ["reservation_start_dt", "pre_event_dt", "event_start_dt", "event_end_dt", "post_event_dt",
-             "reservation_end_dt", "last_mod_dt"]
+    dates = [
+        "reservation_start_dt",
+        "pre_event_dt",
+        "event_start_dt",
+        "event_end_dt",
+        "post_event_dt",
+        "reservation_end_dt",
+        "last_mod_dt",
+    ]
     result = {}
     for child in in_xml:
         tag = child.tag.replace(NAMESPACE, "")
@@ -257,8 +289,12 @@ def parse_reservation_from_xml(in_xml):
             space_json = {}
             for space_child in space_data:
                 space_tag = space_child.tag.replace(NAMESPACE, "")
-                space_json[space_tag] = get_text_from_element(space_data, space_tag, NAMESPACE)
+                space_json[space_tag] = get_text_from_element(
+                    space_data, space_tag, NAMESPACE
+                )
             result[tag] = space_json
         else:
-            result[tag] = get_text_from_element(in_xml, tag, NAMESPACE, is_dt=tag in dates)
+            result[tag] = get_text_from_element(
+                in_xml, tag, NAMESPACE, is_dt=tag in dates
+            )
     return result

@@ -10,7 +10,6 @@ test_blob = b"test_blob"
 
 
 class TestLOB(unittest.TestCase):
-
     def test_blob_insert(self):
         new_record = lobs.new(test_blob=test_blob)
         new_record.save()

@@ -26,5 +26,5 @@ setup(
     install_requires=["cx_Oracle", "requests"],
     description="",
     long_description=read("README.md"),
-    long_description_type="text/markdown",
+    long_description_content_type="text/markdown",
 )
