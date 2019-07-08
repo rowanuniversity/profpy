@@ -13,17 +13,18 @@ from profpy.db.fauxrm import FauxrmApp
 from flask import jsonify
 
 tables = ["admin.users", "admin.roles", "payroll.timesheets"]
-
 app = FauxrmApp(__name__, db_objects=tables, login_var="login_env_var", password_var="password_env_var")
 
     
 @app.route("/rest/person/<id_number>")
 def person(id_number):
-    return jsonify(app.admin.users.find(id=id_number))
+    return jsonify(dict(results=app.admin.users.find(id=id_number, as_json=True)))
 ```
 
 Notice that we simply called `app.admin.users` as a property of the application. The FauxrmApp is smart enough
 to create higher-level properties for owners and sub-properties for object names so you can access them like you would 
 with SQL syntax. This also helps avoid any issues with duplicate table/view names under different owners. 
+
+
 
    

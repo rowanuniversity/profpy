@@ -128,7 +128,7 @@ def print_user_ids(users):
 ```
 
 ---
-#### find ( *data=None, limit=None, raw=False, \*\*kwargs* )
+#### find ( *data=None, limit=None, get_row_objects=True, \*\*kwargs* )
 The find method allows us to query on a table based on its field names using python's keyword arguments parameter type, or using
 fauxrm's Query functions (for more complex queries)
 
@@ -138,7 +138,8 @@ Parameters:
 |----------|-------------------------------------------------------------------|----------|---------------------------------------------|---------|
 | data     | A dictionary to use as search terms                               | dict     | only if no keyword arguments specified      | None    |
 | limit    | A cap on the number of returned results                           | int      | no                                          | None    |
-| raw      | Whether or not to return a list of dicts (instead of Row objects) | bool     | no                                          | False   |
+| get_row_objects      | Whether or not to return a Row objects | bool     | no                                          | True   |
+| as_json      | Whether or not to return json | bool     | no                                          | False   |
 | **kwargs | Field=value search terms on the table/view                        | **kwargs | only if no dict is passed to data parameter | N/A     |
 
 
@@ -230,7 +231,8 @@ Parameters:
 | Name     | Description                                                       | Type     | Required                                    | Default |
 |----------|-------------------------------------------------------------------|----------|---------------------------------------------|---------|
 | data     | A dictionary to use as search terms                               | dict     | only if no keyword arguments specified      | None    |
-| raw      | Whether or not to return a dicts (instead of a Row object) | bool     | no                                          | False   |
+| get_row_objects      | Whether or not to return a Row objects | bool     | no                                          | True   |
+| as_json      | Whether or not to return json | bool     | no                                          | False   |
 | **kwargs | Field=value search terms on the table/view                        | **kwargs | only if no dict is passed to data parameter | N/A     |
 
 Example:

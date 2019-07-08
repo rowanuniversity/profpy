@@ -184,13 +184,16 @@ class Data(object):
         """
         self._db.commit()
 
-    def find(self, data=None, limit=None, get_row_objects=True, **kwargs):
+    def find(
+        self, data=None, limit=None, get_row_objects=True, as_json=False, **kwargs
+    ):
         """
         Finds records based on field values. User may provide as many fields as he/she wants to continue to filter
         the resulting set.
         :param data:            Fields to search on as field-value pairs in a dictionary (dict)
         :param limit:           A limit on the number of records returned (int)
         :param get_row_objects: Whether or not to return Row objects, as opposed to dicts (bool)
+        :param as_json:         Whether or not to return json (bool)
         :param kwargs:          Fields to search on, i.e. first_name="Joe" (used instead of "data" arg)
         :return:                A result set from the database (list of Row objects)
         """
@@ -210,24 +213,29 @@ class Data(object):
                 prepared_kwargs["sql"],
                 get_data=True,
                 params=prepared_kwargs["params"],
-                get_row_objects=get_row_objects,
+                get_row_objects=get_row_objects and not as_json,
                 limit=limit,
             )
 
         return result
 
-    def find_one(self, data=None, get_row_objects=True, **kwargs):
+    def find_one(self, data=None, get_row_objects=True, as_json=False, **kwargs):
         """
         Same as find, but it returns only the first record in the resulting list.
 
         :param data:            Fields to search on as field-value pairs in a dictionary (dict)
         :param get_row_objects: Whether or not to return Row objects, as opposed to dicts (bool)
+        :param as_json:         Whether or not to return json (bool)
         :param kwargs:          Optionally, the caller can specify field-value pairs as keyword arguments
         :return:                If it exists, the Record found at the specified field-value pairs.
         """
 
         results = self.find(
-            data=data, limit=1, get_row_objects=get_row_objects, **kwargs
+            data=data,
+            limit=1,
+            get_row_objects=get_row_objects,
+            as_json=as_json,
+            **kwargs,
         )
         return results[0] if results else None
 
