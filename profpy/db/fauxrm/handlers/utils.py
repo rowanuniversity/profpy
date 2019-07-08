@@ -31,7 +31,11 @@ def results_to_objs(in_cursor, table_object=None, limit=None, get_row_objs=False
     """
     field_names = clean_field_names([d[0].lower() for d in in_cursor.description])
     results = in_cursor.fetchmany(limit) if limit else in_cursor.fetchall()
-    return to_row_objs(results, field_names, table_object) if get_row_objs else to_dict_objs(results, field_names)
+    return (
+        to_row_objs(results, field_names, table_object)
+        if get_row_objs
+        else to_dict_objs(results, field_names)
+    )
 
 
 def to_row_objs(in_data, in_fields, table_object):

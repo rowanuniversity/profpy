@@ -9,7 +9,11 @@ short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9_]*@[a-zA-Z_]+$")
 def get_connection(login_var, password_var):
 
     if not all(variable in os.environ for variable in (login_var, password_var)):
-        raise Exception("Missing environment variables: '{0}', '{1}'".format(login_var, password_var))
+        raise Exception(
+            "Missing environment variables: '{0}', '{1}'".format(
+                login_var, password_var
+            )
+        )
     else:
         return get_connection_raw(os.environ[login_var], os.environ[password_var])
 
@@ -21,7 +25,7 @@ def get_connection_raw(login, password):
     # user@sid
     if re.match(short_form_regex, login):
         user = login_parts[0]
-        dsn  = login_parts[1].replace("//", "")
+        dsn = login_parts[1].replace("//", "")
 
     # user@//host:port/service_name
     else:

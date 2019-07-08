@@ -5,6 +5,7 @@ class Token(object):
     """
     Class that handles Oauth2 Tokens
     """
+
     def __init__(self, expires_in_seconds, in_token_id, in_token_type):
         """
         Constructor
@@ -13,7 +14,9 @@ class Token(object):
         :param in_token_type:      The token's type
         """
         self.token = in_token_id
-        self.expire_time = datetime.datetime.now() + datetime.timedelta(0, expires_in_seconds)
+        self.expire_time = datetime.datetime.now() + datetime.timedelta(
+            0, expires_in_seconds
+        )
         self.type = in_token_type
 
     @property
@@ -27,5 +30,5 @@ class Token(object):
     def header(self):
         return {
             "Authorization": "Bearer {0}".format(self.token),
-            "Content-Type": "application/json; charset=utf-8"
+            "Content-Type": "application/json; charset=utf-8",
         }

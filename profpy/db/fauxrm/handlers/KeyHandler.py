@@ -12,7 +12,6 @@ class PrimaryKey(object):
         # the columns that make up this key (a single value list if it isn't composite)
         self.columns = columns
 
-
     ####################################################################################################################
     # OVERRIDES
     def __len__(self):
