@@ -19,8 +19,26 @@ The profpy library is organized into submodules. For instance, database-related 
 
 ```python
 from profpy.db import get_connection
-connection = get_connection("full_login", "db_password")
+
+if __name__ == "__main__":
+    connection = get_connection("full_login", "db_password")
+    cursor = connection.cursor()
+    # do stuff
 ```
+or
+```python
+from profpy.db import with_oracle_connection
+
+@with_oracle_connection()
+def main(connection):
+    cursor = connection.cursor()
+    # do stuff
+
+if __name__ == "__main__":
+    main()
+```
+
+<i>Note: "full_login" and "db_password" are the defaults for both methods</i>
 
 ### Dependencies
 Python 3.6.7 or above
@@ -28,4 +46,7 @@ Python 3.6.7 or above
 ##### Current Submodules
 For in-depth documentation, explore the submodules individually:
 - [db](./profpy/db)
+    * [fauxrm](./profpy/db/fauxrm)
 - [apis](./profpy/apis)
+
+If you are looking to make a flask application with fauxrm, go [here](./profpy/db/fauxrm/documentation/flask.md). 

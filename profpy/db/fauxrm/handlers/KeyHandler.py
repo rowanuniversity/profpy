@@ -12,6 +12,7 @@ class PrimaryKey(object):
         # the columns that make up this key (a single value list if it isn't composite)
         self.columns = columns
 
+
     ####################################################################################################################
     # OVERRIDES
     def __len__(self):
@@ -69,3 +70,7 @@ class PrimaryKey(object):
         for column in self.columns:
             statements.append("{column}=:{column}".format(column=column))
         return " and ".join(statements)
+
+    @property
+    def key_return(self):
+        return "returning {0} into :out_key_string".format("||','||".join(self.columns))
