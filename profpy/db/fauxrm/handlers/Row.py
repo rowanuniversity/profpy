@@ -20,14 +20,6 @@ You can also update data using these objects, if they belong to a table handler:
         phonebook.commit()
 """
 import cx_Oracle
-import json
-
-
-class RowEncoder(json.JSONEncoder):
-    def default(self, obj):
-        return (
-            obj.__data if isinstance(obj, Row) else json.JSONEncoder.default(self, obj)
-        )
 
 
 class Row(object):
