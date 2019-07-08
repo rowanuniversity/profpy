@@ -158,7 +158,7 @@ class Row(object):
 
     ####################################################################################################################
     # PUBLIC METHODS
-    def save(self):
+    def save(self, commit=False):
         """
         Saves this Row to the database, if the table handler still exists
         :return:
@@ -179,6 +179,8 @@ class Row(object):
                 if self.__state_changed():
                     self.__handler.delete_where(**self.__original_values)
                 self.__dict__.update(new_object.__dict__)
+                if commit:
+                    self.__handler.commit_changes()
             else:
                 raise Exception("Can only perform 'save' on a record in a table.")
 

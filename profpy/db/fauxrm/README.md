@@ -104,8 +104,6 @@ def get_phone_number(phonebook, name):
     
 if __name__ == "__main__":
     get_phone_number("Dennis Nedry")
-    database.close()
-
 ```
 
 You can string them together to use multiple models in one function:
@@ -123,56 +121,149 @@ def get_user_info(addresses, phonebook, name):
     
 if __name__ == "__main__":
     get_user_info("Dennis Nedry")
-    database.close()
 ```
+*Note: We don't have to do an explicit call to database.close(), this is handled by garbage collection.  
 
 #### Querying with Other SQL Operators
-The [technical docs](./documentation/Handlers.md#find--datanone-limitnone-rawfalse-kwargs-) for the find method have examples using other sql operators such as LIKE and IN. 
+Fauxrm currently supports some other SQL operators, similar to the way that Django does. The syntax follows the pattern \<field\>___\<operator\>=\<value\>. 
+This syntax is applied as keyword arguments just like normal queries. 
+```python
+import datetime
+from profpy.db.fauxrm import with_model, Database
+
+database = Database()
+
+@with_model(database, "owner", "movies")
+def movie_stats(movies):
+
+    # <, >, <=, >=, <>
+    movies.find(runtime___lt=127)
+    movies.find(runtime___gt=127)
+    movies.find(runtime___lte=127)
+    movies.find(runtime___gte=127)
+    movies.find(runtime___ne=127)
+
+    # truncate date
+    movies.find(release_date___trunc=datetime.date(year=1993, month=6, day=11))
+    
+    # truncate date with other operator
+    # sql: 
+    #      select * from owner.movies where trunc(release_date) > '1993-11-06'
+    movies.find(release_date___trunc___gt=datetime.date(year=1993, month=6, day=11))
+
+
+@with_model(database, "owner", "movie_characters")
+def movie_characters(movie_characters):
+    
+    # LIKE operator
+    movie_characters.find(first_name___like="Denn%")
+    
+    # IN operator, either syntax works
+    movie_characters.find(first_name___in=["Dennis", "Alan", "John", "Tim"])
+    movie_characters.find(first_name=["Dennis", "Alan", "John", "Tim"])
+      
+```
+
+#### Query functions
+The fauxrm And and Or functions are good for queries that can't be simplified down to keyword argument parameters. These
+functions can be strung together and nested. 
+```python
+from profpy.db.fauxrm import And, Or, with_model, Database
+
+database = Database()
+
+@with_model(database, "owner", "phonebook")
+def query_demo(phonebook):  
+    # select all john smiths and jane does from the phonebook (an or statement)
+    john_smith = And(first_name="John", last_name="Smith")
+    jane_doe = And(first_name="Jane", last_name="Doe")
+    query = Or(john_smith, jane_doe)
+    results = phonebook.find(query)
+```
+
+What would this have looked like with SQL? 
+```oracle
+select * 
+from   owner.phonebook
+where (first_name='John' and last_name='Smith') or (first_name='Jane' and last_name='Doe');
+```
+
+Additionally, you can use the keyword operators from the previous section inside of these logical operator functions.
+This snippet of fauxrm code...
+```python
+from profpy.db.fauxrm import Or, with_model, Database
+
+database = Database()
+
+@with_model(database, "owner", "phonebook")
+def query_demo(phonebook):
+    phonebook.find(Or(first_name___like="Denn%", last_name="Grant"))
+```
+
+... would look like this in SQL:
+```oracle 
+select *
+from   owner.phonebook
+where  first_name like 'Denn%' or last_name='Grant';
+```
 
 #### Modifying tables
 
 *Saving*
+The save method allows you to commit "in place" like so: 
 ```python
-from profpy.db.fauxrm import with_fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-@with_fauxrm()
-def add_phone(database):
-    phonebook = database.model("owner", "phonebook")
+database = Database()
+
+@with_model(database, "owner", "phonebook")
+def add_phone(phonebook):
     new_record = phonebook.new(first_name="Dennis", last_name="Nedry", phone_number="555-555-5555")
-    new_record.save()
-    database.commit()
+    new_record.save(commit=True)
+```
+
+This eliminates the need for an explicit call to database.commit(). 
+
+Alternatively, the database handler's commit method is best used 
+after a string of .save() calls or a loop. 
+```python
+for phone_number in ["555-555-5555", "555-555-5556", "555-555-5557"]:
+    phonebook.new(phone_number=phone_number).save()
+database.commit()
 ```
 
 *Deleting*
 ```python
-from profpy.db.fauxrm import with_fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-@with_fauxrm()
-def demo(database):
-   phonebook = database.model("owner", "phonebook")
-   phonebook.delete_where(first_name="Dennis")
-   database.commit() 
+database = Database()
+
+@with_model(database, "owner", "phonebook")
+def demo(phonebook):
+   phonebook.delete_where(first_name="Dennis", commit=True)
 ```
 
 *Getting at Key (only for tables)*
 ```python
-from profpy.db.fauxrm import with_fauxrm
+from profpy.db.fauxrm import with_model, Database
+
+database = Database()
 
 # say our phonebook table has a generated integer id column
-@with_fauxrm()
-def demo(database):
-    phonebook = database.model("owner", "phonebook")
+@with_model(database, "owner", "phonebook")
+def demo(phonebook):
     first_record = phonebook.get(1)
 ```
 
 *Editing Values by Row*
 ```python
 import datetime
-from profpy.db.fauxrm import with_fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-@with_fauxrm()
-def edit_test_scores(database):
-    test_scores = database.model("owner", "test_score")
+database = Database()
+
+@with_model(database, "owner", "test_score")
+def edit_test_scores(test_scores):
     for record in test_scores.find(user_id=123456):
         record.activity_date = datetime.datetime.now()
         record.test_score = 100
@@ -180,38 +271,21 @@ def edit_test_scores(database):
     database.commit()
 ```
 
-#### Query functions
-The fauxrm And and Or functions are good for queries that can't be simplified down to keyword argument parameters. These
-functions can be strung together and nested. 
-```python
-from profpy.db.fauxrm import And, Or, with_fauxrm
-
-@with_fauxrm()
-def query_demo(database):  
-    # select all john smiths and jane does from the phonebook (an or statement)
-    john_smith = And(first_name="John", last_name="Smith")
-    jane_doe = And(first_name="Jane", last_name="Doe")
-    query = Or(john_smith, jane_doe)
-    
-    phonebook = database.model("owner", "phonebook")
-    results = phonebook.find(query)
-```
-
 #### LOBs
 fauxrm supports the reading and writing BLOBS and CLOBS. However, it does not currently support searching on these data types.
 ```python
-from profpy.db.fauxrm import with_fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-@with_fauxrm()
-def lob_demo(database):
-    table_with_lobs = database.model("owner", "lobs")
+database = Database
+
+@with_model(database, "owner", "lobs")
+def lob_demo(table_with_lobs):
     clob_value = "this is a test CLOB"
     blob_value = b"test blob"
     table_with_lobs.new(
         id=1,
         clob_field=clob_value,
         blob_field=blob_value
-    )
-    table_with_lobs.save()
+    ).save(commit=True)
 ```
 

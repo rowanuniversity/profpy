@@ -48,3 +48,5 @@ For in-depth documentation, explore the submodules individually:
 - [db](./profpy/db)
     * [fauxrm](./profpy/db/fauxrm)
 - [apis](./profpy/apis)
+
+If you are looking to make a flask application with fauxrm, go [here](./profpy/db/fauxrm/documentation/flask.md). 

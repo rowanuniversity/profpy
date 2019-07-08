@@ -18,6 +18,7 @@ class Data(object):
     __TYPE_MAPPING = {
         "VARCHAR2": str,
         "VARCHAR": str,
+        "CHAR": str,
         "NCHAR": str,
         "NVARCHAR": str,
         "RAW": str,
@@ -176,6 +177,13 @@ class Data(object):
         sql = "select * from {table}".format(table=self.name)
         return self._execute_sql(sql, get_data=True, get_row_objects=True)
 
+    def commit_changes(self):
+        """
+        Commits any changes to the database
+        :return:
+        """
+        self._db.commit()
+
     def find(self, data=None, limit=None, get_row_objects=True, **kwargs):
         """
         Finds records based on field values. User may provide as many fields as he/she wants to continue to filter
@@ -225,7 +233,6 @@ class Data(object):
 
     ####################################################################################################################
     # PROTECTED METHODS
-
     def _execute_sql(
         self, sql, get_data=False, params=None, get_row_objects=False, limit=None
     ):
@@ -499,7 +506,7 @@ class Table(Data):
     def has_key(self):
         return self.__primary_key_object.exists
 
-    def delete_where(self, **kwargs):
+    def delete_where(self, commit=False, **kwargs):
         """
         Truncates the table associated with this Table instance
         :return:
@@ -509,7 +516,9 @@ class Table(Data):
             prepared_kwargs = self._prepare_kwargs(kwargs, "delete")
             self._execute_sql(prepared_kwargs["sql"], params=prepared_kwargs["params"])
         else:
-            self._execute_sql("delete from {table}".format(table=self.name))
+            self._execute_sql(f"delete from {self.name}")
+        if commit:
+            self.commit_changes()
 
     def get(self, key=None, **kwargs):
         """

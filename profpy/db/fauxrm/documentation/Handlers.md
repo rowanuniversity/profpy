@@ -3,17 +3,56 @@ Table and View Objects are both children of the Data class. In a script using fa
 classes should not be used. Instead they should be created using a Database object and its model method.
 
 ## Instantiation
-To get a Table or View handler object, you need to use the Database class' model method. This method will return
-the appropriate object type. 
+To get a Table or View handler object, you need to create a Database object first. Then, it is suggested that you used either
+the Database object's .model() method or the with_model decorator. You can also use the with_fauxrm decorator that simply passes a 
+Database object into the decorated function. The last suggested method is using the Database object's own context manager, but this
+is likely the least likely to be used option. 
 
-Example:
+All of these conventions give you flexibility with how you use this tool. For our documentation, we will mostly use the 
+with_model convention, as it is the most succinct. However, this may not *always* be the best design choice if you are 
+using the same models repeatedly in your code. Examples of the different conventions can be found below:
+
+Using the with_fauxrm decorator:
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_fauxrm
 
-with fauxrm.Database() as database:
-    users = database.model("owner", "users")  # returns a View handler for a users table
-    test_scores = database.model("owner", "test_scores") # returns a Table handler for a test score table
+# the arguments to with_fauxrm are optional and default to "full_login" and "db_password", respectively. 
+# they are the names of the environment variables containing your connection string and password.
+@with_fauxrm(login_var="login_env_var", password_var="password_env_var")
+def find_user(database, user_id):
+    users = database.model("owner", "users")
+    return users.get(user_id)
 ```
+
+
+Using the Database object and or with_model decorator: 
+```python
+from profpy.db.fauxrm import with_model, Database
+
+# instantiate Database object, like with the with_fauxrm decorator these default to "full_login" and "db_password"
+database = Database(login_var="login_env_var", password_var="password_env_var")
+
+# using the .model() convention:
+def find_user_1(user_id):
+    user_table = database.model("owner", "users")
+    return user_table.get(user_id)
+
+# using the with_model convention:
+@with_model(database, "owner", "users")
+def find_user_2(user_table, user_id):
+    return user_table.get(user_id)
+```
+
+Using native Database object context manager:
+```python
+from profpy.db.fauxrm import Database
+
+def find_user(user_id):
+    with Database() as database:
+        users = database.model("owner", "users")
+        return users.find(user_id=user_id)
+```
+
 
 ## Properties
 
@@ -37,15 +76,19 @@ The comment/description for this Table or View, defined in the DDL.
 The field definitions for each field. 
 
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import Database
 
-with fauxrm.Database() as database:
-    table = database.model("owner", "table")
-    table.mapping
-    # { "first_name": {"type": <class "str">, "nullable": True, generated": False}, 
-    #   "last_name" : {"type": <class "str">, "nullable": True, generated": False},
-    #   "id"        : {"type", <class "int">, "nullable": False, generated: True}
-    # }
+database = Database()
+table = database.model("owner", "table")
+print(table.mapping)
+```
+
+This should output something like this (if the table had these fields):
+```text
+ { "first_name": {"type": <class "str">, "nullable": True, generated": False}, 
+   "last_name" : {"type": <class "str">, "nullable": True, generated": False},
+   "id"        : {"type", <class "int">, "nullable": False, generated: True}
+ }
 ```
 
 ---
@@ -74,16 +117,14 @@ Returns all records from the table
 
 Example:
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-# print everyone's pidms
-with fauxrm.Database() as database:
-    users = database.model("owner", "users")
+database = Database()
+
+@with_model(database, "owner", "users")
+def print_user_ids(users):
     for record in users.all():
-    
-        # records are of type Row, and therefore allow for direct access to field names as attributes of the object.
-        # user_id is a column in our hypothetical user table
-        record.user_id
+        print(record.user_id)
 ```
 
 ---
@@ -103,12 +144,13 @@ Parameters:
 
 Examples:
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-# get all people named Dennis
-with fauxrm.Database() as database:
-    users = database.model("owner", "users")
-    
+database = Database()
+
+@with_model(database, "owner", "users")
+def example(users):
+    # get all people named Dennis
     # using keyword args
     dennis_list = users.find(first_name="Dennis")
     
@@ -138,45 +180,44 @@ Currently supported operators/functions:
 
 
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-# Find all names similar to a certain Jurassic Park character
-with fauxrm.Database() as database:
-    users = database.model("park_admin", "users")
-    dennis_list = users.find(last_name___like="%edry", first_name___like="%ennis")
+database = Database()
+
+@with_model(database, "park_admin", "users")
+def find_nedry(users):
+    return users.find(last_name___like="%edry", first_name___like="%ennis")
 ```
 
 ```python
 import datetime
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-# Find all doctor's office visits by dates greater than a certain date
-with fauxrm.Database() as database:
-    one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
-    office_visits = database.model("owner", "office_visits")
+database = Database()
+
+@with_model(database, "owner", "office_visits")
+def doctor_example(office_visits):
 
     visits = office_visits.find(visit_date___gt=datetime.date(2019, 3, 1))
     
     # you can also use valid oracle date strings
-    visits = office_visits.find(visit_date___gt="01-MAR-19")
+    visits = office_visits.find(visit_date___gt="01-MAR-19") 
 ```
 
 ##### Using find method with Query Functions
 For queries that involve using "Or", you can use the fauxrm query functions and pass them to the find method. 
 
 ```python
-from profpy.db import fauxrm
-from profpy.db.fauxrm import And, Or
+from profpy.db.fauxrm import And, Or, with_model, Database
 
-# Find all John Smiths or Jane Does
-with fauxrm.Database() as database:
+database = Database()
 
+@with_model(database, "owner", "users")
+def example(users):
     john_smith_query = And(first_name="John", last_name="Smith")
     jane_doe_query = And(first_name="Jane", last_name="Doe")
     query = Or(john_smith_query, jane_doe_query)
-    
-    users = database.model("owner", "users")
-    people = users.find(query)
+    return users.find(query)
 ```
 
 ---
@@ -195,12 +236,13 @@ Parameters:
 Example:
 
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import Database, with_model
 
-# find Dennis Nedry
-with fauxrm.Database() as database:
-    users = database.model("owner", "users")
-    dennis = users.find_one(first_name="Dennis", last_name="Nedry")
+database = Database()
+
+@with_model(database, "owner", "users")
+def example(users):
+    return users.find_one(first_name="Dennis", last_name="Nedry")
 ```
 
 ## Table Objects
@@ -220,21 +262,55 @@ Returns all generated fields for this table
 Returns whether or not this table has a primary key
 
 ### Table-exclusive methods
-#### delete_where ( *\*\*kwargs* )
+#### delete_where ( commit=False, *\*\*kwargs* )
 Deletes rows from a table based on keyword args. If none are specified, it deletes everything. 
 
 Example:
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-# delete all test scores for certain pidms
-with fauxrm.Database() as database:
-    test_scores = database.model("owner", "test_scores")
+database = Database()
+
+@with_model(database, "owner", "test_scores")
+def example(test_scores):
+
     ids = [12345, 6789]
     
-    test_scores.delete_where(user_id___in=ids)
-    database.commit()
+    # commit in place, this argument is optional
+    test_scores.delete_where(commit=True, user_id___in=ids)
 ```
+---
+#### new (\*\*kwargs)
+Creates a new record that is un-persisted to the database until saved. This method is how we create
+new data with fauxrm. 
+
+Parameters:
+
+| Name     | Description                                       | Type     | Required                                    | Default |
+|----------|---------------------------------------------------|----------|---------------------------------------------|---------|
+| **kwargs | key_field=value for each field | **kwargs | no | N/A     | 
+
+
+Example:
+```python
+from profpy.db.fauxrm import with_model, Database
+
+database = Database()
+
+@with_model(database, "owner", "test_scores")
+def add_test_score(model, user_id, score):
+    new_score = model.new(
+        id=user_id,
+        score=score
+    )
+    
+    # the commit argument is optional, if not specified, 
+    # nothing will be committed until database.commit()
+    # is called at some point
+    new_score.save(commit=True)
+```
+The above example will save the new record to the test_scores table, unless any database errors are thrown. 
+
 ---
 #### get ( *key=None, \*\*kwargs* )
 Retrieve a record by supplying its primary key. Table must have a primary key set for this to not throw an exception.
@@ -252,77 +328,33 @@ Examples:
 
 *Normal Primary Key*
 ```python
-from profpy.db import fauxrm
+from profpy.db.fauxrm import Database, with_model
 
-with fauxrm.Database() as database:
-    
-    # say we have a table of phone numbers that has a "primary_address_id" field that corresponds to a primary key "id" field 
-    # in a table of addresses
-    phone_book = database.model("owner", "phonebook")
-    addresses  = database.model("owner", "addresses")
-    
+database = Database()
+
+# say we have a table of phone numbers that has a "primary_address_id" field that corresponds to a primary key "id" field 
+# in a table of addresses
+@with_model(database, "owner", "phonebook")
+@with_model(database, "owner", "addresses")
+def example(addresses, phonebook):
     # find all Johns in phone book and use the foreign key to grab their primary addresses
     primary_addresses = []
-    for phone_record in phone_book.find(first_name="John"):
+    for phone_record in phonebook.find(first_name="John"):
         primary_addresses.append(addresses.get(phone_record.primary_address_id))
+    return primary_addresses
 ```
 
 *Composite Key*
 ```python
 import datetime
-from profpy.db import fauxrm
+from profpy.db.fauxrm import with_model, Database
 
-with fauxrm.Database() as database:
-    test_scores = database.model("owner", "test_scores")
+database = Database()
+
+@with_model(database, "owner", "test_scores")
+def example(test_scores):
     one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
     
     # select a test score based on a composite key of user id, date, and test code
-    record = test_scores.get(user_id=1234, test_date=one_year_ago, test_code="A")
+    return test_scores.get(user_id=1234, test_date=one_year_ago, test_code="A")
 ```
----
-#### save ( *data=None, \*\*kwargs* )
-Inserts or upserts on a table, depending on whether or not a primary key is given in the specified parameters. 
-Returns the new record as a Row object.
-
-Parameters:
-
-| Name     | Description                                     | Type     | Required                                    | Default |
-|----------|-------------------------------------------------|----------|---------------------------------------------|---------|
-| data     | The data to insert/upsert                       | dict     | only if no keyword arguments specified      | None    |
-| **kwargs | The data to insert/upsert, as keyword arguments | **kwargs | only if no dict is passed to data parameter | N/A     |
-
-Examples:
-
-```python
-from profpy.db import fauxrm
-
-# say we have a phonebook table with a generated "id" column
-with fauxrm.Database() as database:
-    
-    phonebook = database.model("owner", "phonebook")
-    
-    # insert new record
-    phonebook.save(phone_number="444-444-4444", name="John Smith")
-    
-    # upsert on id 4
-    phonebook.save(id=4, phone_number="222-222-2222")
-```
-
-##### Using Row object to modify data
-An alternative to the above is modifying the attributes of Row objects and calling their save methods instead.
-
-Example:
-```python
-from profpy.db import fauxrm
-
-# change every test score to 100 for people named Dennis Nedry
-with fauxrm.Database() as database:
-    
-    test_scores = database.model("owner", "test_scores")
-    
-    for test_record in test_scores.find(first_name="Dennis", last_name="Nedry"):
-        test_record.score = "100"
-        test_record.save()
-```
-
-*Note: all appropriate exceptions will be thrown if invalid values are passed to fields.*
