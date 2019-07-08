@@ -1,23 +1,25 @@
 import unittest
+import datetime
 from profpy.db import fauxrm
 
 
 database = fauxrm.Database()
 lobs = database.model("rowan", "fauxrm_test_lobs")
-test_clob = "TEST_CLOB"
-test_blob = b"ffff"
+test_clob = "test_clob"
+test_blob = b"test_blob"
 
 
 class TestLOB(unittest.TestCase):
-
     def test_blob_insert(self):
-        new_record = lobs.save(test_blob=test_blob)
+        new_record = lobs.new(test_blob=test_blob)
+        new_record.save()
         self.assertEqual(new_record.test_blob, test_blob)
 
     def test_bad_blob_insert(self):
 
         try:
-            lobs.save(test_blob="BAD DATA TYPE")
+            lobs.new(test_blob="BAD DATA TYPE")
+            lobs.save()
             caught = False
         except:
             caught = True
@@ -33,12 +35,15 @@ class TestLOB(unittest.TestCase):
         self.assertTrue(caught)
 
     def test_clob_insert(self):
-        new_record = lobs.save(test_clob=test_clob)
+        new_record = lobs.new(test_clob=test_clob)
+        new_record.save()
         self.assertEqual(new_record.test_clob, test_clob)
 
     def test_bad_clob_insert(self):
         try:
-            lobs.save(test_clob=2222)
+            # datetime object should trigger a fail
+            lobs.new(test_clob=datetime.datetime.now())
+            lobs.save()
             caught = False
         except:
             caught = True

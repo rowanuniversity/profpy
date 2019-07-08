@@ -1,5 +1,5 @@
 import cx_Oracle
-from .functions import get_connection
+from functions import get_connection
 
 if __name__ == "__main__":
 

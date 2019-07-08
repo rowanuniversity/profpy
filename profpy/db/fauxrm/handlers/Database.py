@@ -3,6 +3,7 @@ import datetime
 from .DatabaseObjects import Table, View
 from .utils import results_to_objs, validate_params
 from ... import get_connection
+
 FULL_LOGIN = "full_login"
 DB_PASSWORD = "db_password"
 
@@ -11,20 +12,18 @@ class Database(object):
 
     __IO_ERROR_MSG = "Cannot open the file that was given."
 
-    def __init__(self, user_var=FULL_LOGIN, password_var=DB_PASSWORD):
+    def __init__(self, login_var=FULL_LOGIN, password_var=DB_PASSWORD):
         """
         Constructor
-        :param user_var:     An environment variable containing an Oracle connection string
+        :param login_var:     An environment variable containing an Oracle connection string
         :param password_var: An environment variable containing an Oracle password
         """
 
-        self.__connection   = get_connection(user_var, password_var)
-        self.cursor         = self.__connection.cursor()  # a private cursor for internal sql calls
-        self.user           = self.__get_current_user()
-        self.tables         = {}
-        self.views          = {}
-        self.lobs           = []
-
+        self.__connection = get_connection(login_var, password_var)
+        self.cursor = self.__connection.cursor()  # a cursor for internal sql calls
+        self.user = self.__get_current_user()
+        self.tables = {}
+        self.views = {}
 
     ####################################################################################################################
     # OVERRIDES
@@ -44,10 +43,11 @@ class Database(object):
         :return:
         """
         self.close()
-    ####################################################################################################################
 
-    def clear_lobs(self):
-        self.lobs.clear()
+    def __del__(self):
+        self.close()
+
+    ####################################################################################################################
 
     def model(self, owner, object_name):
         """
@@ -79,9 +79,7 @@ class Database(object):
         if owner in list(self.views.keys()):
             self.views[owner][view_name] = view
         else:
-            self.views[owner] = {
-                view_name: view
-            }
+            self.views[owner] = {view_name: view}
         return view
 
     def __model_table(self, owner, table_name):
@@ -96,9 +94,7 @@ class Database(object):
         if owner in list(self.tables.keys()):
             self.tables[owner][table_name] = table
         else:
-            self.tables[owner] = {
-                table_name: table
-            }
+            self.tables[owner] = {table_name: table}
         return table
 
     def execute_query(self, query, params=None, limit=None):
@@ -185,17 +181,22 @@ class Database(object):
         :return:
         """
         try:
-            self.clear_lobs()
-            self.lobs = None
-            self.rollback()
-            self.cursor.close()
-            self.cursor = None
-            self.__connection.close()
-            self.__connection = None
+            self.__connection.rollback()
+        except cx_Oracle.DatabaseError:
+            pass
 
-        except AttributeError:
-            # TODO write some better handling here, should not be triggered, but need to find best practice
-            return True
+        for field in [self.cursor, self.__connection]:
+            try:
+                field.close()
+                field = None
+
+            # these exceptions are thrown if the connection or cursor are no longer open, respectively
+            except cx_Oracle.DatabaseError:
+                pass
+            except cx_Oracle.InterfaceError:
+                pass
+
+        return True
 
     @property
     def name(self):
@@ -220,9 +221,14 @@ class Database(object):
         :param in_object_name: The object's name  (str)
         :return:               The object's type  (str)
         """
-        sql = "select lower(object_type) from all_objects where lower(owner)=:in_owner " \
-              "and lower(object_name)=:in_object_name"
-        params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
+        sql = (
+            "select lower(object_type) from all_objects where lower(owner)=:in_owner "
+            "and lower(object_name)=:in_object_name"
+        )
+        params = {
+            "in_owner": in_owner.lower(),
+            "in_object_name": in_object_name.lower(),
+        }
         self.cursor.execute(sql, params)
         return self.cursor.fetchone()[0]
 
@@ -235,7 +241,10 @@ class Database(object):
         :return:               Whether or not the object exists (bool)
         """
         sql = "select * from all_objects where lower(owner)=:in_owner and lower(object_name)=:in_object_name"
-        params = {"in_owner": in_owner.lower(), "in_object_name": in_object_name.lower()}
+        params = {
+            "in_owner": in_owner.lower(),
+            "in_object_name": in_object_name.lower(),
+        }
         if in_object_type:
             sql += " and lower(object_type)=:in_object_type"
             params["in_object_type"] = in_object_type.lower()

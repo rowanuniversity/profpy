@@ -18,7 +18,15 @@ def execute_statement(cursor, sql, params=None):
     cursor.execute(sql, params if params else {})
 
 
-def execute_query(cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False):
+def execute_query(
+    cursor,
+    sql,
+    params=None,
+    limit=None,
+    null_to_empty_string=False,
+    prefix=None,
+    use_generator=False,
+):
     """
      Executes a sql query, and outputs the results as a list of dictionaries, rather than a list of lists. This allows
      us to access data by column name rather than index, resulting in much more readable code.
@@ -48,7 +56,7 @@ def execute_query(cursor, sql, params=None, limit=None, null_to_empty_string=Fal
     cursor.execute(sql, params if params else {})
     columns = [d[0].lower() for d in cursor.description]
     if prefix:
-        columns = [c[c.startswith(prefix) and len(prefix):] for c in columns]
+        columns = [c[c.startswith(prefix) and len(prefix) :] for c in columns]
 
     if use_generator:
         output = results_to_generator(cursor, columns, null_to_empty_string, limit)
@@ -58,12 +66,21 @@ def execute_query(cursor, sql, params=None, limit=None, null_to_empty_string=Fal
         if not data:
             output = []
         else:
-            output = [row_to_dict(columns, data_row, null_to_empty_string) for data_row in data]
+            output = [
+                row_to_dict(columns, data_row, null_to_empty_string)
+                for data_row in data
+            ]
 
     return output
 
 
-def results_to_generator(in_cursor, field_names, null_to_empty_string=False, limit=None, array_size=DEFAULT_ARRAY_SIZE):
+def results_to_generator(
+    in_cursor,
+    field_names,
+    null_to_empty_string=False,
+    limit=None,
+    array_size=DEFAULT_ARRAY_SIZE,
+):
     """
     Returns a generator as the result of a sql query. Each item yielded is a dictionary, with keys being the column
     names of row result.
@@ -116,7 +133,9 @@ def row_to_dict(field_names, data, null_to_empty_string=False):
     :param null_to_empty_string: Whether or not to convert nulls to empty strings (bool)
     :return:                     A row of results                                 (dict)
     """
-    clean_data = ["" if val is None else val for val in data] if null_to_empty_string else data
+    clean_data = (
+        ["" if val is None else val for val in data] if null_to_empty_string else data
+    )
     return dict(zip(field_names, clean_data))
 
 
@@ -126,7 +145,7 @@ def parse_multiline_sql(in_str):
     :param in_str: The sql str
     :return:       A list of sql statements
     """
-    regex = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+    regex = re.compile(r"""((?:[^;"']|"[^"]*"|'[^']*')+)""")
     results = []
     bad = ["", "/"]
 

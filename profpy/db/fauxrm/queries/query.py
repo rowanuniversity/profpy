@@ -15,7 +15,10 @@ class Query(object):
         (re.compile(r"[a-zA-Z_]+_{3}ne"), "<>"),
         (re.compile(r"[a-zA-Z_]+_{3}in"), "in"),
         (re.compile(r"[a-zA-Z_]+_{3}like"), "like"),
-        (re.compile(r"[a-zA-Z_]+_{3}trunc(_{3}((gt)|(gte)|(ne)|(lt)|(lte)|(in)))?"), "trunc")
+        (
+            re.compile(r"[a-zA-Z_]+_{3}trunc(_{3}((gt)|(gte)|(ne)|(lt)|(lte)|(in)))?"),
+            "trunc",
+        ),
     ]
 
     __TEXT_TO_OPERATOR = {
@@ -25,23 +28,10 @@ class Query(object):
         "lte": "<=",
         "ne": "<>",
         "in": "in",
-        "like": "like"
+        "like": "like",
     }
 
-    __TYPE_VALIDATION = {
-        ">": [str, int, float, datetime.datetime],
-        "<": [str, int, float, datetime.datetime],
-        ">=": [str, int, float, datetime.datetime],
-        "<=": [str, int, float, datetime.datetime],
-        "=": [object],
-        "<>": [object],
-        "trunc": [datetime.datetime],
-        "like": [str],
-        "in": [str, int, float, bool, object]
-    }
-
-    __SQL_FUNCTIONS = ("trunc", )
-
+    __SQL_FUNCTIONS = ("trunc",)
     __QUERY_TYPE_ERROR_MSG = "Other object must be of type 'Query'."
     __SQL_PARSING_ERROR_MSG = "Sql Parsing Error"
 
@@ -53,7 +43,9 @@ class Query(object):
         """
 
         if not all(isinstance(arg, Query) for arg in args):
-            raise TypeError("Invalid input for *args, all must be Query objects (Ands or Ors)")
+            raise TypeError(
+                "Invalid input for *args, all must be Query objects (Ands or Ors)"
+            )
 
         # param names -> param values for parameterized query
         self.__params = {}
@@ -74,16 +66,25 @@ class Query(object):
         original_values = {}
 
         # whether or not the arguments input to the constructor will be or'd or and'd together
-        and_items = (isinstance(self, And) and not isinstance(self, Or)) or type(self) is Query
+        and_items = (isinstance(self, And) and not isinstance(self, Or)) or type(
+            self
+        ) is Query
 
         # deal with the keyword arguments first
         for att, val in kwargs.items():
             parsed_op = self.__parse_operator(att)
 
             sql_function = parsed_op["sql_function"]
-            key, parsed_query = parsed_op["key"], self.__parse_sql(att, val, parsed_op["operator"], sql_function)
+            key, parsed_query = (
+                parsed_op["key"],
+                self.__parse_sql(att, val, parsed_op["operator"], sql_function),
+            )
 
-            sql, params, new_names = parsed_query["sql"], parsed_query["params"], parsed_query["new_names"]
+            sql, params, new_names = (
+                parsed_query["sql"],
+                parsed_query["params"],
+                parsed_query["new_names"],
+            )
             these_original_values = []
 
             if new_names is not None:
@@ -112,7 +113,9 @@ class Query(object):
                     i += 1
                     new_key = key + "__" + str(i)
                 same_keys[key].append(new_key)
-                sql = sql.replace(":{key}".format(key=key), ":{key}".format(key=new_key))
+                sql = sql.replace(
+                    ":{key}".format(key=key), ":{key}".format(key=new_key)
+                )
 
                 if val is not None:
                     self.__params[new_key] = val
@@ -314,7 +317,9 @@ class Query(object):
                 cleaned_params = {}
 
                 # get the current counter value for this parameter name in this Query object
-                self_param_index = self.parameter_name_counter_dict[other_original_field]
+                self_param_index = self.parameter_name_counter_dict[
+                    other_original_field
+                ]
 
                 # get the current counter value for this parameter name in the other Query object
                 other_param_index = other_param_indexes[other_original_field]
@@ -348,7 +353,7 @@ class Query(object):
                             re.compile(old_param_text + "[\s]"): new_param_text + " ",
                             re.compile(old_param_text + "$"): new_param_text,
                             re.compile(old_param_text + "[)]"): new_param_text + ")",
-                            re.compile(old_param_text + "[,\s]"): new_param_text + ", "
+                            re.compile(old_param_text + "[,\s]"): new_param_text + ", ",
                         }
 
                         repl_text = ""
@@ -407,9 +412,7 @@ class Query(object):
             self.__is_empty = False
         else:
             self.__sql = "({0} {1} ({2}))".format(
-                self.__sql,
-                "and" if is_and else "or",
-                other_sql
+                self.__sql, "and" if is_and else "or", other_sql
             )
 
         return self
@@ -453,7 +456,11 @@ class Query(object):
 
         # the parameter names currently being used by this Query object
         all_reserved = self.__get_all_reserved_param_names()
-        index = self.__field_to_highest_index[attribute] if attribute in self.original_fields.keys() else 1
+        index = (
+            self.__field_to_highest_index[attribute]
+            if attribute in self.original_fields.keys()
+            else 1
+        )
 
         # parse together new parameter names since we are using the same field multiple times
         for v in value_list:
@@ -468,7 +475,11 @@ class Query(object):
             out_params[param_name] = v
             in_parts.append(":{0}".format(param_name))
         in_statement = "(" + ", ".join(in_parts) + ")"
-        return {"sql": in_statement, "params": out_params, "new_names": {attribute: new_param_names}}
+        return {
+            "sql": in_statement,
+            "params": out_params,
+            "new_names": {attribute: new_param_names},
+        }
 
     def __parse_operator(self, attribute):
         """
@@ -525,7 +536,11 @@ class Query(object):
             return {"operator": "=", "key": attribute, "sql_function": sql_function}
         else:
             # parse out the original attribute name by chopping off the operator suffix
-            return {"operator": operator, "key": parsed_key, "sql_function": sql_function}
+            return {
+                "operator": operator,
+                "key": parsed_key,
+                "sql_function": sql_function,
+            }
 
     def __parse_sql(self, attribute, value, operator, sql_function=None):
         """
@@ -555,10 +570,6 @@ class Query(object):
 
             # validate the types
             value_list = [value] if value_type not in COLLECTION_TYPES else value
-            valid_types = self.__TYPE_VALIDATION[operator]
-            for v in value_list:
-                if not any(isinstance(v, t) for t in valid_types) and v is not None:
-                    raise TypeError("Invalid type for '{0}'.".format(attribute))
 
             # special case for parsing a sql "in" statement
             if is_in_statement:
@@ -584,7 +595,9 @@ class Query(object):
 
         for k, field_list in self.__original_fields.items():
             num_params = len(field_list)
-            current_field = field_list[0] if num_params == 1 else field_list[num_params - 1]
+            current_field = (
+                field_list[0] if num_params == 1 else field_list[num_params - 1]
+            )
             parts = current_field.split("__")
             self.__field_to_highest_index[k] = int(parts[1]) if len(parts) > 1 else 0
 
@@ -593,6 +606,7 @@ class And(Query):
     """
     Extends the Query class for cases where the user wants to "and" the arguments in the constructor
     """
+
     def __init__(self, *args, **kwargs):
         super(And, self).__init__(*args, **kwargs)
 
@@ -601,12 +615,12 @@ class Or(Query):
     """
     Extends the Query class for cases where the user wants to "or" the arguments in the constructor
     """
+
     def __init__(self, *args, **kwargs):
         super(Or, self).__init__(*args, **kwargs)
 
 
 class FieldOperatorValue(object):
-
     def __init__(self, field, operator, sql_function=None):
         self.__field = field
         self.__operator = operator
