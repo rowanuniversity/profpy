@@ -8,7 +8,7 @@ def read(file_name):
 
 setup(
     name="profpy",
-    version="1.0",
+    version="1.0.1",
     packages=[
         "profpy",
         "profpy.db",
@@ -23,7 +23,7 @@ setup(
     license="MIT",
     author="Connor Hornibrook",
     author_email="hornibrookc@rowan.edu",
-    install_requires=["cx_Oracle", "requests"],
+    install_requires=["cx_Oracle", "requests", "Flask"],
     description="",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
