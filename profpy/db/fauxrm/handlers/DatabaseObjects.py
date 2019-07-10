@@ -202,7 +202,7 @@ class Data(object):
             raise Exception("Did not specify anything for query.")
 
         if isinstance(data, Query):
-            result = self.__query(data, limit)
+            result = self.__query(data, limit, as_json)
 
         else:
             use_this = kwargs if data is None else data
@@ -456,10 +456,11 @@ class Data(object):
         else:
             return ""
 
-    def __query(self, query, limit=None):
+    def __query(self, query, limit=None, as_json=False):
         """
         Executes a sql query using Query objects
         :param query:   A Query query object
+        :param as_json: Whether or not to get json back
         :return:        A list of Record objects based on this query
         """
 
@@ -479,8 +480,8 @@ class Data(object):
                     query.get_full_sql(self.name),
                     get_data=True,
                     params=query.params,
-                    get_row_objects=True,
-                    limit=limit,
+                    get_row_objects=True and not as_json,
+                    limit=limit
                 )
 
 
