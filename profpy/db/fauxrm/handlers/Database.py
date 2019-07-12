@@ -21,6 +21,7 @@ class Database(object):
 
         self.__connection = get_connection(login_var, password_var)
         self.cursor = self.__connection.cursor()  # a cursor for internal sql calls
+        self.__ping_cursor = self.__connection.cursor()
         self.user = self.__get_current_user()
         self.tables = {}
         self.views = {}
@@ -53,7 +54,7 @@ class Database(object):
         Simple connection keep-alive/healthcheck method
         :return:
         """
-        self.cursor.execute("select 1 from dual")
+        self.__ping_cursor.execute("select 1 from dual")
 
     def model(self, owner, object_name):
         """
@@ -191,7 +192,7 @@ class Database(object):
         except cx_Oracle.DatabaseError:
             pass
 
-        for field in [self.cursor, self.__connection]:
+        for field in [self.__ping_cursor, self.cursor, self.__connection]:
             try:
                 field.close()
                 field = None
