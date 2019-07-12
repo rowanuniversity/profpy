@@ -48,6 +48,12 @@ class Database(object):
         self.close()
 
     ####################################################################################################################
+    def ping(self):
+        """
+        Simple connection keep-alive/healthcheck method
+        :return:
+        """
+        self.cursor.execute("select 1 from dual")
 
     def model(self, owner, object_name):
         """
