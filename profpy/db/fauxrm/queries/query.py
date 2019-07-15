@@ -494,7 +494,7 @@ class Query(object):
             in_lists.append(f"({', '.join(curr_in_list)})")
 
         if len(in_lists) > 1:
-            out_list = f" and {attribute} {operator} ".join(in_lists)
+            out_list = f" or {attribute} {operator} ".join(in_lists)
         else:
             out_list = in_lists[0]
 
