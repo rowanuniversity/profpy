@@ -129,21 +129,22 @@ You can also iterate through the columns in a row in a couple of different ways.
 
 ##### Using the ```.items()``` method
 ```python
-@with_model(database, "admin", "users")
+@with_model(database, "admin", "user_table")
 def print_people_named_dennis(user_table):
     for user in user_table.find(first_name="Dennis"):
         for col_name, value in user.items():
             print(f"{col_name}:\t{value}")
 ```
 
-##### Using the ```.columns``` property
+##### Using the ```.columns``` property of model
 ```python
-@with_model(database, "admin", "users")
+@with_model(database, "admin", "user_table")
 def print_people_named_dennis(user_table):
     for user in user_table.find(first_name="Dennis"):
-        for col_name in user.columns:
+        for col_name in user_table.columns:
             print(f"{col_name}\t{user[col_name]}")
 ```
+*Note: Row objects also have ```.columns``` as  a property
 
 #### Querying with Other SQL Operators
 Fauxrm currently supports some other SQL operators, similar to the way that Django does. The syntax follows the pattern \<field\>___\<operator\>=\<value\>. 
