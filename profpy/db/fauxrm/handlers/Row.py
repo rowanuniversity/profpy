@@ -36,6 +36,7 @@ class Row(object):
         "_Row__key",
         "_Row__handler",
         "_Row__original_values",
+        "columns"
     )
 
     def __init__(self, data, handler):
@@ -50,6 +51,8 @@ class Row(object):
         self.__mapping = handler.mapping if handler else {}
         self.__handler = handler
         self.__key = {}
+
+        self.columns = handler.columns if handler else []
 
         for field, value in self.__data.items():
             if isinstance(value, cx_Oracle.LOB):
@@ -183,6 +186,9 @@ class Row(object):
                     self.__handler.commit_changes()
             else:
                 raise Exception("Can only perform 'save' on a record in a table.")
+
+    def items(self):
+        return self.data.items()
 
     ####################################################################################################################
     # PRIVATE METHODS

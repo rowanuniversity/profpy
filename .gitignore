@@ -5,7 +5,7 @@
 *.egg-info/
 test/quick_tests.py
 test/scratch.py
-scratch.py
+scratch*.py
 dist/
 build/
 __pycache__/
