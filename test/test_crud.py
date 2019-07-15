@@ -175,6 +175,28 @@ class TestCRUD(unittest.TestCase):
     Test cases for the base CRUD functionality
     """
 
+    # test in-statements with collections of more than 1000 (Oracle's max)
+    def test_giant_in(self):
+
+        fake_names = []
+        for x in range(2000):
+            fake_names.append(RandomGenerators.get_random_name()[0])
+        try:
+            band_member_table.find(first_name___in=fake_names)
+            caught = False
+        except:
+            caught = True
+
+        self.assertFalse(caught)
+
+        # "not in" statement
+        try:
+            band_member_table.find(first_name___nin=fake_names)
+            caught = False
+        except:
+            caught = True
+        self.assertFalse(caught)
+
     # test for dict-like access of data from Row objects
     def test_dict_access(self):
         test_cols = ["band_name", "last_name", "instrument", "first_name"]
