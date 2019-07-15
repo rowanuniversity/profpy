@@ -175,6 +175,23 @@ class TestCRUD(unittest.TestCase):
     Test cases for the base CRUD functionality
     """
 
+    # test for dict-like access of data from Row objects
+    def test_dict_access(self):
+        test_cols = ["band_name", "last_name", "instrument", "first_name"]
+        # create 10 records
+        for x in range(10):
+            create_new_band_test_record(band_member_table, clear_table=True)
+        for record in band_member_table.find(band_name="The Beatles"):
+            self.assertTrue(all(col in record.columns for col in test_cols))
+            for col, value in record.items():
+                self.assertTrue(col in test_cols)
+                try:
+                    record[col]
+                    caught = False
+                except KeyError:
+                    caught = True
+                self.assertFalse(caught)
+
     # can the handler clear the table correctly without a where clause
     def test_delete_where(self):
         phonebook_table.delete_where()
