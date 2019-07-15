@@ -116,7 +116,7 @@ class Database(object):
         if limit is not None and limit < 1:
             raise ValueError("Limit must be greater than 0.")
         self.cursor.execute(query, validate_params(params))
-        return results_to_objs(self.cursor)
+        return results_to_objs(self.cursor, get_row_objs=True)
 
     def execute_function(self, owner, function_name, *args):
         """

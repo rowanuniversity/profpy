@@ -52,7 +52,7 @@ class Row(object):
         self.__handler = handler
         self.__key = {}
 
-        self.columns = handler.columns if handler else []
+        self.columns = handler.columns if handler else list(data.keys())
 
         for field, value in self.__data.items():
             if isinstance(value, cx_Oracle.LOB):
@@ -168,7 +168,7 @@ class Row(object):
         """
         if self.__handler is None:
             raise AttributeError(
-                "Table handler no longer exists, can not persist to database."
+                "No existing table handler associated with this Row object, can not persist to database."
             )
         else:
 
