@@ -2,6 +2,8 @@
 ### What is profpy?
 The profpy library is a centralized repository for Rowan's various python scripts to use.
 
+Looking for ```fauxrm``` docs? Click [here](./profpy/db/fauxrm/).
+
 ### Why use it?
 Many of Rowan's python scripts/programs utilize similar or congruent functions and classes that end up getting rewritten or even
 copy/pasted wherever needed. Rather than continue this trend of untracked code, profpy allows us to have overhead control over these common functions
