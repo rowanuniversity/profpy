@@ -1,6 +1,4 @@
 import re
-import datetime
-import cx_Oracle
 
 COLLECTION_TYPES = (list, set, tuple)
 
@@ -14,9 +12,11 @@ class Query(object):
         (re.compile(r"[a-zA-Z_]+_{3}lte"), "<="),
         (re.compile(r"[a-zA-Z_]+_{3}ne"), "<>"),
         (re.compile(r"[a-zA-Z_]+_{3}in"), "in"),
+        (re.compile(r"[a-zA-Z_]+_{3}nin"), "not in"),
         (re.compile(r"[a-zA-Z_]+_{3}like"), "like"),
+        (re.compile(r"[a-zA-Z_]+_{3}nlike"), "not like"),
         (
-            re.compile(r"[a-zA-Z_]+_{3}trunc(_{3}((gt)|(gte)|(ne)|(lt)|(lte)|(in)))?"),
+            re.compile(r"[a-zA-Z_]+_{3}trunc(_{3}((gt)|(gte)|(ne)|(lt)|(lte)|(in)|(nin)))?"),
             "trunc",
         ),
     ]
@@ -28,6 +28,8 @@ class Query(object):
         "lte": "<=",
         "ne": "<>",
         "in": "in",
+        "nin": "not in",
+        "nlike": "not like",
         "like": "like",
     }
 
@@ -72,6 +74,7 @@ class Query(object):
 
         # deal with the keyword arguments first
         for att, val in kwargs.items():
+
             parsed_op = self.__parse_operator(att)
 
             sql_function = parsed_op["sql_function"]
@@ -106,7 +109,6 @@ class Query(object):
                 sql_statements.append(sql)
 
             elif key in same_keys.keys():
-
                 i = 1
                 new_key = key + "__" + str(i)
                 while new_key in same_keys[key]:
@@ -438,7 +440,7 @@ class Query(object):
         else:
             raise TypeError(self.__QUERY_TYPE_ERROR_MSG)
 
-    def __parse_in_list(self, attribute, value_list):
+    def __parse_in_list(self, attribute, value_list, operator="in"):
         """
         Method that parses a sql "in" statement, given an attribute and a list of values
         :param attribute:  The field name
@@ -463,20 +465,41 @@ class Query(object):
         )
 
         # parse together new parameter names since we are using the same field multiple times
-        for v in value_list:
+        max_values = 1000  # oracle max for in-operator list
+        num_values = len(value_list)
+        num_lists = (num_values // max_values) + 1
+        in_lists = []
 
-            param_name = "{0}__{1}".format(attribute, index)
+        i = 1
+        curr_in_list = []
+        listed_vals = list(value_list)
+        while i <= num_values:
+
+            param_name = f"{attribute}__{index}"
             while param_name in all_reserved:
                 index += 1
-                param_name = "{0}__{1}".format(attribute, index)
+                param_name = f"{attribute}__{index}"
             all_reserved.append(param_name)
             new_param_names.append(param_name)
 
-            out_params[param_name] = v
-            in_parts.append(":{0}".format(param_name))
-        in_statement = "(" + ", ".join(in_parts) + ")"
+            value = listed_vals[i - 1]
+            out_params[param_name] = value
+            curr_in_list.append(f":{param_name}")
+
+            if i % max_values == 0:
+                in_lists.append(f"({', '.join(curr_in_list)})")
+                curr_in_list = []
+            i += 1
+        if len(in_lists) == 0:
+            in_lists.append(f"({', '.join(curr_in_list)})")
+
+        if len(in_lists) > 1:
+            out_list = f" or {attribute} {operator} ".join(in_lists)
+        else:
+            out_list = in_lists[0]
+
         return {
-            "sql": in_statement,
+            "sql": out_list,
             "params": out_params,
             "new_names": {attribute: new_param_names},
         }
@@ -557,8 +580,9 @@ class Query(object):
         """
 
         value_type = type(value)
-        is_in_statement = value_type in COLLECTION_TYPES or operator == "in"
+        is_in_statement = value_type in COLLECTION_TYPES or operator in ("in", "not in")
         attribute = attribute.split("__")[0]
+
         new_names = None
 
         if value is None:
@@ -568,13 +592,15 @@ class Query(object):
         else:
             parser = FieldOperatorValue(attribute, operator, sql_function)
 
+
             # validate the types
             value_list = [value] if value_type not in COLLECTION_TYPES else value
 
             # special case for parsing a sql "in" statement
             if is_in_statement:
-                parser.set_operator("in")
-                parsed_in = self.__parse_in_list(attribute, value_list)
+                operator = "in" if operator == "=" else operator
+                parser.set_operator(operator)
+                parsed_in = self.__parse_in_list(attribute, value_list, operator)
                 end_sql = parsed_in["sql"]
                 params = parsed_in["params"]
                 new_names = parsed_in["new_names"]

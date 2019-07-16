@@ -124,6 +124,28 @@ if __name__ == "__main__":
 ```
 *Note: We don't have to do an explicit call to database.close(), this is handled by garbage collection.  
 
+#### Using the Row object like a dict 
+You can also iterate through the columns in a row in a couple of different ways. 
+
+##### Using the ```.items()``` method
+```python
+@with_model(database, "admin", "user_table")
+def print_people_named_dennis(user_table):
+    for user in user_table.find(first_name="Dennis"):
+        for col_name, value in user.items():
+            print(f"{col_name}:\t{value}")
+```
+
+##### Using the ```.columns``` property of model
+```python
+@with_model(database, "admin", "user_table")
+def print_people_named_dennis(user_table):
+    for user in user_table.find(first_name="Dennis"):
+        for col_name in user_table.columns:
+            print(f"{col_name}\t{user[col_name]}")
+```
+*Note: Row objects also have ```.columns``` as  a property
+
 #### Querying with Other SQL Operators
 Fauxrm currently supports some other SQL operators, similar to the way that Django does. The syntax follows the pattern \<field\>___\<operator\>=\<value\>. 
 This syntax is applied as keyword arguments just like normal queries. 
@@ -136,12 +158,16 @@ database = Database()
 @with_model(database, "owner", "movies")
 def movie_stats(movies):
 
-    # <, >, <=, >=, <>
+    # <, >, <=, >=, <>, like, not like, in, not in
     movies.find(runtime___lt=127)
     movies.find(runtime___gt=127)
     movies.find(runtime___lte=127)
     movies.find(runtime___gte=127)
     movies.find(runtime___ne=127)
+    movies.find(title___like="Jurassic%")
+    movies.find(title___nlike="%World")
+    movies.find(title___in=["Forrest Gump", "Jurassic Park"])
+    movies.find(title___nin=["Ernest Scared Stupid"])
 
     # truncate date
     movies.find(release_date___trunc=datetime.date(year=1993, month=6, day=11))

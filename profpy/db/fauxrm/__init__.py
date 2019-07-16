@@ -1,6 +1,8 @@
 # init file
 import functools
 import re
+import threading
+import time
 from flask import Flask
 from .handlers.Database import Database
 from .queries.query import And, Or
@@ -65,13 +67,15 @@ class FauxrmApp(Flask):
         db_objects,
         login_var="full_login",
         password_var="db_password",
+        keep_alive_interval=20
     ):
         """
         Constructor
-        :param module_name:  The name of the module (most likely will always be __name__)
-        :param db_objects:   A list of database objects following the [owner.table, owner.table, ...] format.
-        :param login_var:    Environment variable containing db login string
-        :param password_var: Environment variable containing db password string
+        :param module_name:        The name of the module (most likely will always be __name__)
+        :param db_objects:         A list of database objects following the [owner.table, owner.table, ...] format.
+        :param login_var:          Environment variable containing db login string
+        :param password_var:       Environment variable containing db password string
+        :param keep_alive_interval The number of seconds between database connection "keep alive" calls
         """
         if not FauxrmApp.valid_db_object_list(db_objects):
             raise ValueError("Invalid list of database objects given.")
@@ -86,6 +90,20 @@ class FauxrmApp(Flask):
             if not hasattr(self, owner):
                 setattr(self, owner, ModelAttribute())
             getattr(self, owner)[db_obj["object_name"]] = self.db.model(**db_obj)
+
+        # start up a daemon that continuously pings the database this application is using to avoid a timeout
+        self.__keep_alive_interval = keep_alive_interval
+        self.__keep_up = threading.Thread(target=self.__keep_alive, args=(), daemon=True)
+        self.__keep_up.start()
+
+    def __keep_alive(self):
+        """
+        Function used by the self.__keep_up daemon to ping the database
+        :return:
+        """
+        while True:
+            self.db.ping()
+            time.sleep(self.__keep_alive_interval)
 
     def teardown(self, exception):
         """

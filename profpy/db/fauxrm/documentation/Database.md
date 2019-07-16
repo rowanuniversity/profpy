@@ -55,6 +55,19 @@ with fauxrm.Database() as database:
 ```
 
 ## Methods
+#### ping ( )
+Does a simple "healthcheck" or "ping" query against the database.
+```python
+from profpy.db import fauxrm
+with fauxrm.Database() as database:
+    database.ping()
+```
+This is equivalent to:
+```oracle
+select 1 from dual;
+```
+
+
 #### model ( *owner, object_name* )
 Returns either a Table or View handler object, depending on which type the object specified is. Table and View objects
 are children of the Data class, and can be used to retrieve/modify data. For more information on the Table and View 
