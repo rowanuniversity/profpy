@@ -41,6 +41,6 @@ if __name__ == "__main__":
 <i>Note: "full_login" and "db_password" are the defaults for both methods</i>
 
 ### Dependencies
-Python 3.6.7 or above
+- Python 3.6.7 or above
+- Oracle Instant Client
 
-If you are looking to make a flask application with fauxrm, go [here](./profpy/db/fauxrm/documentation/flask.md). 

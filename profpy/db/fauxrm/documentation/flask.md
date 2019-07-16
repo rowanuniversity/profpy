@@ -31,6 +31,15 @@ App instantiation can be as simple as this:
 app = FauxrmApp(__name__, ["admin.users", "admin.roles", "payroll.timesheets"])
 ```
 
+#### Timeout handling
+Keeping a database connection open for too long without usage can cause a timeout and crash your application when users
+try to hit various endpoints. To remedy this, the FauxrmApp class has a built-in daemon that periodically "pings" 
+the database. The interval between the pings is defaulted to 20 seconds, but this can be configured at initialization.
+```python
+# ping database every 10 seconds
+app = FauxrmApp(__name__, ["admin.users", "admin.roles"], keep_alive_interval=10)
+```
+
 
 
    
