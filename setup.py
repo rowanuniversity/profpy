@@ -8,7 +8,7 @@ def read(file_name):
 
 setup(
     name="profpy",
-    version="1.0.3",
+    version="1.1.0",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
@@ -24,7 +24,7 @@ setup(
     license="MIT",
     author="Connor Hornibrook",
     author_email="hornibrookc@rowan.edu",
-    install_requires=["cx_Oracle", "requests", "Flask"],
+    install_requires=["cx_Oracle", "requests", "Flask", "caslib.py"],
     description="",
     long_description=read("pypi.md"),
     long_description_content_type="text/markdown",
