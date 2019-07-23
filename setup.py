@@ -8,7 +8,7 @@ def read(file_name):
 
 setup(
     name="profpy",
-    version="1.1.0",
+    version="1.2.2",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
@@ -19,6 +19,7 @@ setup(
         "profpy.db.general",
         "profpy.apis",
         "profpy.apis.utils",
+        "profpy.auth",
     ],
     url="https://github.com/rowanuniversity/profpy/",
     license="MIT",
