@@ -146,6 +146,32 @@ def print_people_named_dennis(user_table):
 ```
 *Note: Row objects also have ```.columns``` as  a property
 
+##### Additional dict-like syntax
+In addition to ```.items()```, ```.values()```, ```.get()```, and ```.keys()``` are also supported for dict-like access.
+```python
+from profpy.db.fauxrm import with_model, Database
+
+database = Database()
+
+@with_model(database, "admin", "users")
+def demo(users):
+    for user in users.find(last_name="Nedry"):
+        
+        # get keys and values
+        keys = user.keys()  # user.columns returns the same thing
+        vals = user.values()
+        
+        # dict-like iteration
+        for key, value in user.items():
+            print(key, value)
+        
+        # dict-like get
+        first_name = user.get("first_name")
+        
+        # .get() with fallback value
+        some_value = user.get("field_that_does_not_exist", "fallback value")
+```
+
 #### Querying with Other SQL Operators
 Fauxrm currently supports some other SQL operators, similar to the way that Django does. The syntax follows the pattern \<field\>___\<operator\>=\<value\>. 
 This syntax is applied as keyword arguments just like normal queries. 
@@ -302,7 +328,7 @@ fauxrm supports the reading and writing BLOBS and CLOBS. However, it does not cu
 ```python
 from profpy.db.fauxrm import with_model, Database
 
-database = Database
+database = Database()
 
 @with_model(database, "owner", "lobs")
 def lob_demo(table_with_lobs):
