@@ -198,8 +198,8 @@ class Row(object):
     def values(self):
         return self.data.values()
 
-    def get(self, column, value=None):
-        return self.data.get(column, value)
+    def get(self, column, fallback_value=None):
+        return self.data.get(column, fallback_value)
 
     ####################################################################################################################
     # PRIVATE METHODS
