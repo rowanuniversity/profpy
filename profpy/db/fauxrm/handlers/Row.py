@@ -187,8 +187,19 @@ class Row(object):
             else:
                 raise Exception("Can only perform 'save' on a record in a table.")
 
+    # the following four methods mirror the self.__data property's dict methods. this allows users
+    # to iterate through data from the Row object with dict-like syntax
     def items(self):
         return self.data.items()
+
+    def keys(self):
+        return self.data.keys()
+
+    def values(self):
+        return self.data.values()
+
+    def get(self, column, fallback_value=None):
+        return self.data.get(column, fallback_value)
 
     ####################################################################################################################
     # PRIVATE METHODS
@@ -223,8 +234,8 @@ class Row(object):
 
         valid_types = in_type == required_type
         if in_type in (bytes, str) and required_type in (
-            cx_Oracle.CLOB,
-            cx_Oracle.BLOB,
+                cx_Oracle.CLOB,
+                cx_Oracle.BLOB,
         ):
             valid_types = True
 
@@ -283,7 +294,7 @@ class BlankValue(object):
 
 class GeneratedValue(SpecialValue):
     def __init__(
-        self, owner_name, table_name, column_name, expected_type, value=BlankValue()
+            self, owner_name, table_name, column_name, expected_type, value=BlankValue()
     ):
         super().__init__(
             owner_name, table_name, column_name, expected_type, "generated"
