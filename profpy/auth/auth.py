@@ -34,8 +34,6 @@ def cas_required(get_user=False, get_ticket=False, cas_url_env_var=_default_cas_
                             response = f(ticket.attributes, *args, **kwargs)
                     else:
                         response = f(*args, **kwargs)
-                else:
-                    raise Exception("Invalid ticket.")
             return response
         return wrapper
     return _cas_required
