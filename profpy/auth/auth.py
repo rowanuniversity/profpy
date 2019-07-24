@@ -1,5 +1,6 @@
 import os
 import caslib
+import functools
 from flask import request, redirect
 
 _default_cas_url_var = "cas_url"
@@ -14,6 +15,7 @@ def cas_required(get_user=False, get_ticket=False, cas_url_env_var=_default_cas_
     :return:                Either a redirect response to CAS auth page, or the desired dest., if already logged in
     """
     def _cas_required(f):
+        @functools.wraps(f)
         def wrapper(*args, **kwargs):
             if cas_url_env_var not in os.environ:
                 raise ValueError(f"Environment variable \"{cas_url_env_var}\" not found.")
@@ -46,6 +48,7 @@ def cas_logout(cas_url_env_var=_default_cas_url_var):
     :return:                A redirect to the CAS logout page
     """
     def _logout(f):
+        @functools.wraps(f)
         def inner(*args, **kwargs):
             return redirect(f"{os.environ[cas_url_env_var]}/cas/logout")
         return inner
