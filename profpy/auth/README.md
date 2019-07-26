@@ -67,4 +67,26 @@ app = Flask(__name__)
 def logout():
     return
 ```
-Just as before, you can specify a different environment variable using the ```cas_url_env_var``` argument to the decorator.
+
+If you want to redirect them to a custom page post logout, define an endpoint for it and use the new endpoint with Flask's
+```url_for``` function:
+```python
+from flask import Flask, url_for
+from profpy.auth import cas_logout
+
+
+app = Flask(__name__)
+
+
+@app.route("/postLogout")
+def after_logout():
+    return "<h1>Logged out</h1>"
+
+
+@app.route("/logout")
+@cas_logout(after_logout=url_for("after_logout"))
+def logout():
+    pass
+```
+
+Just as before, you can specify a different environment variable using the ```cas_url_env_var``` argument to the ```cas_logout``` decorator.
