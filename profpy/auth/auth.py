@@ -6,12 +6,13 @@ from flask import request, redirect
 _default_cas_url_var = "cas_url"
 
 
-def cas_required(get_user=False, get_ticket=False, cas_url_env_var=_default_cas_url_var):
+def cas_required(get_user=False, get_ticket=False, cas_url_env_var=_default_cas_url_var, override_http=False):
     """
     Decorator for Flask that handles CAS authentication for the routing function it is decorating
     :param get_user:        Whether or not to return the authenticated user object
     :param get_ticket:      Whether or not to return the authenticated ticket object
     :param cas_url_env_var: The environment variable containing the CAS url (default: "cas_url")
+    :param override_http:   Switch to https for your service in the CAS service argument
     :return:                Either a redirect response to CAS auth page, or the desired dest., if already logged in
     """
     def _cas_required(f):
@@ -21,7 +22,10 @@ def cas_required(get_user=False, get_ticket=False, cas_url_env_var=_default_cas_
                 raise ValueError(f"Environment variable \"{cas_url_env_var}\" not found.")
             else:
                 cas_url = os.environ[cas_url_env_var]
-            response = redirect(f"{cas_url}/cas/login?service={request.base_url}")
+            redirect_url = request.url
+            if override_http and redirect_url[:5] != "https":
+                redirect_url = redirect_url.replace("http", "https")
+            response = redirect(f"{cas_url}/cas/login?service={redirect_url}")
             if "ticket" in request.args:
                 ticket = caslib.SAMLClient(cas_url, request.base_url).saml_serviceValidate(request.args["ticket"])
                 if ticket.success:
