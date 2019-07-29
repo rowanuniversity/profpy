@@ -6,7 +6,8 @@ This module contains helper functions for authentication.
 Currently, the ```profpy.auth``` module contains some basic CAS authentication tools that can be easily used with Flask. 
 
 Prior to using this module, you will want to set an environment variable that contains the URL for your CAS service. The 
-default name for this environment variable in the module is ```cas_url```, but you can use others if you want to.
+default name for this environment variable in the module is ```cas_url```, but you can use others if you want to. You must
+also set a ```secret_key``` for the Flask application object for this work properly.
 
 #### Protecting an endpoint
 ```python
@@ -15,6 +16,7 @@ from profpy.auth import cas_required
 
 
 app = Flask(__name__)
+app.secret_key = "some secret value"  # this is required!
 
 
 @app.route("/someSensitivePage")
@@ -37,6 +39,7 @@ from profpy.auth import cas_required
 
 
 app = Flask(__name__)
+app.secret_key = "some secret value"
 
 
 @app.route("/someSensitivePage")
@@ -71,6 +74,7 @@ from profpy.auth import cas_logout
 
 
 app = Flask(__name__)
+app.secret_key = "some secret value"
 
 
 @app.route("/logout")
@@ -87,6 +91,7 @@ from profpy.auth import cas_logout
 
 
 app = Flask(__name__)
+app.secret_key = "some secret value"
 
 
 @app.route("/postLogout")
