@@ -10,14 +10,12 @@ _default_cas_url_var = "cas_url"
 def cas_required(get_user=False, get_ticket=False, cas_url_env_var=_default_cas_url_var):
     """
     Decorator for Flask that handles CAS authentication for the routing function it is decorating
-    :param get_user:                  Whether or not to return the authenticated user object
-    :param get_ticket:                Whether or not to return the authenticated ticket object
-    :param cas_url_env_var:           The environment variable containing the CAS url (default: "cas_url")
-    :return:                          Either a redirect response to CAS auth page, or the desired dest.,
-                                      if already logged in
+    :param get_user:        Whether or not to return the authenticated user object
+    :param get_ticket:      Whether or not to return the authenticated ticket object
+    :param cas_url_env_var: The environment variable containing the CAS url (default: "cas_url")
+    :return:                Either a redirect response to CAS auth page, or the desired dest., if already logged in
     """
     def _cas_required(f):
-        @functools.wraps(f)
         def wrapper(*args, **kwargs):
             if cas_url_env_var not in os.environ:
                 raise ValueError(f"Environment variable \"{cas_url_env_var}\" not found.")
