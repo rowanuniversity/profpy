@@ -7,27 +7,30 @@ Currently, the ```profpy.auth``` module contains some basic CAS authentication t
 
 Prior to using this module, you will want to set an environment variable that contains the URL for your CAS service. The 
 default name for this environment variable in the module is ```cas_url```, but you can use others if you want to. You must
-also set a ```secret_key``` for the Flask application object for this work properly.
+also set a ```secret_key``` for the Flask application object for this work properly. An easy way to do this is 
+to simply craft a uuid, or set one in your environment.
 
 #### Protecting an endpoint
 ```python
 from flask import Flask
 from profpy.auth import cas_required
+from uuid import uuid1
 
 
 app = Flask(__name__)
-app.secret_key = "some secret value"  # this is required!
+app.secret_key = str(uuid1())  # a secret key is required
 
 
 @app.route("/someSensitivePage")
-@cas_required("sensitive_page")
+@cas_required()
 def sensitive_page(cas_user, cas_attributes):
     return "<h3>You have been authenticated</h3>"
 ```
 
 That's it! If the user already isn't already authenticated, they will be bounced to the CAS login page. The ```@cas_required``` decorator
-must go after any routing decorators to work properly. The required argument to the decorator is simply the flask endpoint that 
-you want the user to be routed to after authentication. This will most often be the endpoint being decorated. 
+must go after any routing decorators to work properly. The decorator has no required arguments. But you can optionally 
+specify a CAS server url if you wish to not use the ```cas_url``` environment variable paradigm or if you wish 
+to use a different CAS server for a specific endpoint.
 
 
 The decorator passes the information from the validated ticket along as parameters to the decorated function. We named them ```cas_user``` and ```cas_attributes``` in this example.
@@ -43,7 +46,7 @@ app.secret_key = "some secret value"
 
 
 @app.route("/someSensitivePage")
-@cas_required("sensitive_page")
+@cas_required()
 def sensitive_page(cas_user, cas_attributes):
     return f"Ticket: {session.get('cas-ticket')}"
 ```
@@ -53,15 +56,15 @@ def sensitive_page(cas_user, cas_attributes):
 Any endpoint parameters come after any CAS-parameters fed from the ```@cas_required``` decorator:
 ```python
 @app.route("/someEndpointWithParams/<id_parameter>")
-@cas_required("sensitive_page")
+@cas_required()
 def sensitive_page(cas_user, cas_attributes, id_parameter):
     return f"<h3>{cas_user} accessed page {id_parameter}</h3>"
 ```
 
-#### Using another environment variable to store URL
+#### Using another CAS url
 ```python
 @app.route("/someSensitivePage")
-@cas_required("sensitive_page", cas_url_env_var="some_other_environment_variable")
+@cas_required("https://some-cas-server.com")
 def sensitive_page(cas_user, cas_attributes):
     return "<h3>You have been authenticated</h3>"
 ```
@@ -100,9 +103,15 @@ def after_logout():
 
 
 @app.route("/logout")
-@cas_logout(after_logout=url_for("after_logout"))
+@cas_logout(after_logout="after_logout")
 def logout():
     pass
 ```
 
-Just as before, you can specify a different environment variable using the ```cas_url_env_var``` argument to the ```cas_logout``` decorator.
+Just as before, you can specify a different ```cas_url``` to the ```cas_logout``` decorator.
+```python
+@app.route("/logout")
+@cas_logout("https://some-cas-server.com")
+def logout():
+    pass
+```
