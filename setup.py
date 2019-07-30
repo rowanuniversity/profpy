@@ -8,7 +8,7 @@ def read(file_name):
 
 setup(
     name="profpy",
-    version="1.2.92",
+    version="1.2.93",
     python_requires=">=3.6.7",
     packages=[
         "profpy",

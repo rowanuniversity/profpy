@@ -77,7 +77,7 @@ def cas_logout(cas_server_url=os.environ.get(_default_cas_url_var), after_logout
     def _logout(f):
         @functools.wraps(f)
         def inner(*args, **kwargs):
-            logout_url = f"{os.environ[cas_server_url]}/cas/logout"
+            logout_url = f"{cas_server_url}/cas/logout"
             if after_logout:
                 logout_url += f"?service={url_for(after_logout, _external=True)}"
             response = redirect(logout_url)
