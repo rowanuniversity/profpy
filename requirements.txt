@@ -2,3 +2,4 @@ cx_Oracle
 requests
 Flask
 caslib.py
+sqlalchemy
