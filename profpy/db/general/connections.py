@@ -65,9 +65,68 @@ class OracleConnectionHelper(object):
         return scoped_session(session)() if scoped else session()
 
 
+def _cx_oracle_wrapper_logic(f, login, password, auto_commit, *args, **kwargs):
+    """
+    Common logic between Oracle connection decorators. This was made to avoid duplicate code and to avoid making
+    breaking changes to the library for people using it
+    :param f:            the function being wrapped
+    :param login:        Oracle login string
+    :param password:     Oracle password
+    :param auto_commit:  Whether or not to auto-commit at the end of the transaction
+    :param args:         Additional args from the decorated function
+    :param kwargs:       Additional kwargs from the decorated function
+    :return:             Decorated function
+    """
+    connection = OracleConnectionHelper(login, password).get_cx_oracle_connection()
+    result = None
+    exception = None
+    try:
+        result = f(connection, *args, **kwargs)
+    except Exception as e:
+        exception = e
+    else:
+        if auto_commit:
+            connection.commit()
+    finally:
+        if connection:
+            connection.rollback()
+            connection.close()
+        del connection
+        if exception:
+            raise exception
+    return result
+
+
+def with_cx_oracle_connection(login=os.environ.get("full_login"), password=os.environ.get("db_password"),
+                              auto_commit=False):
+    """
+    Decorator that feeds a cx_Oracle connection to the wrapped function
+    :param login:        the login string (str), defaults to "full_login" env variable
+    :param password:     The password (str), defaults to "db_password" env variable
+    :param auto_commit:  Whether or not to auto-commit any changes to the database
+    :return:             A wrapped function with a connection
+
+
+    Example:
+
+    @with_cx_oracle_connection()
+    def database_task(connection, query):
+        cursor = connection.cursor()
+        # other code
+    """
+    def with_connection_(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            return _cx_oracle_wrapper_logic(f, login, password, auto_commit, *args, **kwargs)
+        return wrapper
+    return with_connection_
+
+
 def with_oracle_connection(login=os.environ.get("full_login"), password=os.environ.get("db_password"),
                            auto_commit=False):
     """
+    DEPRECATED
+
     Decorator that feeds a cx_Oracle connection to the wrapped function
     :param login:        the login string (str), defaults to "full_login" env variable
     :param password:     The password (str), defaults to "db_password" env variable
@@ -82,34 +141,16 @@ def with_oracle_connection(login=os.environ.get("full_login"), password=os.envir
         cursor = connection.cursor()
         # other code
     """
-
     def with_connection_(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            connection = OracleConnectionHelper(login, password).get_cx_oracle_connection()
-            result = None
-            exception = None
-            try:
-                result = f(connection, *args, **kwargs)
-            except Exception as e:
-                exception = e
-            else:
-                if auto_commit:
-                    connection.commit()
-            finally:
-                if connection:
-                    connection.rollback()
-                    connection.close()
-                del connection
-                if exception:
-                    raise exception
-            return result
+            return _cx_oracle_wrapper_logic(f, login, password, auto_commit, *args, **kwargs)
         return wrapper
     return with_connection_
 
 
-def with_oracle_session(login=os.environ.get("full_login"), password=os.environ.get("db_password"), scoped=False,
-                        auto_commit=False, bind=None):
+def with_sql_alchemy_oracle_session(login=os.environ.get("full_login"), password=os.environ.get("db_password"),
+                                    scoped=False, auto_commit=False, bind=None):
     """
     Decorator that passes an Oracle sqlalchemy session to the decorated function
     :param login:       the database login string
@@ -134,7 +175,7 @@ def with_oracle_session(login=os.environ.get("full_login"), password=os.environ.
                     session.commit()
             finally:
                 session.rollback()
-                session.remove()
+                session.close()
                 if exception:
                     raise exception
             return result
@@ -142,7 +183,7 @@ def with_oracle_session(login=os.environ.get("full_login"), password=os.environ.
     return with_oracle_session_
 
 
-def with_oracle_engine(login=os.environ.get("full_login"), password=os.environ.get("db_password")):
+def with_sql_alchemy_oracle_engine(login=os.environ.get("full_login"), password=os.environ.get("db_password")):
     """
     Decorator that passes an Oracle sqlalchemy engine to the decorated function
     :param login:    the database login string
@@ -157,8 +198,46 @@ def with_oracle_engine(login=os.environ.get("full_login"), password=os.environ.g
     return with_oracle_engine_
 
 
-def get_oracle_session(login=os.environ.get("full_login"), password=os.environ.get("db_password"), scoped=False,
-                       bind=None):
+def with_sql_alchemy_oracle_connection(login=os.environ.get("full_login"), password=os.environ.get("db_password"),
+                                       auto_commit=False, engine=None):
+    """
+    Decorator that passes in a sqlalchemy connection the decorated function
+    :param login:       the database login
+    :param password:    the database password
+    :param auto_commit: whether or not to commit the transaction after usage
+    :param engine:      an optional engine to use for this connection
+    :return:            a decorated function with a sqlalchemy connection passed in as the first argument
+    """
+    def with_sql_alchemy_connection_(f):
+        @functools.wraps(f)
+        def wrap(*args, **kwargs):
+            in_engine = engine if engine else OracleConnectionHelper(login, password).get_sql_alchemy_engine()
+            connection = in_engine.connect()
+            transaction = connection.begin()
+            result = None
+            exception = None
+            try:
+                result = f(connection, *args, **kwargs)
+            except Exception as e:
+                exception = e
+            else:
+                if auto_commit and connection and transaction:
+                    transaction.commit()
+            finally:
+                if transaction:
+                    transaction.rollback()
+                    transaction.close()
+                if connection:
+                    connection.close()
+                if exception:
+                    raise exception
+            return result
+        return wrap
+    return with_sql_alchemy_connection_
+
+
+def get_sql_alchemy_oracle_session(login=os.environ.get("full_login"), password=os.environ.get("db_password"),
+                                   scoped=False, bind=None):
     """
     Returns an Oracle sqlalchemy Session object
     :param login:    the database login string
@@ -170,7 +249,7 @@ def get_oracle_session(login=os.environ.get("full_login"), password=os.environ.g
     return OracleConnectionHelper(login, password).get_sql_alchemy_session(scoped=scoped, bind=bind)
 
 
-def get_oracle_engine(login=os.environ.get("full_login"), password=os.environ.get("db_password")):
+def get_sql_alchemy_oracle_engine(login=os.environ.get("full_login"), password=os.environ.get("db_password")):
     """
     Returns an Oracle sqlalchemy engine
     :param login:    the database login string

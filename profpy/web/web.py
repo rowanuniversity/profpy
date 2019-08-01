@@ -1,8 +1,13 @@
 import os
+import re
 from flask import Flask, jsonify
 from uuid import uuid1
 from sqlalchemy import MetaData, Table
-from ..db import get_oracle_session, get_oracle_engine
+from datetime import datetime, date, time
+from ..db import get_sql_alchemy_oracle_session, get_sql_alchemy_oracle_engine
+
+
+_table_regex = re.compile(r"^\w+\.\w+$")
 
 
 class Schema(object):
@@ -12,10 +17,15 @@ class Schema(object):
 
 
 class OracleApp(Flask):
-    def __init__(self, context, name, in_tables, login=os.environ.get("full_login"), password=os.environ.get("db_password")):
+    def __init__(self, context, name, in_tables, login=os.environ.get("full_login"),
+                 password=os.environ.get("db_password")):
         super().__init__(context)
 
         schema_to_table = dict()
+
+        if not all(re.match(_table_regex, table) for table in in_tables):
+            raise ValueError("Invalid table entered. Must be a schema-qualified name: <schema>.<table>")
+
         for t in in_tables:
             parts = t.split(".")
             schema = parts[0]
@@ -25,8 +35,8 @@ class OracleApp(Flask):
             else:
                 schema_to_table[schema] = [table]
 
-        engine = get_oracle_engine(login, password)
-        self.db = get_oracle_session(login, password, engine)
+        engine = get_sql_alchemy_oracle_engine(login, password)
+        self.db = get_sql_alchemy_oracle_session(login, password, engine)
         for schema, tables in schema_to_table.items():
             md = MetaData(engine, schema=schema)
             md.reflect(only=tables, views=True)
@@ -38,14 +48,14 @@ class OracleApp(Flask):
         self.secret_key = str(uuid1())
 
     def teardown(self, exception):
-        self.db.remove()
+        self.db.close()
 
     def healthcheck(self):
         self.db.execute("select 1 from dual")
         return jsonify(dict(message="Healthy", application=self.application_name, status=200)), 200
 
 
-def _serialize(self, result_set, as_http_response=False):
+def _serialize(self, result_set, as_http_response=False, dates_as_strings=True):
     out_results = []
     return_one = type(result_set).__name__ == "result"
     if return_one:
@@ -53,7 +63,10 @@ def _serialize(self, result_set, as_http_response=False):
     for in_result in result_set:
         this_result = dict()
         for column in self.columns:
-            this_result[column.name] = getattr(in_result, column.name)
+            value = getattr(in_result, column.name)
+            if isinstance(value, (datetime, date, time)) and dates_as_strings:
+                value = value.isoformat()
+            this_result[column.name] = value
         out_results.append(this_result)
     out_results = (out_results[0] if out_results else []) if return_one else out_results
     return jsonify(out_results) if as_http_response else out_results
