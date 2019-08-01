@@ -16,31 +16,34 @@ class Schema(object):
             setattr(self, table_obj.name, table_obj)
 
 
-class OracleApp(Flask):
-    def __init__(self, context, name, in_tables, login=os.environ.get("full_login"),
+class OracleFlaskApp(Flask):
+    def __init__(self, context, name, in_tables=None, login=os.environ.get("full_login"),
                  password=os.environ.get("db_password")):
         super().__init__(context)
 
         schema_to_table = dict()
 
-        if not all(re.match(_table_regex, table) for table in in_tables):
-            raise ValueError("Invalid table entered. Must be a schema-qualified name: <schema>.<table>")
+        if in_tables:
+            if not all(re.match(_table_regex, table) for table in in_tables):
+                raise ValueError("Invalid table entered. Must be a schema-qualified name: <schema>.<table>")
 
-        for t in in_tables:
-            parts = t.split(".")
-            schema = parts[0]
-            table = parts[1]
-            if schema in schema_to_table:
-                schema_to_table[schema].append(table)
-            else:
-                schema_to_table[schema] = [table]
+            for t in set(in_tables):
+                parts = t.split(".")
+                schema = parts[0]
+                table = parts[1]
+                if schema in schema_to_table:
+                    schema_to_table[schema].append(table)
+                else:
+                    schema_to_table[schema] = [table]
 
         engine = get_sql_alchemy_oracle_engine(login, password)
         self.db = get_sql_alchemy_oracle_session(login, password, engine)
-        for schema, tables in schema_to_table.items():
-            md = MetaData(engine, schema=schema)
-            md.reflect(only=tables, views=True)
-            setattr(self, schema, Schema(md.tables))
+
+        if in_tables:
+            for schema, tables in schema_to_table.items():
+                md = MetaData(engine, schema=schema)
+                md.reflect(only=tables, views=True)
+                setattr(self, schema, Schema(md.tables))
 
         self.application_name = name
         self.url_map.strict_slashes = False
