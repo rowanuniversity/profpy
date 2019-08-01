@@ -82,6 +82,48 @@ def get_person(engine, person_id):
 
 ---
 
+#### with_sql_alchemy_model( *engine, owner, object_name*)
+<i>Decorator that passes a Sql-Alchemy model to the wrapped function.</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| engine    | Sql-Alchemy engine | engine  | yes      |  |
+| owner | owner/schema for the object you are modeling | str  | yes      | |
+|object_name|name of the object you are modeling | str | yes| |
+
+```python
+from profpy.db import with_sql_alchemy_model, get_sql_alchemy_oracle_engine, get_sql_alchemy_oracle_session
+
+engine = get_sql_alchemy_oracle_engine("login", "password")
+session = get_sql_alchemy_oracle_session("login", "password", bind=engine)
+
+
+@with_sql_alchemy_model(engine, "general", "persons")
+def get_person(persons):
+    return session.query(persons).filter_by(last_name="Nedry", first_name="Dennis").all()
+```
+
+With multiple:
+```python
+from profpy.db import with_sql_alchemy_model, get_sql_alchemy_oracle_engine, get_sql_alchemy_oracle_session
+
+engine = get_sql_alchemy_oracle_engine("login", "password")
+session = get_sql_alchemy_oracle_session("login", "password", bind=engine)
+
+
+@with_sql_alchemy_model(engine, "general", "addresses")
+@with_sql_alchemy_model(engine, "general", "persons")
+def get_address_info(persons, addresses):
+    dennis = session.query(persons).filter_by(last_name="Nedry", first_name="Dennis").first()
+    return session.query(addresses).filter_by(user_id=dennis.id)
+```
+
+<br>
+
+---
+
 #### with_sql_alchemy_oracle_connection( *login=os.environ['full_login'], password=os.environ['db_password'], auto_commit=False, engine=None*)
 <i>Decorator that passes a Sql-Alchemy connection to the wrapped function.</i>
 

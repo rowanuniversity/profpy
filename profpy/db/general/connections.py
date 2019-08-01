@@ -2,7 +2,7 @@ import cx_Oracle
 import os
 import re
 import functools
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9_]*@[a-zA-Z_]+$")
@@ -120,6 +120,28 @@ def with_cx_oracle_connection(login=os.environ.get("full_login"), password=os.en
             return _cx_oracle_wrapper_logic(f, login, password, auto_commit, *args, **kwargs)
         return wrapper
     return with_connection_
+
+
+def with_sql_alchemy_model(engine, owner, object_name):
+    """
+    Decorator that feeds a Sql-Alchemy model to the decorated function
+    :param engine:       A Sql-Alchemy engine
+    :param owner:        The schema/owner of the table/view
+    :param object_name:  The name of the table/view
+    :return:
+    """
+    def with_sql_alchemy_model_(f):
+        @functools.wraps(f)
+        def wrap(*args, **kwargs):
+            md = MetaData(engine, schema=owner)
+            md.reflect(only=[object_name], views=True)
+            model = None
+            for tbl_name, tbl_obj in md.tables.items():
+                if tbl_name == f"{owner}.{object_name}":
+                    model = tbl_obj
+            return f(model, *args, **kwargs)
+        return wrap
+    return with_sql_alchemy_model_
 
 
 def with_oracle_connection(login=os.environ.get("full_login"), password=os.environ.get("db_password"),

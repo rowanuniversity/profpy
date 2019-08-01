@@ -42,9 +42,11 @@ print(app.application_name)
 
 #### Methods
 ##### healthcheck()
-<i>Simple ping to the database to see if the connection is up. Returns a jsonified Flask response.</i>
-```python
-app.healthcheck()
+<i>Simple ping to the database to see if the connection is up. Returns a jsonified Flask response. This is baked in 
+as "/health", "/healthcheck", and "/ping" to your application. 
+</i>
+```bash
+curl localhost:5000/healthcheck
 ```
 
 ##### teardown()

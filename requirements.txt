@@ -1,5 +1,5 @@
-cx_Oracle
-requests
-Flask
-caslib.py
-sqlalchemy
+cx_Oracle==7.2.0
+requests==2.22.0
+Flask==1.1.1
+caslib.py==2.2.2
+sqlalchemy==1.3.6

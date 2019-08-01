@@ -15,6 +15,9 @@ The ```OracleFlaskApp``` class allows us to access auto-generated Sql-Alchemy mo
 as attributes of the application. All you have to do is provide schema-qualified table/view names in a list to
 the constructor.
 
+All instances of this class have a baked-in healthcheck endpoint. This can be reached at ```/health```,
+ ```/healthcheck```, or ```/ping```.
+
 ```python
 from profpy.web import OracleFlaskApp
 from flask import jsonify
@@ -39,13 +42,7 @@ def search(person_id):
 # implement some custom json formatting (not shown here)
 @app.route("/person/name/<name>")
 def name_search(name):
-    return jsonify(app.db.execute("select * from general.people where name like 'p_name%'", p_name=name))
-    
-
-# return a healthcheck json response
-@app.route("/healthcheck")
-def healthcheck():
-    return app.db.healthcheck()
+    return jsonify(app.db.execute("select * from general.people where name like :p_name || '%'", p_name=name))
 ``` 
 
 As you can see from above, we called the model's ```as_json``` method and passed in a Sql-Alchemy query. The ```as_json```
@@ -134,7 +131,9 @@ def logout():
 ```
 
 #### With pure Flask app
-All previous examples used our OracleFlaskApp class. Here is one using basic Flask.
+All previous examples used our OracleFlaskApp class. There may be an instance where you don't need to connect
+to Oracle or want to use some other database platform to back your app. For this reason, the ```auth``` decorators
+work with "vanilla" Flask applications as well. 
 ```python
 from profpy.web import auth
 from flask import Flask

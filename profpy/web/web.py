@@ -39,6 +39,10 @@ class OracleFlaskApp(Flask):
         engine = get_sql_alchemy_oracle_engine(login, password)
         self.db = get_sql_alchemy_oracle_session(login, password, engine)
 
+        # bake in a healthcheck route
+        for rule in ["healthcheck", "health", "ping"]:
+            self.add_url_rule(f"/{rule}", view_func=self.__healthcheck)
+
         if in_tables:
             for schema, tables in schema_to_table.items():
                 md = MetaData(engine, schema=schema)
@@ -53,7 +57,7 @@ class OracleFlaskApp(Flask):
     def teardown(self, exception):
         self.db.close()
 
-    def healthcheck(self):
+    def __healthcheck(self):
         self.db.execute("select 1 from dual")
         return jsonify(dict(message="Healthy", application=self.application_name, status=200)), 200
 
