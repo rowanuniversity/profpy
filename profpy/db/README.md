@@ -8,46 +8,118 @@ that was found across multiple projects and CVS repositories.
 <br>
 
 ---
-#### with_oracle_connection( *login_var="full_login", password_var="db_password"*)
-<i>Decorator that passes a cx_Oracle connection to the wrapped function.</i>
+#### with_cx_oracle_connection( *login=os.environ['full_login'], password=os.environ['db_password'], auto_commit=False*)
+<i>Decorator that passes a cx_Oracle connection to the wrapped function. This is the suggested profpy method
+for connecting to Oracle with cx_Oracle!</i>
 
 <b>Parameters:</b>
 
 | Name         | Description                                             | Type | Required | Default |
 |--------------|---------------------------------------------------------|------|----------| ------- |
-| login_var    | environment variable containing login connection string | str  | no      | full_login |
-| password_var | environment variable containing database password       | str  | no      | db_password |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+|auto_commit| commit at end of transaction? |bool|no|False
 
 ```python
-from profpy.db import with_oracle_connection
+from profpy.db import with_cx_oracle_connection
 
-@with_oracle_connection()
+@with_cx_oracle_connection(auto_commit=True)
 def get_person(connection, person_id):
     cursor = connection.cursor()
     cursor.execute("select * from general.people where id=:in_id", {"in_id": person_id})
     cursor.close()
-    
-    # alwasy explicitly commit changes when needed, connection rolls back after wrapped function is done executing.
-    connection.commit()
 ```
 
 <br>
 
 ---
 
-#### get_connection(<i> login_var, password_var </i>)
-<i>Returns cx_Oracle connection object based on given environment variable names. Often "full_login" and "db_password"</i>.
+#### with_sql_alchemy_oracle_session( *login=os.environ['full_login'], password=os.environ['db_password'], scoped=False, auto_commit=False, bind=None*)
+<i>Decorator that passes a Sql-Alchemy session to the wrapped function. This is the suggested profpy method for 
+connecting to Oracle with Sql-Alchemy!</i>
 
 <b>Parameters:</b>
 
-| Name         | Description                                             | Type | Required |
-|--------------|---------------------------------------------------------|------|----------|
-| login_var    | environment variable containing login connection string | str  | yes      |
-| password_var | environment variable containing database password       | str  | yes      |
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+| scoped | return a scoped session?       | bool  | no      | False|
+| bind | optional, already-made engine to bind session to       | Sql-Alchemy Engine  | no      | None|
+|auto_commit| commit changes at end of transaction? | bool | no | False
 
 ```python
-from profpy.db import get_connection
-with get_connection("full_login", "db_password") as connection:
+from profpy.db import with_sql_alchemy_oracle_session
+
+@with_sql_alchemy_oracle_session()
+def get_person(session, person_id):
+    session.execute("select * from general.people where id=:in_id", in_id=person_id)
+```
+
+<br>
+
+---
+
+#### with_sql_alchemy_oracle_engine( *login=os.environ['full_login'], password=os.environ['db_password']*)
+<i>Decorator that passes a Sql-Alchemy engine to the wrapped function.</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+
+```python
+from profpy.db import with_sql_alchemy_oracle_engine
+
+@with_sql_alchemy_oracle_engine()
+def get_person(engine, person_id):
+    engine.execute("select * from general.people where id=:in_id", in_id=person_id)
+```
+
+<br>
+
+---
+
+#### with_sql_alchemy_oracle_connection( *login=os.environ['full_login'], password=os.environ['db_password'], auto_commit=False, engine=None*)
+<i>Decorator that passes a Sql-Alchemy connection to the wrapped function.</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+|auto_commit| commit at end of transaction? |bool|no|False|
+|engine| optional, already-made engine to use for connection | Sql-Alchemy engine | None
+
+```python
+from profpy.db import with_sql_alchemy_oracle_connection
+
+@with_sql_alchemy_oracle_connection(auto_commit=True)
+def get_person(connection, person_id):
+    connection.execute("select * from general.people where id=:in_id", in_id=person_id).fetchall()
+```
+
+<br>
+
+---
+
+
+#### get_cx_oracle_connection(*login=os.environ['full_login'], password=os.environ['db_password']*)
+<i>Returns cx_Oracle connection object</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+
+```python
+from profpy.db import get_cx_oracle_connection
+with get_cx_oracle_connection("login", "password") as connection:
     # do stuff
     connection.commit()
 ```
@@ -55,8 +127,56 @@ with get_connection("full_login", "db_password") as connection:
 
 ---
 
+#### get_sql_alchemy_oracle_engine(*login=os.environ['full_login'], password=os.environ['db_password']*)
+<i>Returns Sql-Alchemy Oracle engine</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+
+```python
+from profpy.db import get_sql_alchemy_oracle_engine
+
+engine = get_sql_alchemy_oracle_engine("login", "password")
+engine.execute("some query")
+
+```
+<br>
+
+---
+
+#### get_sql_alchemy_oracle_session(*login=os.environ['full_login'], password=os.environ['db_password'], scoped=False, bind=None*)
+
+<i>Returns Sql-Alchemy Oracle Session object</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| login    | login connection string | str  | no      | full_login environment var |
+| password | database password       | str  | no      | db_password environment var|
+| scoped | return a scoped session?       | bool  | no      | False|
+| bind | optional, already-made engine to bind session to       | Sql-Alchemy Engine  | no      | None|
+
+```python
+from profpy.db import get_sql_alchemy_oracle_session
+
+session = get_sql_alchemy_oracle_session("login", "password")
+session.execute("some query")
+
+```
+<br>
+
+---
+
 #### execute_statement ( <i>cursor, sql, params=None</i> )
-<i>Executes a SQL statement (DML/DDL) and returns nothing.</i>
+<i>Executes a SQL statement (DML/DDL) with a cx_Oracle cursor and returns nothing.
+This method exists for semantic consistency with ```execute_query```. The same 
+functionality can be achieved by using ```cursor.execute(sql, params)``` natively with the cx_Oracle
+cursor.</i>
 
 <b>Parameters:</b>
 
@@ -84,7 +204,7 @@ with get_connection("full_login", "db_password") as connection:
 ---
 
 #### execute_query ( <i>cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False</i> )
-<i>Returns a list of dictionaries from a resulting SQL query. This is in contrast to the normal behavior of cx_Oracle cursor
+<i>Returns a list of dictionaries from a resulting SQL query, using a cx_Oracle cursor. This is in contrast to the normal behavior of cx_Oracle cursor
 executions which return a list of lists. This allows us to access data by column name, rather than having to keep track of indexes, leading to much more readable code. The "use_generator" parameter allows for the user to return a generator object rather than a list of dictionaries. This generator 
 object will yield dictionaries as needed. This option is highly recommended for use cases involving large datasets. </i>
 
@@ -154,6 +274,3 @@ sql_statements = sql_file_to_statements("/tmp/some_queries.sql")
 ```
 
 ---
-
-## Advanced Usage
-The db submodule is home to the fauxrm database abstraction layer, which can be used for more complex tasks. See [the docs](./fauxrm/README.md) for more details.

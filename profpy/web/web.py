@@ -55,7 +55,7 @@ class OracleApp(Flask):
         return jsonify(dict(message="Healthy", application=self.application_name, status=200)), 200
 
 
-def _serialize(self, result_set, as_http_response=False, dates_as_strings=True):
+def _serialize(self, result_set, as_http_response=False, iso_dates=True):
     out_results = []
     return_one = type(result_set).__name__ == "result"
     if return_one:
@@ -64,7 +64,7 @@ def _serialize(self, result_set, as_http_response=False, dates_as_strings=True):
         this_result = dict()
         for column in self.columns:
             value = getattr(in_result, column.name)
-            if isinstance(value, (datetime, date, time)) and dates_as_strings:
+            if isinstance(value, (datetime, date, time)) and iso_dates:
                 value = value.isoformat()
             this_result[column.name] = value
         out_results.append(this_result)
