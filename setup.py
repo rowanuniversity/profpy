@@ -8,19 +8,16 @@ def read(file_name):
 
 setup(
     name="profpy",
-    version="1.2.93",
+    version="2",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
         "profpy.db",
-        "profpy.db.fauxrm",
-        "profpy.db.fauxrm.queries",
-        "profpy.db.fauxrm.handlers",
         "profpy.db.general",
         "profpy.apis",
         "profpy.apis.utils",
-        "profpy.auth",
         "profpy.web",
+        "profpy.web.auth"
     ],
     url="https://github.com/rowanuniversity/profpy/",
     license="MIT",
