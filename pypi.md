@@ -2,6 +2,7 @@
 ### What is profpy?
 The profpy library is a centralized repository for Rowan's various python scripts to use.
 
+
 ### Why use it?
 Many of Rowan's python scripts/programs utilize similar or congruent functions and classes that end up getting rewritten or even
 copy/pasted wherever needed. Rather than continue this trend of untracked code, profpy allows us to have overhead control over these common functions
@@ -14,31 +15,20 @@ pip3 install profpy
 ```
 
 ### Submodules
-The profpy library is organized into submodules. For instance, database-related functionality can be access by importing the 
-"db" submodule. For example, to import the function that parses together a cx_Oracle connection object one could do this:
+The profpy library is organized into submodules: ```db```, ```web```, and ```apis```. The ```db``` submodule makes accessing
+Oracle databases with cx_Oracle and or Sql-Alchemy simpler. The ```apis``` submodule 
+contains wrapper-classes for some commonly used web APIs. The ```web``` submodule contains code for making easy,
+Oracle database-backed Flask apps.
 
-```python
-from profpy.db import get_connection
+All three of these submodules can be used to cut back on duplicated code, as well as make the development process much less
+time consuming.  
 
-if __name__ == "__main__":
-    connection = get_connection("full_login", "db_password")
-    cursor = connection.cursor()
-    # do stuff
-```
-or
-```python
-from profpy.db import with_oracle_connection
 
-@with_oracle_connection()
-def main(connection):
-    cursor = connection.cursor()
-    # do stuff
+For in-depth documentation, explore the submodules individually:
+- [db](https://github.com/rowanuniversity/profpy/tree/master/profpy/db)
+- [apis](https://github.com/rowanuniversity/profpy/tree/master/profpy/apis)
+- [web](https://github.com/rowanuniversity/profpy/tree/master/profpy/web)
 
-if __name__ == "__main__":
-    main()
-```
-
-<i>Note: "full_login" and "db_password" are the defaults for both methods</i>
 
 ### Dependencies
 - Python 3.6.7 or above
