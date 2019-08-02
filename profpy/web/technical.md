@@ -32,6 +32,12 @@ app.db.execute("select * from some_table")
 print(app.application_name)
 ```
 
+##### tables
+*A list of tables/views that have models associated with this application object*
+```python
+print(app.tables)
+```
+
 ##### Parent Properties set by constructor
 | Property | Value |
 |----------|-------|
@@ -47,6 +53,8 @@ as "/health", "/healthcheck", and "/ping" to your application.
 </i>
 ```bash
 curl localhost:5000/healthcheck
+curl localhost:5000/health
+curl localhost:5000/ping
 ```
 
 ##### teardown()

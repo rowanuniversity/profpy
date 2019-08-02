@@ -6,14 +6,14 @@ An API wrapper that optimizes calls to the ServiceNow table API.
 This API utilizes user/password credentials for authentication. 
 ```python
 from profpy.apis import ServiceNowTable
-api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/")
+api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/now/table/")
 ```
 
 ### Retrieving Data
 This class currently only supports endpoints that retrieve data via GET requests. 
 ```python
 from profpy.apis import ServiceNowTable
-api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/")
+api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/now/table/")
 
 # returns json for matching result
 record = api.get_record(table_name="this-table", record_id="this-record-id")
@@ -58,6 +58,27 @@ The user and password as a tuple; technically the parent class' public_key and p
 Each method's section will have a link back to ServiceNow's documentation for the corresponding endpoint. You should 
 visit these pages for in-depth information on available query parameters. 
 
+### load_table( *table_name, limit=None, \*\*kwargs* )
+Loads *all* possible values from a table based on the endpoint associated with the provided table name.
+This function takes into account result "paging" that the ```get_records``` method does not. 
+
+Parameters:
+
+| Name        | Description                                        | Type          | Required | Default |
+|-------------|----------------------------------------------------|---------------|----------|---------|
+| table_name  | the name of the table  | str          | yes       |    |
+| limit      | a limit on the number of the results | int | no | None | 
+| **kwargs    | Keyword args to be used as url query parameters    | **kwargs dict | no       | N/A     |
+
+
+```python
+from profpy.apis import ServiceNowTable
+api = ServiceNowTable("user", "password", "url")
+
+incidents = api.load_table("incidents", limit=2000)
+```
+
+
 ### get_record( *table_name, record_id, custom_id_field, \*\*kwargs* )
 Returns a record based on table name and sys_id.
  
@@ -74,7 +95,7 @@ Parameters:
 
 ```python
 from profpy.apis import ServiceNowTable
-api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/")
+api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/now/table/")
 
 # returns json for matching result
 record = api.get_record(table_name="this-table", record_id="this-record-id")
@@ -98,7 +119,7 @@ Parameters:
 
  ```python
 from profpy.apis import ServiceNowTable
-api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/")
+api = ServiceNowTable(user="username", password="*****", in_url="this-api-url.com/api/now/table/")
 
 # returns list of json objects for matching results
 all_records = api.get_records(table_name="this-table")

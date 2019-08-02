@@ -49,6 +49,7 @@ class OracleFlaskApp(Flask):
                 md.reflect(only=tables, views=True)
                 setattr(self, schema, Schema(md.tables))
 
+        self.tables = in_tables
         self.application_name = name
         self.url_map.strict_slashes = False
         self.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
