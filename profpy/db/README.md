@@ -53,7 +53,7 @@ from profpy.db import with_sql_alchemy_oracle_session
 
 @with_sql_alchemy_oracle_session()
 def get_person(session, person_id):
-    session.execute("select * from general.people where id=:in_id", in_id=person_id)
+    session.execute("select * from general.people where id=:in_id", dict(in_id=person_id))
 ```
 
 <br>
@@ -216,7 +216,7 @@ session.execute("some query")
 
 #### get_sql_alchemy_oracle_model( *engine, object_owner, object_name, return_relationships* )
 
-<i>Returns Sql-Alchemy Oracle Session object</i>
+<i>Returns Sql-Alchemy Oracle Model object, or a list of model objects (if specified)</i>
 
 <b>Parameters:</b>
 
