@@ -53,7 +53,7 @@ from profpy.db import with_sql_alchemy_oracle_session
 
 @with_sql_alchemy_oracle_session()
 def get_person(session, person_id):
-    session.execute("select * from general.people where id=:in_id", in_id=person_id)
+    session.execute("select * from general.people where id=:in_id", dict(in_id=person_id))
 ```
 
 <br>
@@ -209,6 +209,31 @@ from profpy.db import get_sql_alchemy_oracle_session
 session = get_sql_alchemy_oracle_session("login", "password")
 session.execute("some query")
 
+```
+<br>
+
+---
+
+#### get_sql_alchemy_oracle_model( *engine, object_owner, object_name, return_relationships* )
+
+<i>Returns Sql-Alchemy Oracle Model object, or a list of model objects (if specified)</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| engine    | A Sql-Alchemy engine | engine | yes      |  |
+| object_owner | the owner of the table/view       | str  | yes      | |
+| object_name | the name of the table/view      | str  | yes      | |
+| return_relationships | return models for foreign key references?      | bool  | no      | False|
+
+```python
+from profpy.db import get_sql_alchemy_oracle_engine, get_sql_alchemy_oracle_model
+
+engine = get_sql_alchemy_oracle_engine()
+
+users = get_sql_alchemy_oracle_model(engine, "admin", "users")
+users_with_foreign_key_models = get_sql_alchemy_oracle_model(engine, "admin", "users", return_relationships=True)
 ```
 <br>
 

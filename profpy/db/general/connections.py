@@ -258,6 +258,29 @@ def with_sql_alchemy_oracle_connection(login=os.environ.get("full_login"), passw
     return with_sql_alchemy_connection_
 
 
+def get_sql_alchemy_oracle_model(engine, object_owner, object_name, return_relationships=False):
+    """
+    Returns an auto-generated Sql-Alchemy model based on the given parameters.
+    :param engine: The Sql-Alchemy engine being used to create this class
+    :param object_owner:         The owner of the table/view in the database.
+    :param object_name:          The name of the table/view
+    :param return_relationships: Whether or not to return all auto-generated models. If a table with a foreign key
+                                 is modeled, that source tables for the key are also modeled.
+    :return:                     A model or list of models, depending on the parameters
+    """
+    md = MetaData(engine, schema=object_owner)
+    md.reflect(only=[object_name], views=True)
+
+    if return_relationships:
+        return md.tables.items()
+    else:
+        model = None
+        for tbl_name, tbl_obj in md.tables.items():
+            if tbl_name == f"{object_owner}.{object_name}":
+                model = tbl_obj
+        return model
+
+
 def get_sql_alchemy_oracle_session(login=os.environ.get("full_login"), password=os.environ.get("db_password"),
                                    scoped=False, bind=None):
     """
