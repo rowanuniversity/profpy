@@ -214,6 +214,31 @@ session.execute("some query")
 
 ---
 
+#### get_sql_alchemy_oracle_model( *engine, object_owner, object_name, return_relationships* )
+
+<i>Returns Sql-Alchemy Oracle Session object</i>
+
+<b>Parameters:</b>
+
+| Name         | Description                                             | Type | Required | Default |
+|--------------|---------------------------------------------------------|------|----------| ------- |
+| engine    | A Sql-Alchemy engine | engine | yes      |  |
+| object_owner | the owner of the table/view       | str  | yes      | |
+| object_name | the name of the table/view      | str  | yes      | |
+| return_relationships | return models for foreign key references?      | bool  | no      | False|
+
+```python
+from profpy.db import get_sql_alchemy_oracle_engine, get_sql_alchemy_oracle_model
+
+engine = get_sql_alchemy_oracle_engine()
+
+users = get_sql_alchemy_oracle_model(engine, "admin", "users")
+users_with_foreign_key_models = get_sql_alchemy_oracle_model(engine, "admin", "users", return_relationships=True)
+```
+<br>
+
+---
+
 #### execute_statement ( <i>cursor, sql, params=None</i> )
 <i>Executes a SQL statement (DML/DDL) with a cx_Oracle cursor and returns nothing.
 This method exists for semantic consistency with ```execute_query```. The same 
