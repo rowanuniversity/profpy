@@ -17,7 +17,7 @@ def requirements():
 
 setup(
     name="profpy",
-    version="2.1.0",
+    version="2.2.0",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
@@ -26,7 +26,6 @@ setup(
         "profpy.apis",
         "profpy.apis.utils",
         "profpy.web",
-        "profpy.web.auth"
     ],
     url="https://github.com/rowanuniversity/profpy/",
     license="MIT",
