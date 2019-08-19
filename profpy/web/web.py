@@ -196,7 +196,7 @@ class SecureFlaskApp(Flask):
             logout_url += f"?service={url_for(self.__after_logout, _external=True)}"
         return redirect(logout_url)
 
-    def secured(self, any_roles=None, not_roles=None, all_roles=None, get_cas_user=False, cas_server_url=None):
+    def secured(self, any_roles=None, not_roles=None, all_roles=None, get_cas_user=False):
         """
         Use CAS to secure an endpoint, alternatively specify any roles to restrict access to the endpoint to as well
         :param any_roles:    A list of roles to allow to see the form
@@ -208,6 +208,9 @@ class SecureFlaskApp(Flask):
         def _secured(f):
             @functools.wraps(f)
             def wrap(*args, **kwargs):
+
+                # set response to "unauthorized" by default, this will get changed if the user is allowed to hit
+                # the decorated route function
                 response = render_template(self.__custom_403) if self.__custom_403 \
                                else jsonify(dict(message="Unauthorized")), 403
                 session["cas-after-login"] = f"{request.path}{_parse_query_string(quoted=False)}"
@@ -225,19 +228,27 @@ class SecureFlaskApp(Flask):
                             .filter(self.users.c.username == cas.user).all()
                         cas.roles = [a.authority for a in auths]
 
-                        # if roles are specified and the user doesn't meet the requirement, keep the
-                        # default 403 response
+                        # all_roles was set, and the authenticated user doesn't have all of the roles in the
+                        # in the list, block their access
                         if all_roles and not all(role in cas.roles for role in all_roles):
                             pass
                         else:
+                            # endpoint has not_roles set, and the authenticated user has a role in said list.
+                            # i.e. user has "bad" role for this page, block their access
                             if not_roles and any(role in not_roles for role in cas.roles):
                                 pass
+
+                            # endpoint has any_roles set, and the authenticated user does not have any of the
+                            # roles in said list, block their access
                             elif any_roles and not any(role in any_roles for role in cas.roles):
                                 pass
+
                             # else, they authenticated fully (both CAS and role-base if specified)
                             else:
                                 session.pop("cas-object")
                                 response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
+
+                    # no role-based security configured, just do CAS
                     else:
                         session.pop("cas-object")
                         response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
