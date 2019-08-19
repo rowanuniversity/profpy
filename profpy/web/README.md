@@ -166,6 +166,64 @@ You can also override the logout endpoint to be something other than ```/logout`
 app = SecureFlaskApp(__name__, "My Web App", engine, logout_endpoint="/otherLogout", post_logout_view_function="post_logout")
 ```
 
+#### Session Cookie-based Protection
+There may also be scenarios in which you want to protect endpoints using a combination of session cookies and HTTP basic auth. 
+
+A good use case here would be an admin-like page that utilizes AJAX. To clamp down these kinds of endpoints to only 
+be accessible from certain pages, you can use the ```@app.set_session_cookie``` and ```@app.requires_session_cookie``` decorators.
+
+The ```@app.set_session_cookie``` decorator simply sets a Flask session cookie to a specified value when you hit the decorated route. 
+
+The ```@app.requires_session_cookie``` decorator only allows users to use the decorated route function if the
+specified cookie is present *or* if they provide suitable HTTP basic auth credentials. 
+
+This gives us flexibility to design secure AJAX methods that can be used both by the web app and *authorized* users outside of the web app using cURL or some similar tool.
+
+```python
+from profpy.db import get_sql_alchemy_oracle_engine
+from profpy.web import SecureFlaskApp
+from flask import request
+
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
+
+@app.route("/admin")
+@app.set_session_cookie("admin-session")
+@app.secured()
+def admin():
+    return "<h1>admin page</h1>"
+
+
+@app.route("/createUser", methods=["POST"])
+@app.requires_session_cookie("admin-session")
+def create():
+    app.db.execute(
+        app.general.people.insert().values(
+            first_name=request.args.first_name,
+            last_name=request.args.last_name
+        )
+    )
+    app.db.commit()
+```
+
+##### What did that do?
+When the user hits the ```/admin``` endpoint, a cookie called "admin-session" gets 
+set in the encrypted Flask session object. As long as this is set, they can use the 
+```/createUser``` endpoint. If they tried hitting ```curl host:port/createUser``` from the command
+line, they would get a 401 error. If http basic auth is set up in the environment (see configuration section below), 
+the endpoint *is* accessible from outside of the application if valid credentials are supplied. 
+
+##### What is the cookie value? 
+By default, ```@app.set_session_cookie``` sets the session cookie to a random uuid. However, 
+you can override this default behavior.
+```python
+@app.route("/admin")
+@app.set_session_cookie("admin-session", cookie_value="some-alternative-value")
+@app.secured()
+def admin():
+    return "<h1>admin page</h1>"
+```
+
 ## Configuration
 The ```SecureFlaskApp``` requires some very basic configuration for CAS, and some additional configuration for role-based
 security (if used). 
@@ -199,3 +257,13 @@ Instead of setting environment variables, you can also specify these configurati
 ```python
 app = SecureFlaskApp(__name__, "My Web App", engine, security_schema="security", role_table="roles", user_table="users", user_role_table="user_roles")
 ```
+
+#### Session Cookie Protection
+The only configuration needed for session cookie-based endpoint protection would be to set 
+the following environment variables:
+
+| Env Var                  | Description                                                        |
+|--------------------------|--------------------------------------------------------------------|
+| http_basic_auth_user          | username          |
+| http_basic_auth_password     | password |
+

@@ -196,6 +196,48 @@ class SecureFlaskApp(Flask):
             logout_url += f"?service={url_for(self.__after_logout, _external=True)}"
         return redirect(logout_url)
 
+    def set_session_cookie(self, cookie_name, cookie_value=uuid1()):
+        """
+        Sets a specified session cookie to a specified value
+        :param cookie_name:  the name of the session cookie to be set
+        :param cookie_value: the value to set the session cookie to
+        :return:             the decorated function
+        """
+        def _set_cookie_hash(f):
+            @functools.wraps(f)
+            def wrap(*args, **kwargs):
+                session[cookie_name] = cookie_value
+                return f(*args, **kwargs)
+            return wrap
+        return _set_cookie_hash
+
+    def requires_session_cookie(self, cookie_name, http_user=os.environ.get("http_basic_auth_user"),
+                                http_password=os.environ.get("http_basic_auth_password")):
+        """
+        Requires a session cookie for the decorated endpoint to be accessed. This is particularly useful for protecting
+        admin-related AJAX endpoints from outside use.
+        :param cookie_name:     A cookie name
+        :param http_user:       Basic auth user
+        :param http_password:   Basic auth password
+        :return:                An http response
+        """
+        def _requires_cookie(f):
+            @functools.wraps(f)
+            def wrap(*args, **kwargs):
+                if session.get(cookie_name):
+                    response = f(*args, **kwargs)
+                elif request.authorization:
+                    if request.authorization.username == http_user \
+                            and request.authorization.password == http_password:
+                        response = f(*args, **kwargs)
+                    else:
+                        response = jsonify(dict(message="Invalid credentials")), 403
+                else:
+                    response = jsonify(dict(message="Missing credentials.")), 401
+                return response
+            return wrap
+        return _requires_cookie
+
     def secured(self, any_roles=None, not_roles=None, all_roles=None, get_cas_user=False):
         """
         Use CAS to secure an endpoint, alternatively specify any roles to restrict access to the endpoint to as well
