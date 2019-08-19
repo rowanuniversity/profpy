@@ -40,7 +40,7 @@ def search(person_id):
 ``` 
 
 In the above example, we created a basic home page with the ```home``` route function. Using the ```@app.secured``` 
-decorator, we added CAS-protection to the endpoint (more on [CAS configuration](#Configuration) later). The ```search``` function gives an
+decorator, we added CAS-protection to the endpoint (more on [CAS configuration](#configuration) later). The ```search``` function gives an
 example of the auto-generated Sql-Alchemy models being used directly as properties of the application.
 
 
@@ -63,7 +63,7 @@ def home(cas_user):
 ```
 
 #### Role-based protection
-Once [configured](#Configuration), you can also use role-based protection for endpoints. The ```SecureFlaskApp``` constructor 
+Once [configured](#configuration), you can also use role-based protection for endpoints. The ```SecureFlaskApp``` constructor 
 defaults to not use role security, but you can turn it on with an optional argument. 
 ```python
 app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
