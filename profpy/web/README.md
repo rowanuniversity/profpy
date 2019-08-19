@@ -187,10 +187,13 @@ To use role-based security, set the following environment variables:
 | security_user_table      | The database table/view containing user info                       |
 | security_user_role_table | The database table/view containing the user to role crosswalk info |
 
-Additionally, these tables/views are required to follow some basic structural rules. The role and user
-tables must both have unique key fields called ```id```. The crosswalk table must have identifiers called 
-```app_user_id``` and ```app_role_id``` to link back to the other tables. Lastly, the actual role names in the role
-table/view must be stored in a field called ```authority```.
+Additionally, these tables/views are required to follow some basic structural rules:
+
+- The role and user tables must both have unique key fields called ```id```. 
+
+- The crosswalk table must have identifiers called ```app_user_id``` and ```app_role_id``` to link back to the other tables. 
+
+- The actual role names in the role table/view must be stored in a field called ```authority```.
 
 Instead of setting environment variables, you can also specify these configuration values in the app's constructor:
 ```python

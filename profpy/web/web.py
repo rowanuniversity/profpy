@@ -88,8 +88,16 @@ class SecureFlaskApp(Flask):
         :param cas_url:                    The CAS server url
         :param logout_endpoint:            The endpoint for the CAS logout
         :param post_logout_view_function:  The page to drop a user at after they have logged out
+        :param custom_403_template:        A custom 403 html page template
+        :param security_schema:            The db schema containing security tables
+        :param role_table                  Table containing security roles
+        :param user_table                  Table containing security users
+        :param user_role_table             Crosswalk table for security roles and users
         """
         super().__init__(context)
+
+        if cas_url is None:
+            raise Exception("CAS url not configured.")
 
         # organize tables by schema
         schema_to_table = dict()
@@ -98,7 +106,7 @@ class SecureFlaskApp(Flask):
                 raise ValueError("Invalid table entered. Must be a schema-qualified name: <schema>.<table>")
             schema_to_table = _explode_full_table_names(in_tables)
 
-        # connect to oracle
+        # connect to db
         self.db = scoped_session(sessionmaker(bind=engine))()
         self.__custom_403 = custom_403_template
 
@@ -118,11 +126,7 @@ class SecureFlaskApp(Flask):
         self.user_roles = None
         self.__after_logout = post_logout_view_function
         self.__cas_server_url = cas_url
-        self.__cas_configured = self.__cas_server_url is not None
         self.__role_security_configured = False
-
-        if not self.__cas_configured:
-            raise Exception("CAS url not configured.")
 
         required_security = [role_table, user_table, user_role_table, security_schema]
 
@@ -135,7 +139,24 @@ class SecureFlaskApp(Flask):
                 self.roles = _get_single_table(engine, security_schema, role_table)
                 self.users = _get_single_table(engine, security_schema, user_table)
                 self.user_roles = _get_single_table(engine, security_schema, user_role_table)
-                self.__role_security_configured = True
+
+                # validate the required columns
+                missing = {}
+                for obj, required_fields in {self.roles: ["id", "authority"], self.users: ["id"],
+                                             self.user_roles: ["app_role_id", "app_user_id"]}.items():
+                    this_table_missing = []
+                    raw = _raw_columns(obj)
+                    for rf in required_fields:
+                        if rf not in raw:
+                            this_table_missing.append(rf)
+                    if this_table_missing:
+                        missing[obj.name] = this_table_missing
+
+                if missing:
+                    for k, v in missing.items():
+                        self.logger.warning(f"Security table {k} missing the following required fields: {', '.join(v)}")
+                else:
+                    self.__role_security_configured = True
 
             # user specified some of the required security configs, but not all. log a warning
             else:
@@ -331,6 +352,10 @@ def _login(in_cas_url):
         else:
             del session["cas-ticket"]
     return redirect(redirect_url)
+
+
+def _raw_columns(table_obj):
+    return [str(col).replace(f"{table_obj.name}.", "") for col in table_obj.columns]
 
 
 # implement serializer
