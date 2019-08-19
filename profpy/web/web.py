@@ -7,12 +7,12 @@ import os
 import re
 import functools
 import caslib
-from flask import Flask, jsonify, session, request, redirect, url_for
+from flask import Flask, jsonify, session, request, redirect, url_for, render_template
 from urllib.parse import quote
 from uuid import uuid1
 from sqlalchemy import MetaData, Table
+from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime, date, time
-from ..db import get_sql_alchemy_oracle_session, get_sql_alchemy_oracle_engine
 
 
 # some constants
@@ -70,21 +70,19 @@ class Schema(object):
             setattr(self, table_obj.name, table_obj)
 
 
-class OracleFlaskApp(Flask):
+class SecureFlaskApp(Flask):
     """
-    A CAS-secured, Sql-Alchemy Oracle-backed Flask application.
+    A CAS-secured, Sql-Alchemy Database-backed Flask application. This class also allows for role-based security.
     """
-    def __init__(self, context, name, in_tables=None, login=os.environ.get("full_login"),
-                 password=os.environ.get("db_password"), role_security=True,
+    def __init__(self, context, name, engine, in_tables=None, role_security=False,
                  cas_url=os.environ.get(_default_cas_url_var), logout_endpoint="logout",
-                 post_logout_view_function=None):
+                 post_logout_view_function=None, custom_403_template=None):
         """
         Constructor
         :param context:                    WSGI object name (__name__)
         :param name:                       The descriptive name of the web app
+        :param engine:                     A sqlalchemy engine for the database
         :param in_tables:                  A list of schema-qualified database tables/views for the app to use
-        :param login:                      Oracle DB login
-        :param password:                   Oracle password
         :param role_security:              Whether or not to enable role-based security
         :param cas_url:                    The CAS server url
         :param logout_endpoint:            The endpoint for the CAS logout
@@ -100,8 +98,8 @@ class OracleFlaskApp(Flask):
             schema_to_table = _explode_full_table_names(in_tables)
 
         # connect to oracle
-        engine = get_sql_alchemy_oracle_engine(login, password)
-        self.db = get_sql_alchemy_oracle_session(login, password, engine)
+        self.db = scoped_session(sessionmaker(bind=engine))()
+        self.__custom_403 = custom_403_template
 
         # bake in a healthcheck route
         for rule in ["healthcheck", "health", "ping"]:
@@ -165,11 +163,13 @@ class OracleFlaskApp(Flask):
             logout_url += f"?service={url_for(self.__after_logout, _external=True)}"
         return redirect(logout_url)
 
-    def secured(self, roles=None, get_cas_user=False):
+    def secured(self, any_roles=None, not_roles=None, all_roles=None, get_cas_user=False):
         """
         Use CAS to secure an endpoint, alternatively specify any roles to restrict access to the endpoint to as well
-        :param roles:        A list of roles for security
+        :param any_roles:    A list of roles to allow to see the form
         :param get_cas_user: Whether or not to return an object representing an authenticated CAS user
+        :param not_roles:    A list of roles to NOT allow to see the form
+        :param all_roles:    User must be in ALL of these roles to see page
         :return:             the decorated function
         """
         def _secured(f):
@@ -178,7 +178,8 @@ class OracleFlaskApp(Flask):
                 if not self.__cas_server_url:
                     raise Exception("No CAS URL set in environment or specified in decorator.")
                 else:
-                    response = jsonify(dict(message="Unauthorized")), 403
+                    response = render_template(self.__custom_403) if self.__custom_403 \
+                                   else jsonify(dict(message="Unauthorized")), 403
                     session["cas-after-login"] = f"{request.path}{_parse_query_string(quoted=False)}"
                     if "cas-object" not in session:
                         response = _login(self.__cas_server_url)
@@ -193,13 +194,17 @@ class OracleFlaskApp(Flask):
 
                         # role-based auth. if roles are specified and the user doesn't meet the requirement, keep the
                         # default 403 response
-                        if roles and not any(role in roles for role in cas.roles):
+                        if all_roles and not all(role in cas.roles for role in all_roles):
                             pass
-
-                        # else, they authenticated fully (both CAS and role-base if specified)
                         else:
-                            session.pop("cas-object")
-                            response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
+                            if not_roles and any(role in not_roles for role in cas.roles):
+                                pass
+                            elif any_roles and not any(role in any_roles for role in cas.roles):
+                                pass
+                            # else, they authenticated fully (both CAS and role-base if specified)
+                            else:
+                                session.pop("cas-object")
+                                response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
                 return response
             return wrap
         return _secured
