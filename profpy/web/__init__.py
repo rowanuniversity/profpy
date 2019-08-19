@@ -1,1 +1,1 @@
-from .web import OracleFlaskApp
+from .web import SecureFlaskApp

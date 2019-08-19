@@ -18,7 +18,7 @@ pip3 install profpy
 The profpy library is organized into submodules: ```db```, ```web```, and ```apis```. The ```db``` submodule makes accessing
 Oracle databases with cx_Oracle and or Sql-Alchemy simpler. The ```apis``` submodule 
 contains wrapper-classes for some commonly used web APIs. The ```web``` submodule contains code for making easy,
-Oracle database-backed Flask apps.
+database-backed Flask apps, configured with CAS and role-based security.
 
 All three of these submodules can be used to cut back on duplicated code, as well as make the development process much less
 time consuming.  
