@@ -74,7 +74,7 @@ class SecureFlaskApp(Flask):
     """
     A CAS-secured, Sql-Alchemy Database-backed Flask application. This class also allows for role-based security.
     """
-    def __init__(self, context, name, engine, in_tables=None, role_security=False,
+    def __init__(self, context, name, engine, in_tables=None,
                  cas_url=os.environ.get(_default_cas_url_var), logout_endpoint="logout",
                  post_logout_view_function=None, custom_403_template=None, security_schema=os.environ.get(_schema_var),
                  role_table=os.environ.get(_role_var), user_table=os.environ.get(_user_var),
@@ -85,7 +85,6 @@ class SecureFlaskApp(Flask):
         :param name:                       The descriptive name of the web app
         :param engine:                     A sqlalchemy engine for the database
         :param in_tables:                  A list of schema-qualified database tables/views for the app to use
-        :param role_security:              Whether or not to enable role-based security
         :param cas_url:                    The CAS server url
         :param logout_endpoint:            The endpoint for the CAS logout
         :param post_logout_view_function:  The page to drop a user at after they have logged out
@@ -119,20 +118,34 @@ class SecureFlaskApp(Flask):
         self.user_roles = None
         self.__after_logout = post_logout_view_function
         self.__cas_server_url = cas_url
+        self.__cas_configured = self.__cas_server_url is not None
+        self.__role_security_configured = False
+
+        if not self.__cas_configured:
+            raise Exception("CAS url not configured.")
 
         required_security = [role_table, user_table, user_role_table, security_schema]
-        if role_security:
 
-            # check configuration in environment vars
-            if not all(obj not in ("", None) for obj in required_security):
-                raise Exception(f"Role-based security not configured correctly.")
+        # set up role-based security if the user configured it
+        if any(required_security):
 
             # if valid, create sqlalchemy table objects for role security
-            else:
+            if all(required_security):
                 # shown above, the order of the the security config list is role, user, user_role (0, 1, 2 indexes)
                 self.roles = _get_single_table(engine, security_schema, role_table)
                 self.users = _get_single_table(engine, security_schema, user_table)
                 self.user_roles = _get_single_table(engine, security_schema, user_role_table)
+                self.__role_security_configured = True
+
+            # user specified some of the required security configs, but not all. log a warning
+            else:
+                missing = []
+                for k, v in {"role table": role_table, "user table": user_table,
+                             "user role crosswalk table": user_role_table, "security schema": security_schema}.items():
+                    if not v:
+                        missing.append(k)
+                self.logger.warning(f"Role-based security not configured correctly. "
+                                    f"Invalid/missing values: {', '.join(missing)}")
 
         # other fields
         self.tables = in_tables
@@ -162,7 +175,7 @@ class SecureFlaskApp(Flask):
             logout_url += f"?service={url_for(self.__after_logout, _external=True)}"
         return redirect(logout_url)
 
-    def secured(self, any_roles=None, not_roles=None, all_roles=None, get_cas_user=False):
+    def secured(self, any_roles=None, not_roles=None, all_roles=None, get_cas_user=False, cas_server_url=None):
         """
         Use CAS to secure an endpoint, alternatively specify any roles to restrict access to the endpoint to as well
         :param any_roles:    A list of roles to allow to see the form
@@ -174,24 +187,24 @@ class SecureFlaskApp(Flask):
         def _secured(f):
             @functools.wraps(f)
             def wrap(*args, **kwargs):
-                if not self.__cas_server_url:
-                    raise Exception("No CAS URL set in environment or specified in decorator.")
+                response = render_template(self.__custom_403) if self.__custom_403 \
+                               else jsonify(dict(message="Unauthorized")), 403
+                session["cas-after-login"] = f"{request.path}{_parse_query_string(quoted=False)}"
+                if "cas-object" not in session:
+                    response = _login(self.__cas_server_url)
                 else:
-                    response = render_template(self.__custom_403) if self.__custom_403 \
-                                   else jsonify(dict(message="Unauthorized")), 403
-                    session["cas-after-login"] = f"{request.path}{_parse_query_string(quoted=False)}"
-                    if "cas-object" not in session:
-                        response = _login(self.__cas_server_url)
-                    else:
-                        raw_cas = session.get("cas-object")
-                        cas = CasUser(raw_cas["user"], raw_cas["attributes"])
+                    raw_cas = session.get("cas-object")
+                    cas = CasUser(raw_cas["user"], raw_cas["attributes"])
+
+                    # do role-based security, if it was configured
+                    if self.__role_security_configured:
                         auths = self.db.query(self.users, self.roles.c.authority) \
                             .outerjoin(self.user_roles, self.users.c.id == self.user_roles.c.app_user_id) \
                             .outerjoin(self.roles, self.user_roles.c.app_role_id == self.roles.c.id) \
                             .filter(self.users.c.username == cas.user).all()
                         cas.roles = [a.authority for a in auths]
 
-                        # role-based auth. if roles are specified and the user doesn't meet the requirement, keep the
+                        # if roles are specified and the user doesn't meet the requirement, keep the
                         # default 403 response
                         if all_roles and not all(role in cas.roles for role in all_roles):
                             pass
@@ -204,6 +217,9 @@ class SecureFlaskApp(Flask):
                             else:
                                 session.pop("cas-object")
                                 response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
+                    else:
+                        session.pop("cas-object")
+                        response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
                 return response
             return wrap
         return _secured

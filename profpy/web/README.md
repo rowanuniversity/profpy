@@ -63,17 +63,35 @@ def home(cas_user):
 ```
 
 #### Role-based protection
-Once configured (see configuration section at bottom), you can also use role-based protection for endpoints. The ```SecureFlaskApp``` constructor 
-defaults to not use role security, but you can turn it on with an optional argument. 
+Once configured (see configuration section at bottom), you can also use role-based protection for endpoints. The ```SecureFlaskApp```
+class looks for and then validates this configuration. If no configuration is specified, role-based security is ignored. If an invalid
+configuration is specified, role-based security will be ignored, but the app's logger will notify you of what 
+values need to be fixed. 
+
+
+When relying on environment variable-based configuration, you don't have to change anything in your setup for Flask.
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+from profpy.web import SecureFlaskApp
+from profpy.db import get_sql_alchemy_oracle_engine
+
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My App", engine, ["general.people", "contact.addresses"])
 ```
 
-Now you can clamp down on endpoint access based on roles from your configured security tables/views.
+Alternatively, you can specify role-based security configuration values to the constructor itself. This is also shown in the configuration section at the end of this README. 
+```python
+from profpy.web import SecureFlaskApp
+from profpy.db import get_sql_alchemy_oracle_engine
+
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My App", engine, ["general.people", "contact.addresses"], security_schema="security", role_table="app_role", user_table="app_user", user_role_table="app_user_app_role")
+```
+
+---
 
 Restricting access to users who have any of the given roles:
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
 
 @app.route("/mainSecurityGrid")
 @app.secured(any_roles=["ROLE_NEDRY"])
@@ -83,7 +101,7 @@ def main_security():
 
 You can also do the inverse and have a list of roles to block access from. 
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
 
 @app.route("/mainSecurityGrid")
 @app.secured(not_roles=["ROLE_NEDRY"])
@@ -93,7 +111,7 @@ def main_security():
 
 Restricting access to users who have ALL of the given roles:
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
 
 @app.route("/mainSecurityGrid")
 @app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"])
@@ -123,7 +141,7 @@ def main_security(user):
 By default the app will just render a basic "Unauthorized" json response. You can override this by specifying
 a template name in the constructor for the ```SecureFlaskApp```.
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True, custom_403_template="403.html")
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], custom_403_template="403.html")
 ```
 
 #### CAS logout
@@ -132,7 +150,7 @@ out. Once logged out, the user will be sent to the CAS server's default logout p
 
 However, you can specify an after logout location specific to your app via the ```SecureFlaskApp```'s constructor.
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, cas_url="https://some-cas-server.com", post_logout_view_function="post_logout")
+app = SecureFlaskApp(__name__, "My Web App", engine, post_logout_view_function="post_logout")
 
 
 @app.route("/afterLogout")
@@ -145,7 +163,7 @@ Note that this argument is the name of the routing function that you define in y
 
 You can also override the logout endpoint to be something other than ```/logout```.
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, cas_url="https://some-cas-server.com", logout_endpoint="/otherLogout", post_logout_view_function="post_logout")
+app = SecureFlaskApp(__name__, "My Web App", engine, logout_endpoint="/otherLogout", post_logout_view_function="post_logout")
 ```
 
 ## Configuration
@@ -176,5 +194,5 @@ table/view must be stored in a field called ```authority```.
 
 Instead of setting environment variables, you can also specify these configuration values in the app's constructor:
 ```python
-app = SecureFlaskApp(__name__, "My Web App", engine, role_security=True, security_schema="security", role_table="roles", user_table="users", user_role_table="user_roles")
+app = SecureFlaskApp(__name__, "My Web App", engine, security_schema="security", role_table="roles", user_table="users", user_role_table="user_roles")
 ```
