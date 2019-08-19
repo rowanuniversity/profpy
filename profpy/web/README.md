@@ -73,6 +73,8 @@ Now you can clamp down on endpoint access based on roles from your configured se
 
 Restricting access to users who have any of the given roles:
 ```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+
 @app.route("/mainSecurityGrid")
 @app.secured(any_roles=["ROLE_NEDRY"])
 def main_security():
@@ -81,6 +83,8 @@ def main_security():
 
 You can also do the inverse and have a list of roles to block access from. 
 ```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+
 @app.route("/mainSecurityGrid")
 @app.secured(not_roles=["ROLE_NEDRY"])
 def main_security():
@@ -89,20 +93,13 @@ def main_security():
 
 Restricting access to users who have ALL of the given roles:
 ```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], role_security=True)
+
 @app.route("/mainSecurityGrid")
 @app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"])
 def main_security():
     return "<h1>Welcome, to Jurassic Park</h1>"
 ```
-
-Using the roles from an authenticated user:
-```python
-@app.route("/mainSecurityGrid")
-@app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"], get_cas_user=True)
-def main_security(user):
-    return f"<h1>Welcome, to Jurassic Park. You have these roles: {', '.join(user.roles)}</h1>"
-```
-
 
 Role Security Arguments:
 
@@ -111,6 +108,16 @@ Role Security Arguments:
 | any_roles          | User that has any of these roles can access endpoint       |
 | not_roles      | User with any of these roles can NOT access the endpoint                    |
 | all_roles      | User with all of these roles can access the endpoint                    |
+
+
+The CAS user will also have a list of all of their roles as an attribute:
+```python
+@app.route("/mainSecurityGrid")
+@app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"], get_cas_user=True)
+def main_security(user):
+    roles = user.roles
+    return f"<h1>Welcome, to Jurassic Park. You have these roles: {', '.join(roles)}</h1>"
+```
 
 #### Custom 403 Page
 By default the app will just render a basic "Unauthorized" json response. You can override this by specifying
@@ -153,7 +160,7 @@ app = SecureFlaskApp(__name__, "My Web App", engine, cas_url="https://some-cas-s
 ``` 
 
 #### Role-based security
-The role-based security requires the following environment variables to be set:
+To use role-based security, set the following environment variables:
 
 | Env Var                  | Description                                                        |
 |--------------------------|--------------------------------------------------------------------|
@@ -166,3 +173,8 @@ Additionally, these tables/views are required to follow some basic structural ru
 tables must both have unique key fields called ```id```. The crosswalk table must have identifiers called 
 ```app_user_id``` and ```app_role_id``` to link back to the other tables. Lastly, the actual role names in the role
 table/view must be stored in a field called ```authority```.
+
+Instead of setting environment variables, you can also specify these configuration values in the app's constructor:
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, role_security=True, security_schema="security", role_table="roles", user_table="users", user_role_table="user_roles")
+```

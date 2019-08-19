@@ -1,7 +1,7 @@
 """
 profpy.web
 
-Easy-to-use Flask extension for CAS and role-based security with Oracle-backed Flask Apps
+Easy-to-use Flask extension for CAS and role-based security with database-backed Flask Apps
 """
 import os
 import re
@@ -76,7 +76,9 @@ class SecureFlaskApp(Flask):
     """
     def __init__(self, context, name, engine, in_tables=None, role_security=False,
                  cas_url=os.environ.get(_default_cas_url_var), logout_endpoint="logout",
-                 post_logout_view_function=None, custom_403_template=None):
+                 post_logout_view_function=None, custom_403_template=None, security_schema=os.environ.get(_schema_var),
+                 role_table=os.environ.get(_role_var), user_table=os.environ.get(_user_var),
+                 user_role_table=os.environ.get(_user_role_var)):
         """
         Constructor
         :param context:                    WSGI object name (__name__)
@@ -118,22 +120,19 @@ class SecureFlaskApp(Flask):
         self.__after_logout = post_logout_view_function
         self.__cas_server_url = cas_url
 
-        required_security_vars = [_role_var, _user_var, _user_role_var, _schema_var]
-        security_vals = {_role_var: os.environ.get(_role_var), _user_var: os.environ.get(_user_var),
-                         _user_role_var: os.environ.get(_user_role_var)}
-        security_schema = os.environ.get(_schema_var)
+        required_security = [role_table, user_table, user_role_table, security_schema]
         if role_security:
 
             # check configuration in environment vars
-            if not all(ev in os.environ for ev in required_security_vars):
-                raise Exception(f"Security environment variables must be set: {', '.join(required_security_vars)}")
+            if not all(obj not in ("", None) for obj in required_security):
+                raise Exception(f"Role-based security not configured correctly.")
 
             # if valid, create sqlalchemy table objects for role security
             else:
                 # shown above, the order of the the security config list is role, user, user_role (0, 1, 2 indexes)
-                self.roles = _get_single_table(engine, security_schema, security_vals[_role_var])
-                self.users = _get_single_table(engine, security_schema, security_vals[_user_var])
-                self.user_roles = _get_single_table(engine, security_schema, security_vals[_user_role_var])
+                self.roles = _get_single_table(engine, security_schema, role_table)
+                self.users = _get_single_table(engine, security_schema, user_table)
+                self.user_roles = _get_single_table(engine, security_schema, user_role_table)
 
         # other fields
         self.tables = in_tables
