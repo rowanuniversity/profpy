@@ -1,17 +1,10 @@
 # profpy.web
 ## Overview
-The ```web``` submodule contains some helper classes to make Flask app development even easier than it already was. 
+The ```web``` submodule contains an extension of the Flask wsgi object called ```SecuredFlaskApp``` which allows
+us to make role and CAS-secured Flask apps with minimal overhead. 
 
-Contained in this submodule is the ```OracleFlaskApp``` extension of the ```Flask``` class that enables easy access to 
-Oracle tables/views with Sql-Alchemy without the need for explicitly writing models.
-
-Also in this submodule are the ```@cas_required``` and ```@cas_logout``` CAS authentication decorators, which can 
-be accessed like so: ```from profpy.web.auth import cas_required, cas_logout```. These decorators will work with *any* 
-Flask application, not just our ```OracleFlaskApp``` class.
-
-
-### Creating an Application
-The ```OracleFlaskApp``` class allows us to access auto-generated Sql-Alchemy models of any table or view 
+#### Creating an Application
+The ```SecuredFlaskApp``` class allows us to access auto-generated Sql-Alchemy models of any table or view 
 as attributes of the application. All you have to do is provide schema-qualified table/view names in a list to
 the constructor.
 
@@ -19,15 +12,21 @@ All instances of this class have a baked-in healthcheck endpoint. This can be re
  ```/healthcheck```, or ```/ping```.
 
 ```python
-from profpy.web import OracleFlaskApp
-from flask import jsonify
+from profpy.web import SecureFlaskApp
+from profpy.db import get_sql_alchemy_oracle_engine
 
-app = OracleFlaskApp(__name__, "My Oracle Web App", ["general.people", "contact.addresses"], "login", "password")
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
 
 # get models by attribute access
 people = app.general.people
 addresses = app.contact.addresses
 
+
+@app.route("/")
+@app.secured()
+def home():
+    return "<h1>Home Page</h1>"
 
 @app.route("/person/id/<person_id>")
 def search(person_id):
@@ -37,125 +36,234 @@ def search(person_id):
         ).first(),
         as_http_response=True
     )
-    
-# you can also execute sql rather than use the models. However, you may need to 
-# implement some custom json formatting (not shown here)
-@app.route("/person/name/<name>")
-def name_search(name):
-    return jsonify(app.db.execute("select * from general.people where name like :p_name || '%'", p_name=name))
+  
 ``` 
 
-As you can see from above, we called the model's ```as_json``` method and passed in a Sql-Alchemy query. The ```as_json```
-method also allows us to specify if we just want the json as a python ```dict``` object or as a "jsonified" Flask response.
-Having this option eliminates the need for repeated calls to ```flask.jsonify``` across an application with json endpoints. 
-
-Go [here](./technical.md) for technical documentation on the ```OracleFlaskApp``` class.
+In the above example, we created a basic home page with the ```home``` route function. Using the ```@app.secured``` 
+decorator, we added CAS-protection to the endpoint (more on CAS configuration later). The ```search``` function gives an
+example of the auto-generated Sql-Alchemy models being used directly as properties of the application.
 
 
-### Protecting endpoints with CAS
-The ```auth``` decorators in this submodule allow us to easily protect endpoints with CAS. 
-Prior to using this module, you may want to set an environment variable that contains the URL for your CAS service. The name for this environment variable in the module is ```cas_url```. Alternatively, you can pass a url into the decorators each time you use them.
-
-If you 
-are using a ```Flask``` object (not ```OracleFlaskApp```), you will then have to set a ```secret_key``` for this work properly. An easy way to do this is 
-to simply craft a uuid, or set one in your environment.
-
+#### Using the CAS user
+What if you want to use information from the authenticated CAS user? This is possible by specifying ```True``` for
+the optional ```get_cas_user``` argument to the ```@app.secured``` decorator. Doing this will pass the 
+user object along to the decorated function. This object will have all of the CAS attributes as class attributes, 
+as well as any roles the user may have from role-based security (if used).
 
 ```python
-from profpy.web import auth, OracleFlaskApp
-
-
-app = OracleFlaskApp(__name__, "My App", ["schema.table"], "login", "password")
-
 @app.route("/")
-@auth.cas_required()
-def home(cas_user, cas_attributes):
-    return f"<h1>{cas_user} Authenticated!"
+@app.secured(get_cas_user=True)
+def home(cas_user):
+
+    # access to authenticated CAS attributes
+    cas_user.sAMAccountName
+    cas_user.displayName
+    
+    return f"<h1>Welcome {cas_user.user}</h1>"
 ```
 
-As seen above, the ```cas_required``` decorator passes the authenticated user and attributes on to the 
-decorated endpoint. When the endpoint is hit, the user will either get bounced to the CAS server for authentication, or 
-they will reach their destination without interruption. Once authenticated, they get bounced to the endpoint's intended 
-location. 
+#### Role-based protection
+Once configured (see configuration section at bottom), you can also use role-based protection for endpoints. The ```SecureFlaskApp```
+class looks for and then validates this configuration. If no configuration is specified, role-based security is ignored. If an invalid
+configuration is specified, role-based security will be ignored, but the app's logger will notify you of what 
+values need to be fixed. 
 
-#### Logging out
-You can also use the ```auth.cas_logout``` decorator to log a user out of CAS. You can provide an optional ```after_logout```
-parameter that specifies where the user goes once they are logged out. If not, they go to the default CAS logout page for the 
-given server. 
+
+When relying on environment variable-based configuration, you don't have to change anything in your setup for Flask.
+```python
+from profpy.web import SecureFlaskApp
+from profpy.db import get_sql_alchemy_oracle_engine
+
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My App", engine, ["general.people", "contact.addresses"])
+```
+
+Alternatively, you can specify role-based security configuration values to the constructor itself. This is also shown in the configuration section at the end of this README. 
+```python
+from profpy.web import SecureFlaskApp
+from profpy.db import get_sql_alchemy_oracle_engine
+
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My App", engine, ["general.people", "contact.addresses"], security_schema="security", role_table="app_role", user_table="app_user", user_role_table="app_user_app_role")
+```
+
+---
+
+Restricting access to users who have any of the given roles:
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
+
+@app.route("/mainSecurityGrid")
+@app.secured(any_roles=["ROLE_NEDRY"])
+def main_security():
+    return "<h1>Welcome, to Jurassic Park</h1>"
+```
+
+You can also do the inverse and have a list of roles to block access from. 
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
+
+@app.route("/mainSecurityGrid")
+@app.secured(not_roles=["ROLE_NEDRY"])
+def main_security():
+    return "<h1>Welcome, to Jurassic Park</h1>"
+```
+
+Restricting access to users who have ALL of the given roles:
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
+
+@app.route("/mainSecurityGrid")
+@app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"])
+def main_security():
+    return "<h1>Welcome, to Jurassic Park</h1>"
+```
+
+Role Security Arguments:
+
+| Argument                | Description                                                        |
+|--------------------------|--------------------------------------------------------------------|
+| any_roles          | User that has any of these roles can access endpoint       |
+| not_roles      | User with any of these roles can NOT access the endpoint                    |
+| all_roles      | User with all of these roles can access the endpoint                    |
+
+
+The CAS user will also have a list of all of their roles as an attribute:
+```python
+@app.route("/mainSecurityGrid")
+@app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"], get_cas_user=True)
+def main_security(user):
+    roles = user.roles
+    return f"<h1>Welcome, to Jurassic Park. You have these roles: {', '.join(roles)}</h1>"
+```
+
+#### Custom 403 Page
+By default the app will just render a basic "Unauthorized" json response. You can override this by specifying
+a template name in the constructor for the ```SecureFlaskApp```.
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"], custom_403_template="403.html")
+```
+
+#### CAS logout
+By default, the ```SecureFlaskApp``` comes with a ```/logout``` endpoint that will use the CAS server to log the current user
+out. Once logged out, the user will be sent to the CAS server's default logout page. 
+
+However, you can specify an after logout location specific to your app via the ```SecureFlaskApp```'s constructor.
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, post_logout_view_function="post_logout")
+
+
+@app.route("/afterLogout")
+def post_logout():
+    return "<h1>User logged out</h1>"
+```
+
+Note that this argument is the name of the routing function that you define in your code, not the endpoint itself.
+
+
+You can also override the logout endpoint to be something other than ```/logout```.
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, logout_endpoint="/otherLogout", post_logout_view_function="post_logout")
+```
+
+#### Session Cookie-based Protection
+There may also be scenarios in which you want to protect endpoints using a combination of session cookies and HTTP basic auth. 
+
+A good use case here would be an admin-like page that utilizes AJAX. To clamp down these kinds of endpoints to only 
+be accessible from certain pages, you can use the ```@app.set_session_cookie``` and ```@app.requires_session_cookie``` decorators.
+
+The ```@app.set_session_cookie``` decorator simply sets a Flask session cookie to a specified value when you hit the decorated route. 
+
+The ```@app.requires_session_cookie``` decorator only allows users to use the decorated route function if the
+specified cookie is present *or* if they provide suitable HTTP basic auth credentials. 
+
+This gives us flexibility to design secure AJAX methods that can be used both by the web app and *authorized* users outside of the web app using cURL or some similar tool.
 
 ```python
-from profpy.web import auth, OracleFlaskApp
+from profpy.db import get_sql_alchemy_oracle_engine
+from profpy.web import SecureFlaskApp
+from flask import request
+
+engine = get_sql_alchemy_oracle_engine()
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
+
+@app.route("/admin")
+@app.set_session_cookie("admin-session")
+@app.secured()
+def admin():
+    return "<h1>admin page</h1>"
 
 
-app = OracleFlaskApp(__name__, "My App", ["schema.table"], "login", "password")
-
-@app.route("/unauth")
-def post_logout():
-    return "<h1>Logged out</h1>"
-
-
-@app.route("/logout")
-@auth.cas_logout(after_logout="post_logout")
-def logout():
-    pass
+@app.route("/createUser", methods=["POST"])
+@app.requires_session_cookie("admin-session")
+def create():
+    app.db.execute(
+        app.general.people.insert().values(
+            first_name=request.args.first_name,
+            last_name=request.args.last_name
+        )
+    )
+    app.db.commit()
 ```
 
+##### What did that do?
+When the user hits the ```/admin``` endpoint, a cookie called "admin-session" gets 
+set in the encrypted Flask session object. As long as this is set, they can use the 
+```/createUser``` endpoint. If they tried hitting ```curl host:port/createUser``` from the command
+line, they would get a 401 error. If http basic auth is set up in the environment (see configuration section below), 
+the endpoint *is* accessible from outside of the application if valid credentials are supplied. 
 
-#### Specifying CAS Server in decorator
-If you don't decide to store the CAS server url in the ```cas_url``` environment variable, you can pass 
-the url into the decorators.
-
+##### What is the cookie value? 
+By default, ```@app.set_session_cookie``` sets the session cookie to a random uuid. However, 
+you can override this default behavior.
 ```python
-from profpy.web import auth, OracleFlaskApp
-
-
-app = OracleFlaskApp(__name__, "My App", ["schema.table"], "login", "password")
-cas_url = "https://some-cas-server.com"
-
-
-@app.route("/")
-@auth.cas_required(cas_server_url=cas_url)
-def home(cas_user, cas_attributes):
-    return f"<h1>{cas_user} Authenticated!"
-
-
-@app.route("/unauth")
-def post_logout():
-    return "<h1>Logged out</h1>"
-
-
-@app.route("/logout")
-@auth.cas_logout(cas_server_url=cas_url, after_logout="post_logout")
-def logout():
-    pass
+@app.route("/admin")
+@app.set_session_cookie("admin-session", cookie_value="some-alternative-value")
+@app.secured()
+def admin():
+    return "<h1>admin page</h1>"
 ```
 
-#### With pure Flask app
-All previous examples used our OracleFlaskApp class. There may be an instance where you don't need to connect
-to Oracle or want to use some other database platform to back your app. For this reason, the ```auth``` decorators
-work with "vanilla" Flask applications as well. 
+## Configuration
+The ```SecureFlaskApp``` requires some very basic configuration for CAS, and some additional configuration for role-based
+security (if used). 
+
+#### CAS
+For CAS to work correctly, you just need to set an environment variable called ```cas_url``` that stores 
+the CAS server url. Alternatively, you could specify this url when you create the application.
 ```python
-from profpy.web import auth
-from flask import Flask
-from uuid import uuid1
+app = SecureFlaskApp(__name__, "My Web App", engine, cas_url="https://some-cas-server.com")
+``` 
 
+#### Role-based security
+To use role-based security, set the following environment variables:
 
-app = Flask(__name__)
-app.secret_key = str(uuid1())
+| Env Var                  | Description                                                        |
+|--------------------------|--------------------------------------------------------------------|
+| security_schema          | The database schema containing your security tables/views          |
+| security_role_table      | The database table/view containing role info                       |
+| security_user_table      | The database table/view containing user info                       |
+| security_user_role_table | The database table/view containing the user to role crosswalk info |
 
-@app.route("/")
-@auth.cas_required()
-def home(cas_user, cas_attributes):
-    return f"<h1>{cas_user} Authenticated!"
+Additionally, these tables/views are required to follow some basic structural rules:
 
+- The role and user tables must both have unique key fields called ```id```. 
 
-@app.route("/unauth")
-def post_logout():
-    return "<h1>Logged out</h1>"
+- The crosswalk table must have identifiers called ```app_user_id``` and ```app_role_id``` to link back to the other tables. 
 
+- The actual role names in the role table/view must be stored in a field called ```authority```.
 
-@app.route("/logout")
-@auth.cas_logout(after_logout="post_logout")
-def logout():
-    pass
+Instead of setting environment variables, you can also specify these configuration values in the app's constructor:
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, security_schema="security", role_table="roles", user_table="users", user_role_table="user_roles")
 ```
+
+#### Session Cookie Protection
+The only configuration needed for session cookie-based endpoint protection would be to set 
+the following environment variables:
+
+| Env Var                  | Description                                                        |
+|--------------------------|--------------------------------------------------------------------|
+| http_basic_auth_user          | username          |
+| http_basic_auth_password     | password |
+
