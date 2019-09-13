@@ -4,7 +4,7 @@ The ```web``` submodule contains an extension of the Flask wsgi object called ``
 us to make role and CAS-secured Flask apps with minimal overhead. 
 
 #### Creating an Application
-The ```SecuredFlaskApp``` class allows us to access auto-generated Sql-Alchemy models of any table or view 
+The ```SecureFlaskApp``` class allows us to access auto-generated Sql-Alchemy models of any table or view 
 as attributes of the application. All you have to do is provide schema-qualified table/view names in a list to
 the constructor.
 
@@ -137,6 +137,20 @@ def main_security(user):
     return f"<h1>Welcome, to Jurassic Park. You have these roles: {', '.join(roles)}</h1>"
 ```
 
+Correct configuration of role-based security will allow you access to any fields from your security user table as 
+part of the CAS user object. Let's assume there is a ```display_name``` field in your user table in the data base; you 
+can access it this way:
+
+```python
+app = SecureFlaskApp(__name__, "My Web App", engine, ["general.people", "contact.addresses"])
+
+@app.route("/mainSecurityGrid")
+@app.secured(all_roles=["ROLE_NEDRY", "ROLE_HAMMOND"], get_cas_user=True)
+def main_security(cas_user):
+    return f"<h1>Hello {cas_user.display_name}! Welcome, to Jurassic Park</h1>"
+```
+
+
 #### Custom 403 Page
 By default the app will just render a basic "Unauthorized" json response. You can override this by specifying
 a template name in the constructor for the ```SecureFlaskApp```.
@@ -252,6 +266,8 @@ Additionally, these tables/views are required to follow some basic structural ru
 - The crosswalk table must have identifiers called ```app_user_id``` and ```app_role_id``` to link back to the other tables. 
 
 - The actual role names in the role table/view must be stored in a field called ```authority```.
+
+- The user table must have a column called ```username``` that corresponds to authenticated CAS users' usernames found in the CAS attributes. 
 
 Instead of setting environment variables, you can also specify these configuration values in the app's constructor:
 ```python
