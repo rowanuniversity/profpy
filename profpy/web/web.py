@@ -203,7 +203,7 @@ class SecureFlaskApp(Flask):
         logout_url = f"{self.__cas_server_url}/cas/logout"
         if self.__after_logout:
             logout_url += f"?service={url_for(self.__after_logout, _external=True)}"
-        session.pop("cas-object")
+        session.pop("cas-object", None)
         return redirect(logout_url)
 
     def set_session_cookie(self, cookie_name, cookie_value=uuid1()):
