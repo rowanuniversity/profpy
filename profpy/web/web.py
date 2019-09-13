@@ -28,7 +28,7 @@ class CasUser(object):
     """
     Helper class that simply makes accessing CAS attributes more straight forward
     """
-    def __init__(self, cas_user, cas_attributes, roles=None):
+    def __init__(self, cas_user, cas_attributes, db_session=None, user_table=None):
         """
         Constructor
         :param cas_user:       A validated CAS user
@@ -37,7 +37,12 @@ class CasUser(object):
 
         self.__attributes = cas_attributes
         self.__user = cas_user
-        self.roles = roles if roles else []
+        self.roles = []
+
+        if db_session is not None and user_table is not None:
+            db_user = db_session.query(user_table).filter_by(username=self.__user).first()
+            for field in db_user.keys():
+                setattr(self, field, getattr(db_user, field))
 
     def __getattr__(self, item):
         if item == "user":
@@ -98,6 +103,10 @@ class SecureFlaskApp(Flask):
 
         if cas_url is None:
             raise Exception("CAS url not configured.")
+
+        # strip trailing slash, if it is present
+        elif cas_url[len(cas_url) - 1] == "/":
+            cas_url = cas_url[:-1]
 
         # organize tables by schema
         schema_to_table = dict()
@@ -194,6 +203,7 @@ class SecureFlaskApp(Flask):
         logout_url = f"{self.__cas_server_url}/cas/logout"
         if self.__after_logout:
             logout_url += f"?service={url_for(self.__after_logout, _external=True)}"
+        session.pop("cas-object")
         return redirect(logout_url)
 
     def set_session_cookie(self, cookie_name, cookie_value=uuid1()):
@@ -260,7 +270,7 @@ class SecureFlaskApp(Flask):
                     response = _login(self.__cas_server_url)
                 else:
                     raw_cas = session.get("cas-object")
-                    cas = CasUser(raw_cas["user"], raw_cas["attributes"])
+                    cas = CasUser(raw_cas["user"], raw_cas["attributes"], db_session=self.db, user_table=self.users)
 
                     # do role-based security, if it was configured
                     if self.__role_security_configured:
@@ -272,27 +282,18 @@ class SecureFlaskApp(Flask):
 
                         # all_roles was set, and the authenticated user doesn't have all of the roles in the
                         # in the list, block their access
+                        valid = True
                         if all_roles and not all(role in cas.roles for role in all_roles):
-                            pass
-                        else:
-                            # endpoint has not_roles set, and the authenticated user has a role in said list.
-                            # i.e. user has "bad" role for this page, block their access
-                            if not_roles and any(role in not_roles for role in cas.roles):
-                                pass
-
-                            # endpoint has any_roles set, and the authenticated user does not have any of the
-                            # roles in said list, block their access
-                            elif any_roles and not any(role in any_roles for role in cas.roles):
-                                pass
-
-                            # else, they authenticated fully (both CAS and role-base if specified)
-                            else:
-                                session.pop("cas-object")
-                                response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
+                            valid = False
+                        if not_roles and any(role in not_roles for role in cas.roles):
+                            valid = False
+                        if any_roles and not any(role in any_roles for role in cas.roles):
+                            valid = False
+                        if valid:
+                            response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
 
                     # no role-based security configured, just do CAS
                     else:
-                        session.pop("cas-object")
                         response = f(cas, *args, **kwargs) if get_cas_user else f(*args, **kwargs)
                 return response
             return wrap
@@ -384,7 +385,7 @@ def _parse_query_string(quoted=False):
     return (quote(qs) if quoted else qs) if qs != "?" else ""
 
 
-def _login(in_cas_url):
+def _login(in_cas_url, db_session=None, security_user_table=None):
     """
     Business logic for CAS login
     :param in_cas_url:      The CAS server url
@@ -400,7 +401,8 @@ def _login(in_cas_url):
         client = caslib.SAMLClient(in_cas_url, app_url)
         cas_response = client.saml_serviceValidate(session["cas-ticket"])
         if cas_response.success:
-            session["cas-object"] = CasUser(cas_response.user, cas_response.attributes).serialize()
+            session["cas-object"] = CasUser(cas_response.user, cas_response.attributes, db_session,
+                                            security_user_table).serialize()
             redirect_url = session.pop("cas-after-login")
         else:
             del session["cas-ticket"]
