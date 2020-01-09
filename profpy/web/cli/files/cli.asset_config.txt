@@ -1,0 +1,7 @@
+assets = Environment(app)
+
+# set up basic asset management
+js = Bundle("site.js", filters="jsmin", output="{app_name}.js")
+css = Bundle("site.css", filters="cssmin", output="site.css")
+assets.register("js_all", js)
+assets.register("css_all", css)

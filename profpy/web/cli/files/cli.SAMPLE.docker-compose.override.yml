@@ -1,0 +1,9 @@
+# This SAMPLE docker-compose.override.yml file is to be used for production deployment only.
+# This will change the location of the .env file from locally in the directory, to a secured credentials folder.
+# To use this, copy SAMPLE.docker-compose.override.yml to docker-compose.override.yml
+# and ensure that the necessary .env file exists in the credentials folder
+version: "3.4"
+services:
+  web:
+    env_file:
+      - /opt/credentials/{app_name}.env
