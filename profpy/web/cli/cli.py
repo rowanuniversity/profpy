@@ -126,6 +126,8 @@ class AppGenerator(object):
             contents = "".join(in_requirements.readlines())
             for r in self.__requirements:
                 contents += f"\n{r}"
+            if self.__asset_management:
+                contents += "\nFlask-Assets"
             with open(str(self.__path / "requirements.txt"), "w") as out_requirements:
                 out_requirements.write(contents)
 
