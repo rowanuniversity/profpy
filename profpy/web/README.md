@@ -283,3 +283,10 @@ the following environment variables:
 | http_basic_auth_user          | username          |
 | http_basic_auth_password     | password |
 
+## app-init CLI
+Upon installation of profpy (2.3.0 or higher), you will get the command line tool "app-init" as well. This tool
+allows you to quickly create and configure Dockerized web applications with the ```profpy.web``` tools.
+
+```shell script
+app-init -h
+```

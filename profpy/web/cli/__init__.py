@@ -190,7 +190,3 @@ def with_cmd_line_args(f):
 @with_cmd_line_args
 def main(cmd_line):
     AppGenerator(cmd_line).init()
-
-
-if __name__ == "__main__":
-    main()

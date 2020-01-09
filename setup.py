@@ -17,7 +17,7 @@ def requirements():
 
 setup(
     name="profpy",
-    version="2.2.2",
+    version="2.3.0",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
@@ -27,6 +27,7 @@ setup(
         "profpy.apis.utils",
         "profpy.web",
     ],
+    scripts=["bin/app-init"],
     url="https://github.com/rowanuniversity/profpy/",
     license="MIT",
     author="Connor Hornibrook",
