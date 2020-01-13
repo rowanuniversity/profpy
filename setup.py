@@ -26,14 +26,21 @@ setup(
         "profpy.apis",
         "profpy.apis.utils",
         "profpy.web",
+        "profpy.cli", 
+        "profpy.cli.flask_init"
     ],
-    scripts=["bin/app-init"],
+    entry_points={
+        "console_scripts": [
+            "profpy = profpy.__main__:main"
+        ]
+    },
     url="https://github.com/rowanuniversity/profpy/",
     license="MIT",
     author="Connor Hornibrook",
     author_email="hornibrookc@rowan.edu",
     install_requires=requirements(),
     description="",
+    include_package_data=True,
     long_description=read("pypi.md"),
     long_description_content_type="text/markdown",
 )

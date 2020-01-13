@@ -1,23 +1,8 @@
 #!/usr/bin/env python3
-import functools
 import os
 import pathlib
 import shutil
-from argparse import Namespace, ArgumentParser
-
-
-class AppArgNamespace(Namespace):
-    def __init__(self):
-        super().__init__()
-        self.name = None
-        self.role_security = None
-        self.port = None
-        self.cas_url = None
-        self.output_directory = None
-        self.asset_management = None
-        self.database_user = None
-        self.database_objects = []
-        self.requirements = []
+import sys
 
 
 class AppGenerator(object):
@@ -31,8 +16,11 @@ class AppGenerator(object):
     def __init__(self, cmd_line_args):
         if cmd_line_args.output_directory:
             self.__path = pathlib.Path(cmd_line_args.output_directory, cmd_line_args.name)
+            self.__path_provided = True
         else:
             self.__path = pathlib.Path(".", cmd_line_args.name)
+            self.__path_provided = False
+        self.__path_str = str(self.__path) if self.__path_provided else f"./{str(self.__path)}"
 
         if os.path.exists(self.__path):
             if cmd_line_args.force_create:
@@ -131,15 +119,16 @@ class AppGenerator(object):
             with open(str(self.__path / "requirements.txt"), "w") as out_requirements:
                 out_requirements.write(contents)
 
-
     def __setup_env(self):
         rs_config = ""
         if self.__role_security:
             for line in ["security_schema=webappmgr", "security_role_table=app_role", "security_user_table=app_user", "security_user_role_table=app_user_app_role"]:
                 rs_config += f"{line}\n"
         with open(str(self.__dir / "cli.SAMPLE.env"), "r") as in_env:
-            with open(str(self.__path / "SAMPLE.env"), "w") as out_env:
-                out_env.write("".join(in_env.readlines()).format(cas_url=self.__cas_url, db_user=self.__database_user) + rs_config)
+            sample_path = str(self.__path / "SAMPLE.env")
+            with open(sample_path, "w") as out_env:
+                out_env.write("".join(in_env.readlines()).format(cas_url=self.__cas_url, db_user=self.__database_user, app_name=self.__name) + rs_config)
+            shutil.copyfile(sample_path, str(self.__path / ".env"))
 
 
     def __setup_readme(self):
@@ -155,8 +144,43 @@ class AppGenerator(object):
         with open(str(self.__dir / "cli.LICENSE"), "r") as in_license:
             with open(str(self.__path / "LICENSE"), "w") as out_license:
                 out_license.writelines(in_license.readlines())
+        with open(str(self.__dir / "cli.main.css"), "r") as in_css:
+            with open(str(self.__path / "app" / "static" / "css" / "main.css"), "w") as out_css:
+                out_css.write("".join(in_css.readlines()))
+
+    def __setup_images(self):
+        for i in ["favicon.ico", "rowan_torch_logo_small.png"]:
+            shutil.copyfile(
+                str(self.__dir / f"cli.{i}"),
+                str(self.__path / "app" / "static" / "images" / i)
+            )
+        
+    def __setup_html(self):
+        for temp in ["layout.html", "index.html"]:
+            with open(str(self.__dir / f"cli.{temp}"), "r") as in_temp:
+                with open(str(self.__path / "app" / "templates" / temp), "w") as out_temp:
+                    out_temp.write("".join(in_temp.readlines()).format(app_name=self.__name))
 
 
+    def __finished(self):
+        
+        print(f"\nYour app has been created at {self.__path_str}")
+        print("Do the following steps to run your app:")
+        print(f"\t1. cd {self.__path_str}")
+        print(f"\t2. ./dba/setup.sh <password for database user>")
+        print(f"\t3. sed -i \"\" 's/db_password=/db_password=<password for database user>/g' .env")
+        print(f"\t4. docker-compose up --build\n")
+
+        print("Things to remember:")
+        print("\t- Submit a ticket to whitelist your application's PROD and TEST urls with CAS.")
+        print("\t- If you are using GIT for version control, run:")
+        print("\t\t1. git init")
+        print("\t\t2. git remote add origin <remote url>")
+        print("\t\t3. git add .")
+        print("\t\t4. git commit -m \"init commit\"")
+        print("\t\t5. git push\n")
+
+        
     def init(self):
         self.__setup_directories()
         self.__setup_app_file()
@@ -166,27 +190,60 @@ class AppGenerator(object):
         self.__setup_env()
         self.__setup_readme()
         self.__setup_misc()
+        self.__setup_images()
+        self.__setup_html()
+        self.__finished()
 
 
+def flask_init_process_input(in_arg):
+    processed_arg = []
+    user_in = input(in_arg["help"])
+    if not user_in and "default" in in_arg:
+        user_in = in_arg["default"]
+    if "required" in in_arg:
+        valid = user_in.lower() not in (None, "")
+        while not valid:
+            print("Input is required.")
+            user_in = input(in_arg["help"])
+            valid = user_in.lower() not in (None, "")
+        processed_arg.extend([f"--{in_arg['name']}", user_in])
+    elif "flag" in in_arg:
+        valid = user_in.lower() in ("y", "n")
+        while not valid:
+            print("Invalid option specified.")
+            user_in = input(in_arg["help"])
+            valid = user_in.lower() in ("y", "n")
+        if user_in.lower() == "y":
+            processed_arg.append(f"--{in_arg['name']}")
+    elif "list" in in_arg:
+        processed_arg.append(f"--{in_arg['name']}")
+        user_in = user_in.strip()  
+        split_up = user_in.split(" ")
+        processed_arg.extend(split_up if split_up else [user_in])
+    else:
+        processed_arg.extend([f"--{in_arg['name']}", user_in])
+    return dict(processed_arg=processed_arg, key=in_arg["name"], value=user_in)
 
-def with_cmd_line_args(f):
-    @functools.wraps(f)
-    def with_cmd_line_args_(*args, **kwargs):
-        ap = ArgumentParser(description="Initialize a web application that utilizes the SecuredFlaskApp class and Docker.")
-        ap.add_argument("-n", "--name", required=True, type=str, help="The name of the application.")
-        ap.add_argument("-f", "--force-create", action="store_true", help="If the project name already exists in the output directory, delete it before running this tool.")
-        ap.add_argument("-p", "--port", required=True, type=int, help="The port that Docker will run this application on.")
-        ap.add_argument("-rs", "--role-security", action="store_true", help="Whether or not to configure Spring-like, role-based security.")
-        ap.add_argument("-c", "--cas-url", required=True, type=str, help="The fully-qualified CAS url, e.g. https://login.rowan.edu")
-        ap.add_argument("-d", "--output-directory", type=str, help="The directory to place this application, defaults to the directory where this script is being run.")
-        ap.add_argument("-a", "--asset-management", action="store_true", help="Whether or not to set up integration with Flask-Assets")
-        ap.add_argument("-dbu", "--database-user", type=str, required=True, help="The Oracle user that will be the backing database user for this application.")
-        ap.add_argument("-dbo", "--database-objects", type=str, nargs="*", help="Any tables/views to allow your app to have access to. Must be fully qualified names (schema.table).")
-        ap.add_argument("-rq", "--requirements", type=str, nargs="*", help="Any additional dependencies to have in requirements.txt (profpy is placed in there by default).")
-        return f(ap.parse_args(namespace=AppArgNamespace), *args, **kwargs)
-    return with_cmd_line_args_
 
+def flask_init_prompt():
+    print("\nInitialize a profpy-flask app.")
+    out_args = []
+    name_arg = flask_init_process_input(dict(name="name", help="Name of application (required): ", required=True))
+    out_args.extend(name_arg["processed_arg"])
+    for arg in [
+        dict(name="port", help="Port to run the application on (required): ", required=True),
+        dict(name="database-user", help="The database user for the application (required): ", required=True),
+        dict(name="output-directory", help=f"The output directory (\"./{name_arg['value']}\"): "),
+        dict(name="cas-url", help="The CAS url (https://login.rowan.edu): ", default="https://login.rowan.edu"),
+        dict(name="database-objects", help="Database tables/views for the application to have access to (e.g. schema1.table1 schema2.table2): ", list=True),
+        dict(name="requirements", help="Any additional requirements for requirements.txt: ", list=True),
+        dict(name="role-security", help="Whether or not to use role-based security (Y/n): ", flag=True, default="y"),
+        dict(name="asset-management", help="Whether or not to use flask-assets (Y/n): ", flag=True, default="y"),
+        dict(name="force-create", help="Delete an existing application in the given directory with the same name (y/N): ", flag=True, default="n")
+    ]:
+        out_args.extend(flask_init_process_input(arg)["processed_arg"])
+    return out_args
+        
 
-@with_cmd_line_args
-def main(cmd_line):
-    AppGenerator(cmd_line).init()
+def flask_init(cmd_line_args):
+    AppGenerator(cmd_line_args).init()
