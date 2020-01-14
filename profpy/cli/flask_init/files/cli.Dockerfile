@@ -1,4 +1,4 @@
-FROM tiangolo/uwsgi-nginx-flask:python3.7
+FROM tiangolo/meinheld-gunicorn-flask:python3.7
 MAINTAINER  Rowan University <support@rowan.edu>
 
 ## Set up directory structure
@@ -11,16 +11,6 @@ RUN apt-get update && apt-get install libaio1 && apt-get install tzdata
 
 ## Get Oracle InstantClient from local server
 RUN curl https://nsscdn.rowan.edu/public/asa/docker/oracle/instantclient-basiclite-linux.x64-18.5.0.0.0dbru.zip -o "oracle-instantclient-basic.zip"
-
-# 300 seconds = 5 minutes
-RUN echo "uwsgi_read_timeout 300s;" > /etc/nginx/conf.d/custom_timeout.conf
-RUN echo "lazy-apps = true;" >> $UWSGI_INI
-# fix some send_file error for python io module that has to do with uwsgi
-RUN echo "wsgi-disable-file-wrapper = true;" >> $UWSGI_INI
-RUN echo "ignore-sigpipe = true;" >> $UWSGI_INI
-RUN echo "ignore-write-errors = true;" >> $UWSGI_INI
-RUN echo "disable-write-exception = true;" >> $UWSGI_INI
-
 
 ## Install InstantClient
 ## cribbed from https://github.com/asg1612/alpine-oracle-instantclient/blob/master/Dockerfile

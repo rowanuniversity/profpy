@@ -51,6 +51,7 @@ class AppGenerator(object):
         directories = [
             self.__path,
             os.path.join(self.__path, "app"),
+            os.path.join(self.__path, "docker-overrides"),
             os.path.join(self.__path, "app", "utils"),
             os.path.join(self.__path, "app", "templates"),
             os.path.join(self.__path, "app", "static"),
@@ -68,13 +69,21 @@ class AppGenerator(object):
         in_dockerfile = str(self.__dir / "cli.Dockerfile")
         with open(in_compose, "r") as compose_file:
             with open(str(self.__path / "docker-compose.yml"), "w") as out_compose:
-                out_compose.write("".join(compose_file.readlines()).format(port_number=self.__port))
+                out_compose.write("".join(compose_file.readlines()).format(port_number=self.__port, database_user=self.__database_user))
         with open(in_override, "r") as override_file:
             with open(str(self.__path / "SAMPLE.docker-compose.override.yml"), "w") as out_override:
                 out_override.write("".join(override_file.readlines()).format(app_name=self.__name))
         with open(in_dockerfile, "r") as dockerfile:
             with open(str(self.__path / "Dockerfile"), "w") as out_dockerfile:
                 out_dockerfile.write("".join(dockerfile.readlines()))
+        for instance in ["dev", "test", "prod"]:
+            with open(str(self.__dir / f"cli.{instance}.docker-compose.override.yml"), "r") as in_compose:
+                with open(str(self.__path / "docker-overrides" / f"{instance}.docker-compose.override.yml"), "w") as out_compose:
+                    if instance == "prod":
+                        out_compose.write("".join(in_compose.readlines()).format(database_user=self.__database_user, app_name=self.__name))
+                    else:
+                        out_compose.write("".join(in_compose.readlines()).format(database_user=self.__database_user))
+
 
     def __setup_app_file(self):
         in_path = str(self.__dir / "cli.main.py")
@@ -108,6 +117,7 @@ class AppGenerator(object):
         with open(str(self.__dir / "cli.setup.sh"), "r") as in_setup:
             with open(str(self.__path / "dba" / "setup.sh"), "w") as out_setup:
                 out_setup.write("".join(in_setup.readlines()).format(database_user=self.__database_user))
+
 
     def __setup_requirements(self):
         with open(str(self.__dir / "cli.requirements.txt"), "r") as in_requirements:
@@ -219,7 +229,8 @@ def flask_init_process_input(in_arg):
         processed_arg.append(f"--{in_arg['name']}")
         user_in = user_in.strip()  
         split_up = user_in.split(" ")
-        processed_arg.extend(split_up if split_up else [user_in])
+        user_in = [] if not user_in else user_in
+        processed_arg.extend(split_up if split_up else user_in)
     else:
         processed_arg.extend([f"--{in_arg['name']}", user_in])
     return dict(processed_arg=processed_arg, key=in_arg["name"], value=user_in)
