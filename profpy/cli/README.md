@@ -4,6 +4,14 @@ As of version 3.0, profpy installation now includes a suite of command line tool
 These tools are placed in the user's path upon installation, allowing for them to
 be called directly on the commnand line with the entrypoint ```profpy```
 
+Get a list of available tools:
+
+```shell script
+# either one works
+profpy -h
+profpy help
+```
+
 ## Web Development
 
 ### flask-init
@@ -115,3 +123,6 @@ profpy run-app prod -ap /path/to/webapp
 
 # stop the app
 profpy stop-app -ap /path/to/webapp
+```
+
+## Database Tools
