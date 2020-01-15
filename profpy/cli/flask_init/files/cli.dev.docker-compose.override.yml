@@ -1,0 +1,10 @@
+version: "3.4"
+services:
+  web:
+    build: 
+      context: "."
+      dockerfile: "./docker/dev.Dockerfile"
+    environment: 
+      full_login: "{database_user}@pprd"
+    volumes:
+      - ./app/:/app
