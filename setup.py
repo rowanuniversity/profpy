@@ -17,7 +17,7 @@ def requirements():
 
 setup(
     name="profpy",
-    version="2.2.2",
+    version="2.3",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
