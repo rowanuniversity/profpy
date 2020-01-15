@@ -4,7 +4,9 @@ As of version 3.0, profpy installation now includes a suite of command line tool
 These tools are placed in the user's path upon installation, allowing for them to
 be called directly on the commnand line with the entrypoint ```profpy```
 
-## flask-init
+## Web Development
+
+### flask-init
 
 Creates a Flask application directory structure, complete with Rowan design standards
 and ```docker-compose``` configuration. The created app will include the following:
@@ -22,8 +24,6 @@ class for ```CAS``` and role-based security. Included here are the following dir
 - a ```.gitignore``` file
 
 - a barebones ```README.md``` file
-
-#### Usage
 
 There are two ways of utilizing this tool. The first way is to enter information via prompts. You can
 access this feature by entering no arguments:
@@ -44,7 +44,7 @@ For a more detailed explanation of these arguments:
 profpy flask-init -h
 ```
 
-## run-app
+### run-app
 
 Run a containerized web application that you created via a ```profpy``` init tool. The ```profpy``` init tools
 set up ```Docker``` files in a way that allow you to quickly run web applications against different database instances.
@@ -94,3 +94,24 @@ You can also run an app that is in a different directory using the ```-ap, --app
 profpy run-app -ap /path/to/webapp
 profpy run-app test -ap /path/to/webapp
 ```
+
+### stop-app
+
+Stop a running, detached container that you started with ```run-app```.
+
+```shell script
+# start the app
+profpy run-app prod
+
+# stop the app
+profpy stop-app
+```
+
+When outside of the app:
+
+```shell script
+# start the app
+profpy run-app prod -ap /path/to/webapp
+
+# stop the app
+profpy stop-app -ap /path/to/webapp
