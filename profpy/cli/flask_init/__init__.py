@@ -3,6 +3,7 @@ import os
 import pathlib
 import shutil
 import sys
+import argparse
 
 
 class AppGenerator(object):
@@ -52,6 +53,7 @@ class AppGenerator(object):
             self.__path,
             os.path.join(self.__path, "app"),
             os.path.join(self.__path, "docker-overrides"),
+            os.path.join(self.__path, "docker"),
             os.path.join(self.__path, "app", "utils"),
             os.path.join(self.__path, "app", "templates"),
             os.path.join(self.__path, "app", "static"),
@@ -74,8 +76,11 @@ class AppGenerator(object):
             with open(str(self.__path / "SAMPLE.docker-compose.override.yml"), "w") as out_override:
                 out_override.write("".join(override_file.readlines()).format(app_name=self.__name))
         with open(in_dockerfile, "r") as dockerfile:
-            with open(str(self.__path / "Dockerfile"), "w") as out_dockerfile:
+            with open(str(self.__path / "docker" / "Dockerfile"), "w") as out_dockerfile:
                 out_dockerfile.write("".join(dockerfile.readlines()))
+        with open(str(self.__dir / "cli.dev.Dockerfile"), "r") as dockerfile_alt:
+            with open(str(self.__path / "docker" / "dev.Dockerfile"), "w") as out_dockerfile_alt:
+                out_dockerfile_alt.write("".join(dockerfile_alt.readlines()))
         for instance in ["dev", "test", "prod"]:
             with open(str(self.__dir / f"cli.{instance}.docker-compose.override.yml"), "r") as in_compose:
                 with open(str(self.__path / "docker-overrides" / f"{instance}.docker-compose.override.yml"), "w") as out_compose:
@@ -254,7 +259,23 @@ def flask_init_prompt():
     ]:
         out_args.extend(flask_init_process_input(arg)["processed_arg"])
     return out_args
-        
+
+def flask_init_argparser():     
+    parser = argparse.ArgumentParser(
+        description="Initialize a profpy-flask app."
+    )
+    parser.add_argument("-n", "--name", required=True, type=str, help="The name of the application.")
+    parser.add_argument("-f", "--force-create", action="store_true", help="If the project name already exists in the output directory, delete it before running this tool.")
+    parser.add_argument("-p", "--port", required=True, type=int, help="The port that Docker will run this application on.")
+    parser.add_argument("-rs", "--role-security", action="store_true", help="Whether or not to configure Spring-like, role-based security.")
+    parser.add_argument("-c", "--cas-url", default="https://login.rowan.edu", required=True, type=str, help="The fully-qualified CAS url, (defaults to https://login.rowan.edu)"),
+    parser.add_argument("-o", "--output-directory", type=str, help="Optional output directory (defaults to current directory)")
+    parser.add_argument("-a", "--asset-management", action="store_true", help="Whether or not to set up integration with Flask-Assets")
+    parser.add_argument("-dbu", "--database-user", type=str, required=True, help="The Oracle user that will be the backing database user for this application.")
+    parser.add_argument("-dbo", "--database-objects", type=str, nargs="*", help="Any tables/views to allow your app to have access to. Must be fully qualified names (schema.table).")
+    parser.add_argument("-rq", "--requirements", type=str, nargs="*", help="Any additional dependencies to have in requirements.txt (profpy is placed in there by default).")
+    return parser
+
 
 def flask_init(cmd_line_args):
     AppGenerator(cmd_line_args).init()

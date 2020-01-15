@@ -182,6 +182,8 @@ class SecureFlaskApp(Flask):
         self.application_name = name
         self.url_map.strict_slashes = False
         self.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
+        self.config["TEMPLATES_AUTO_RELOAD"] = True
+        self.jinja_env.auto_reload = True
         self.secret_key = str(uuid1())
 
     def __healthcheck(self):

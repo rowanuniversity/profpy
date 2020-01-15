@@ -27,7 +27,8 @@ setup(
         "profpy.apis.utils",
         "profpy.web",
         "profpy.cli", 
-        "profpy.cli.flask_init"
+        "profpy.cli.flask_init",
+        "profpy.cli.run_app"
     ],
     entry_points={
         "console_scripts": [

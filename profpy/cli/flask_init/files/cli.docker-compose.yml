@@ -2,7 +2,9 @@ version: '3.4'
 services:
   web:
     restart: unless-stopped
-    build: .
+    build:
+      context: "."
+      dockerfile: "./docker/Dockerfile"
     environment: 
       full_login: "{database_user}@prod"
       PYTHONUNBUFFERED: "TRUE"
