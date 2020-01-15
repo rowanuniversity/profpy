@@ -28,7 +28,7 @@ def logs(in_args):
     cmd = ["docker-compose", "logs"]
     for flag in ["no_color", "follow", "timestamps"]:
         if getattr(in_args, flag):
-            cmd.append(f"--{flag}")
+            cmd.append(f"--{flag.replace('_', '-')}")
     if in_args.tail:
         cmd.append(f"--tail={in_args.tail}")
     subprocess.call(cmd)
