@@ -83,7 +83,7 @@ class SecureFlaskApp(Flask):
                  cas_url=os.environ.get(_default_cas_url_var), logout_endpoint="logout",
                  post_logout_view_function=None, custom_403_template=None, security_schema=os.environ.get(_schema_var),
                  role_table=os.environ.get(_role_var), user_table=os.environ.get(_user_var),
-                 user_role_table=os.environ.get(_user_role_var)):
+                 user_role_table=os.environ.get(_user_role_var), **configs):
         """
         Constructor
         :param context:                    WSGI object name (__name__)
@@ -98,6 +98,7 @@ class SecureFlaskApp(Flask):
         :param role_table                  Table containing security roles
         :param user_table                  Table containing security users
         :param user_role_table             Crosswalk table for security roles and users
+        :param configs                     Any additional Flask configs to set/override.
         """
         super().__init__(context)
 
@@ -174,8 +175,7 @@ class SecureFlaskApp(Flask):
                              "user role crosswalk table": user_role_table, "security schema": security_schema}.items():
                     if not v:
                         missing.append(k)
-                self.logger.warning(f"Role-based security not configured correctly. "
-                                    f"Invalid/missing values: {', '.join(missing)}")
+                self.logger.warning(f"Role-based security not configured correctly. Invalid/missing values: {', '.join(missing)}")
 
         # other fields
         self.tables = in_tables
@@ -183,6 +183,12 @@ class SecureFlaskApp(Flask):
         self.url_map.strict_slashes = False
         self.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
         self.secret_key = str(uuid1())
+        self.config["TEMPLATES_AUTO_RELOAD"] = True
+        self.jinja_env.auto_reload = True
+
+        # set any user-provided configs
+        for key, value in configs.items():
+            self.config[key] = value
 
     def __healthcheck(self):
         """
