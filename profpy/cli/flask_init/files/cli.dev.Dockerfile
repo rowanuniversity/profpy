@@ -3,7 +3,6 @@ LABEL maintainer="Rowan University <support@rowan.edu>"
 
 ## Set up directory structure
 RUN mkdir -p /opt/rowan/dependencies
-RUN mkdir -p /tmp/essays/
 WORKDIR /opt/rowan/dependencies
 
 ## Updates and Dependencies
