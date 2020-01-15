@@ -14,7 +14,7 @@ to standardize some of our code practices moving forward.
 pip3 install profpy
 ```
 
-## CLI
+### CLI
 
 For details on the ```profpy``` command line interface, [read the docs](./profpy/cli).
 

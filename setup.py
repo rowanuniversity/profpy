@@ -1,6 +1,7 @@
 import os
 import pathlib
 from setuptools import setup
+from profpy import __version__
 
 
 def read(file_name):
@@ -17,7 +18,7 @@ def requirements():
 
 setup(
     name="profpy",
-    version="2.4.0",
+    version=__version__,
     python_requires=">=3.6.7",
     packages=[
         "profpy",
@@ -29,7 +30,8 @@ setup(
         "profpy.cli", 
         "profpy.cli.flask_init",
         "profpy.cli.run_app",
-        "profpy.cli.stop_app"
+        "profpy.cli.stop_app",
+        "profpy.cli.logs"
     ],
     entry_points={
         "console_scripts": [

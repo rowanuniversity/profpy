@@ -1,9 +1,12 @@
-#!/usr/bin/env python3
+"""
+flask-init command line tool
+"""
 import os
 import pathlib
 import shutil
 import sys
 import argparse
+from profpy import __version__
 
 
 class AppGenerator(object):
@@ -15,8 +18,11 @@ class AppGenerator(object):
     __dir = pathlib.PurePath(__file__).parent / "files"
 
     def __init__(self, cmd_line_args):
+        """
+        Constructor, process user input
+        """
         if cmd_line_args.output_directory:
-            self.__path = pathlib.Path(cmd_line_args.output_directory, cmd_line_args.name)
+            self.__path = pathlib.Path(cmd_line_args.output_directory)
             self.__path_provided = True
         else:
             self.__path = pathlib.Path(".", cmd_line_args.name)
@@ -49,6 +55,9 @@ class AppGenerator(object):
     
 
     def __setup_directories(self):
+        """
+        Setup the overall directory structure
+        """
         directories = [
             self.__path,
             os.path.join(self.__path, "app"),
@@ -66,15 +75,14 @@ class AppGenerator(object):
             os.mkdir(d)
 
     def __setup_docker(self):
+        """
+        Setup the appropriate Docker configuration
+        """
         in_compose = str(self.__dir / "cli.docker-compose.yml")
-        in_override = str(self.__dir / "cli.SAMPLE.docker-compose.override.yml")
         in_dockerfile = str(self.__dir / "cli.Dockerfile")
         with open(in_compose, "r") as compose_file:
             with open(str(self.__path / "docker-compose.yml"), "w") as out_compose:
                 out_compose.write("".join(compose_file.readlines()).format(port_number=self.__port, database_user=self.__database_user))
-        with open(in_override, "r") as override_file:
-            with open(str(self.__path / "SAMPLE.docker-compose.override.yml"), "w") as out_override:
-                out_override.write("".join(override_file.readlines()).format(app_name=self.__name))
         with open(in_dockerfile, "r") as dockerfile:
             with open(str(self.__path / "docker" / "Dockerfile"), "w") as out_dockerfile:
                 out_dockerfile.write("".join(dockerfile.readlines()))
@@ -91,6 +99,9 @@ class AppGenerator(object):
 
 
     def __setup_app_file(self):
+        """
+        Parse the text for the controller.
+        """
         in_path = str(self.__dir / "cli.main.py")
         out_path = str(self.__path / "app" / "main.py")
         asset_config = ""
@@ -110,6 +121,9 @@ class AppGenerator(object):
                 )
     
     def __setup_ddl(self):
+        """
+        Create the dba code
+        """
         additional_grants = ""
         for t in self.__tables:
             additional_grants += f"grant select on {t} to {self.__database_user};\n"
@@ -125,6 +139,9 @@ class AppGenerator(object):
 
 
     def __setup_requirements(self):
+        """
+        Create the requirements.txt file
+        """
         with open(str(self.__dir / "cli.requirements.txt"), "r") as in_requirements:
             contents = "".join(in_requirements.readlines())
             for r in self.__requirements:
@@ -135,6 +152,9 @@ class AppGenerator(object):
                 out_requirements.write(contents)
 
     def __setup_env(self):
+        """
+        Configure the .env file and its appropriate sample version
+        """
         rs_config = ""
         if self.__role_security:
             for line in ["security_schema=webappmgr", "security_role_table=app_role", "security_user_table=app_user", "security_user_role_table=app_user_app_role"]:
@@ -142,28 +162,34 @@ class AppGenerator(object):
         with open(str(self.__dir / "cli.SAMPLE.env"), "r") as in_env:
             sample_path = str(self.__path / "SAMPLE.env")
             with open(sample_path, "w") as out_env:
-                out_env.write("".join(in_env.readlines()).format(cas_url=self.__cas_url, db_user=self.__database_user, app_name=self.__name) + rs_config)
+                out_env.write("".join(in_env.readlines()).format(cas_url=self.__cas_url, db_user=self.__database_user, app_name=self.__name, version=__version__) + rs_config)
             shutil.copyfile(sample_path, str(self.__path / ".env"))
 
 
     def __setup_readme(self):
+        """
+        Setup a barebones README.md file
+        """
         with open(str(self.__dir / "cli.README.md"), "r") as in_readme:
             with open(str(self.__path / "README.md"), "w") as out_readme:
-                out_readme.write("".join(in_readme.readlines()).format(app_name=self.__name))
+                out_readme.write("".join(in_readme.readlines()).format(app_name=self.__name, version=__version__))
 
 
     def __setup_misc(self):
+        """
+        Handle the other stuff
+        """
         with open(str(self.__dir / "cli.gitignore"), "r") as in_gi:
             with open(str(self.__path / ".gitignore"), "w") as out_gi:
                 out_gi.writelines(in_gi.readlines())
-        with open(str(self.__dir / "cli.LICENSE"), "r") as in_license:
-            with open(str(self.__path / "LICENSE"), "w") as out_license:
-                out_license.writelines(in_license.readlines())
         with open(str(self.__dir / "cli.main.css"), "r") as in_css:
             with open(str(self.__path / "app" / "static" / "css" / "main.css"), "w") as out_css:
                 out_css.write("".join(in_css.readlines()))
 
     def __setup_images(self):
+        """
+        Bring over some images for the layout template
+        """
         for i in ["favicon.ico", "rowan_torch_logo_small.png"]:
             shutil.copyfile(
                 str(self.__dir / f"cli.{i}"),
@@ -171,6 +197,9 @@ class AppGenerator(object):
             )
         
     def __setup_html(self):
+        """
+        Create the template files
+        """
         for temp in ["layout.html", "index.html"]:
             with open(str(self.__dir / f"cli.{temp}"), "r") as in_temp:
                 with open(str(self.__path / "app" / "templates" / temp), "w") as out_temp:
@@ -178,7 +207,9 @@ class AppGenerator(object):
 
 
     def __finished(self):
-        
+        """
+        Return some helper text
+        """
         print(f"\nYour app has been created at {self.__path_str}")
         print("Do the following steps to run your app:")
         print(f"\t1. cd {self.__path_str}")
@@ -197,6 +228,9 @@ class AppGenerator(object):
 
         
     def init(self):
+        """
+        Run the tool
+        """
         self.__setup_directories()
         self.__setup_app_file()
         self.__setup_docker()
@@ -211,6 +245,9 @@ class AppGenerator(object):
 
 
 def flask_init_process_input(in_arg):
+    """
+    Process a piece of user-input via a prompt. Appropriately handle special cases.
+    """
     processed_arg = []
     user_in = input(in_arg["help"])
     if not user_in and "default" in in_arg:
@@ -242,6 +279,9 @@ def flask_init_process_input(in_arg):
 
 
 def flask_init_prompt():
+    """
+    This function receives user-prompted arguments for usage with the tool (if the user has not specified any parameters)
+    """
     print("\nInitialize a profpy-flask app.")
     out_args = []
     name_arg = flask_init_process_input(dict(name="name", help="Name of application (required): ", required=True))
@@ -249,7 +289,7 @@ def flask_init_prompt():
     for arg in [
         dict(name="port", help="Port to run the application on (required): ", required=True),
         dict(name="database-user", help="The database user for the application (required): ", required=True),
-        dict(name="output-directory", help=f"The output directory (\"./{name_arg['value']}\"): "),
+        dict(name="output-directory", help=f"The output app directory (\"./{name_arg['value']}\"): "),
         dict(name="cas-url", help="The CAS url (https://login.rowan.edu): ", default="https://login.rowan.edu"),
         dict(name="database-objects", help="Database tables/views for the application to have access to (e.g. schema1.table1 schema2.table2): ", list=True),
         dict(name="requirements", help="Any additional requirements for requirements.txt: ", list=True),
@@ -261,15 +301,18 @@ def flask_init_prompt():
     return out_args
 
 def flask_init_argparser():     
+    """
+    Return the argparser for this tool.
+    """
     parser = argparse.ArgumentParser(
         description="Initialize a profpy-flask app."
     )
     parser.add_argument("-n", "--name", required=True, type=str, help="The name of the application.")
-    parser.add_argument("-f", "--force-create", action="store_true", help="If the project name already exists in the output directory, delete it before running this tool.")
+    parser.add_argument("-f", "--force-create", action="store_true", help="If the project name already exists, delete it before running this tool.")
     parser.add_argument("-p", "--port", required=True, type=int, help="The port that Docker will run this application on.")
     parser.add_argument("-rs", "--role-security", action="store_true", help="Whether or not to configure Spring-like, role-based security.")
     parser.add_argument("-c", "--cas-url", default="https://login.rowan.edu", required=True, type=str, help="The fully-qualified CAS url, (defaults to https://login.rowan.edu)"),
-    parser.add_argument("-o", "--output-directory", type=str, help="Optional output directory (defaults to current directory)")
+    parser.add_argument("-o", "--output-directory", type=str, help="Optional output app directory (./<name>)")
     parser.add_argument("-a", "--asset-management", action="store_true", help="Whether or not to set up integration with Flask-Assets")
     parser.add_argument("-dbu", "--database-user", type=str, required=True, help="The Oracle user that will be the backing database user for this application.")
     parser.add_argument("-dbo", "--database-objects", type=str, nargs="*", help="Any tables/views to allow your app to have access to. Must be fully qualified names (schema.table).")
@@ -278,4 +321,7 @@ def flask_init_argparser():
 
 
 def flask_init(cmd_line_args):
+    """
+    Driver
+    """
     AppGenerator(cmd_line_args).init()

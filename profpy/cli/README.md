@@ -125,4 +125,17 @@ profpy run-app prod -ap /path/to/webapp
 profpy stop-app -ap /path/to/webapp
 ```
 
-## Database Tools
+### logs
+
+Get ```docker-compose``` logs for your application.
+
+```shell script
+# when in app directory
+profpy logs
+
+# when outside of app directory
+profpy logs -ap /path/to/app
+
+# other options (directly from docker-compose)
+profpy logs [--no-color] [-f, --follow] [-t, --timestamps] [--tail="all"]
+```

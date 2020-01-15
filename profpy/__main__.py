@@ -10,6 +10,7 @@ import argparse
 from .cli.run_app import run_app, run_app_argparser
 from .cli.flask_init import flask_init, flask_init_prompt, flask_init_argparser
 from .cli.stop_app import stop_app, stop_app_argparser
+from .cli.logs import logs, logs_argparser
 
 
 # valid programs
@@ -17,6 +18,7 @@ _programs = [
     dict(name="flask-init", description="Initialize a Flask web app with profpy.web tools."),
     dict(name="run-app", description="Run a dockerized web app that you created with one of the profpy init tools."),
     dict(name="stop-app", description="Stop a dockerized web app that you created with one of the profpy init tools."),
+    dict(name="logs", description="Get the logs for an app you created with a profpy init tool."),
     dict(name="help", description="Get info on profpy CLI tools.")
 ]
 
@@ -58,6 +60,13 @@ class Cli(object):
         
         # call the appropriate method for the tool specified by the user
         getattr(self, program)()
+
+
+    def logs(self):
+        """
+        Produce logs for a profpy-created web application.
+        """
+        logs(logs_argparser().parse_args(self.__prog_args))
 
 
     def help(self):
@@ -106,11 +115,14 @@ class Cli(object):
             flask_init(parser.parse_args(self.__prog_args))
         else:
             flask_init(parser.parse_args(flask_init_prompt()))
-
-
+    
+    
 def main():
     """
     CLI driver
     """
-    Cli()
+    try:
+        Cli()
+    except KeyboardInterrupt:
+        print("Goodbye.")
     

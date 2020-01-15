@@ -1,9 +1,15 @@
+"""
+run-app command line tool
+"""
 import subprocess
 import pathlib
 import argparse
 import os
 
 def validate_instance(in_instance):
+    """
+    Check that the user provided a valid instance
+    """
     if not in_instance:
         return "dev"
     else:
@@ -15,6 +21,9 @@ def validate_instance(in_instance):
 
 
 def str_to_pathlib(in_str):
+    """
+    Handle the string to pathlib.Path casting
+    """
     if isinstance(in_str, pathlib.Path):
         return in_str
     else:
@@ -25,6 +34,9 @@ def str_to_pathlib(in_str):
 
 
 def run_app(in_args):
+    """
+    Driver
+    """
     path = in_args.app_path
     os.chdir(str(path))
 
@@ -41,6 +53,9 @@ def run_app(in_args):
 
 
 def run_app_argparser():
+    """
+    Return the argparser for this tool
+    """
     parser = argparse.ArgumentParser(
         description="Run a dockerized web application that you set up via one of profpy's init tools."
     )
