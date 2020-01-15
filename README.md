@@ -14,6 +14,10 @@ to standardize some of our code practices moving forward.
 pip3 install profpy
 ```
 
+### CLI
+
+For details on the ```profpy``` command line interface, [read the docs](./profpy/cli).
+
 ### Submodules
 The profpy library is organized into submodules: ```db```, ```web```, and ```apis```. The ```db``` submodule makes accessing
 Oracle databases with cx_Oracle and or Sql-Alchemy simpler. The ```apis``` submodule 

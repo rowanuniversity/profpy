@@ -1,0 +1,18 @@
+version: '3.4'
+services:
+  web:
+    restart: unless-stopped
+    build:
+      context: "."
+      dockerfile: "./docker/Dockerfile"
+    environment: 
+      full_login: "{database_user}@prod"
+      PYTHONUNBUFFERED: "TRUE"
+      TZ: "America/New_York"
+      NLS_LANG: ".AL32UTF8"
+    env_file:
+      - .env
+    expose:
+      - "80"
+    ports:
+      - "{port_number}:80"

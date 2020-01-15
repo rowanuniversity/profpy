@@ -1,0 +1,5 @@
+version: "3.4"
+services:
+  web:
+    environment: 
+      full_login: "{database_user}@fortnght"

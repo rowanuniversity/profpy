@@ -1,0 +1,33 @@
+.navbar {
+    background-image: url(/static/images/rowan_torch_logo_small.png);
+    background-repeat: no-repeat;
+    /* background-attachment: fixed; */
+    background-position: left top;
+    background-size: contain;
+}
+
+body {
+    margin-bottom: 70px;
+    background-image: url(https://nsscdn.rowan.edu/public/asa/images/rowan_jimmies.png);
+}
+
+.navbar-brand {
+    padding-left: 1em;
+    color: #591404 !important;
+}
+
+.navbar-brand img {
+    height: 25px;
+}
+
+#navbarSupportedContent {
+    margin-top: 0.3em;
+}
+
+.dropdown-menu {
+    opacity: 0.75;
+}
+
+.help-logo {
+    height: 1.1em;
+}
