@@ -17,7 +17,7 @@ def requirements():
 
 setup(
     name="profpy",
-    version="2.3.0",
+    version="2.4.0",
     python_requires=">=3.6.7",
     packages=[
         "profpy",
@@ -28,7 +28,8 @@ setup(
         "profpy.web",
         "profpy.cli", 
         "profpy.cli.flask_init",
-        "profpy.cli.run_app"
+        "profpy.cli.run_app",
+        "profpy.cli.stop_app"
     ],
     entry_points={
         "console_scripts": [

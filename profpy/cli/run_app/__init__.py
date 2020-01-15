@@ -1,6 +1,7 @@
 import subprocess
 import pathlib
 import argparse
+import os
 
 def validate_instance(in_instance):
     if not in_instance:
@@ -12,10 +13,23 @@ def validate_instance(in_instance):
         else:
             raise IOError("Invalid instance. Must be dev, test, or prod.")
 
+
+def str_to_pathlib(in_str):
+    if isinstance(in_str, pathlib.Path):
+        return in_str
+    else:
+        try:
+            return pathlib.Path(in_str)
+        except:
+            raise IOError("Invalid path specified.")
+
+
 def run_app(in_args):
     path = in_args.app_path
+    os.chdir(str(path))
+
     env = in_args.instance
-    override = str(path / "docker-overrides" / f"{env}.docker-compose.override.yml")
+    override = str(pathlib.Path(".", "docker-overrides", f"{env}.docker-compose.override.yml"))
     cmd = [
         "docker-compose", "-f", "docker-compose.yml", "-f", override, "up", "--build"
     ]
@@ -31,7 +45,7 @@ def run_app_argparser():
         description="Run a dockerized web application that you set up via one of profpy's init tools."
     )
     parser.add_argument("instance", type=validate_instance, help="The instance to run this on.", nargs="?", default="dev")
-    parser.add_argument("-ap", "--app-path", type=str, default=pathlib.Path("."), help="Optional path to the app (\".\").")
+    parser.add_argument("-ap", "--app-path", type=str_to_pathlib, default=pathlib.Path("."), help="Optional path to the app (\".\").")
     parser.add_argument("--force-recreate", action="store_true", required=False, help="Force a full recreate via docker-compose.")
     parser.add_argument("-d", "--detach", action="store_true", required=False, help="Run the container in detached mode.")
     return parser
