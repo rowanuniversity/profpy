@@ -19,6 +19,19 @@ app.logger.setLevel(logging.DEBUG)
 
 {asset_config}
 
+@app.teardown_appcontext
+def shutdown_user_session(response_or_error):
+    """
+    Necessary for database cleanup on session close. If not here, 
+    it is possible for the connection to stay open with a bad transaction.
+    """
+    try:
+        if response_or_error is None:
+            app.db.commit()
+    finally:
+        app.db.rollback()
+    return response_or_error
+
 
 @app.route("/")
 @app.route("/home")

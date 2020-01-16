@@ -118,6 +118,7 @@ class SecureFlaskApp(Flask):
 
         # connect to db
         self.db = scoped_session(sessionmaker(bind=engine))()
+        self.__service = os.getenv("service")
         self.__custom_403 = custom_403_template
 
         # bake in a healthcheck route
@@ -197,9 +198,9 @@ class SecureFlaskApp(Flask):
         """
         try:
             self.db.execute("select 1 from dual")
-            response = jsonify(dict(message="Healthy", application=self.application_name, status=200)), 200
+            response = jsonify(dict(message="Healthy", instance=self.__service, application=self.application_name, status=200)), 200
         except Exception as e:
-            response = jsonify(dict(message=f"Unhealthy: {str(e)}", application=self.application_name, status=500)), 500
+            response = jsonify(dict(message=f"Unhealthy: {str(e)}", instance=self.__service, application=self.application_name, status=500)), 500
         return response
 
     def __logout(self):
