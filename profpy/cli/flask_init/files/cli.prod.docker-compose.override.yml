@@ -4,6 +4,7 @@ services:
   web:
     environment: 
       instance: "PROD"
+      service: "PROD.ORARAC2"
       full_login: "{database_user}@prod"    
     env_file:
       - /opt/credentials/{app_name}.env

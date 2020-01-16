@@ -6,6 +6,7 @@ services:
       dockerfile: "./docker/dev.Dockerfile"
     environment: 
       instance: "PPRD"
+      service: "PPRD.ORARAC1"
       full_login: "{database_user}@pprd"
     volumes:
       - ./app/:/app

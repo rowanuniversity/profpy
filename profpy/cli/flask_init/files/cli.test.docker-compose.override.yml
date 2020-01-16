@@ -3,4 +3,5 @@ services:
   web:
     environment: 
       instance: "FORTNGHT"
+      service: "FORTNGHT.ORARAC1"
       full_login: "{database_user}@fortnght"
