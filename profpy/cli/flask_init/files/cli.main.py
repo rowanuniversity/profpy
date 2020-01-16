@@ -19,6 +19,18 @@ app.logger.setLevel(logging.DEBUG)
 
 {asset_config}
 
+@app.teardown_appcontext
+def shutdown_user_session(response_or_error):
+    """
+    Necessary for database cleanup on session close
+    """
+    try:
+        if response_or_error is None:
+            app.db.commit()
+    finally:
+        app.db.rollback()
+    return response_or_error
+
 
 @app.route("/")
 @app.route("/home")

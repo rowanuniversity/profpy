@@ -269,10 +269,12 @@ def flask_init_process_input(in_arg):
             processed_arg.append(f"--{in_arg['name']}")
     elif "list" in in_arg:
         processed_arg.append(f"--{in_arg['name']}")
-        user_in = user_in.strip()  
-        split_up = user_in.split(" ")
-        user_in = [] if not user_in else user_in
-        processed_arg.extend(split_up if split_up else user_in)
+        user_in = user_in.strip()
+        if user_in:
+            user_in = user_in.split(" ")
+        else:
+            user_in = []
+        processed_arg.extend(user_in)
     else:
         processed_arg.extend([f"--{in_arg['name']}", user_in])
     return dict(processed_arg=processed_arg, key=in_arg["name"], value=user_in)
