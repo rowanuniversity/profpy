@@ -2,4 +2,5 @@ version: "3.4"
 services:
   web:
     environment: 
+      instance: "FORTNGHT"
       full_login: "{database_user}@fortnght"

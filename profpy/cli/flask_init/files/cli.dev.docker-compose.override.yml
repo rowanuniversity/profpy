@@ -5,6 +5,7 @@ services:
       context: "."
       dockerfile: "./docker/dev.Dockerfile"
     environment: 
+      instance: "PPRD"
       full_login: "{database_user}@pprd"
     volumes:
       - ./app/:/app
