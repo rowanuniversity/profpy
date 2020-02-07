@@ -6,7 +6,9 @@ RUN mkdir -p /opt/rowan/dependencies
 WORKDIR /opt/rowan/dependencies
 
 ## Updates and Dependencies
-RUN apt-get update && apt-get install libaio1 && apt-get install tzdata
+RUN apt-get update && apt-get install -y \
+	libaio1 \
+    tzdata
 
 ## Get Oracle InstantClient from local server
 RUN curl https://nsscdn.rowan.edu/public/asa/docker/oracle/instantclient-basiclite-linux.x64-18.5.0.0.0dbru.zip -o "oracle-instantclient-basic.zip"
