@@ -22,13 +22,13 @@
     {{% if config["instance"] == "PPRD" %}}
         <link rel="stylesheet" href="{{{{ url_for('static', filename='css/rowan-site.css') }}}}" />
         <link rel="stylesheet" href="{{{{ url_for('static', filename='css/site.css') }}}}" />
-        <script type="text/javascript" href="{{{{ url_for('static', filename='js/site.js') }}}}"></script>
+        <script type="text/javascript" src="{{{{ url_for('static', filename='js/site.js') }}}}"></script>
     {{% else  %}}
         {{% assets filters="cssmin", output="mini/site.min.css", "css/rowan-site.css", "css/site.css" %}}
             <link rel="stylesheet" href="{{{{ ASSET_URL }}}}" />
         {{% endassets %}}
         {{% assets filters="jsmin", output="mini/site.min.js", "js/site.js" %}}
-            <script type="text/javascript" href="{{{{ ASSET_URL }}}}"></script>
+            <script type="text/javascript" src="{{{{ ASSET_URL }}}}"></script>
         {{% endassets %}}
     {{% endif %}}
     {{% block additional_sources %}}{{% endblock %}}
