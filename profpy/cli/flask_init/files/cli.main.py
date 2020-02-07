@@ -3,7 +3,8 @@ import logging
 from profpy.web import SecureFlaskApp
 from profpy.db import get_sql_alchemy_oracle_engine
 from flask import render_template
-{asset_import}
+from flask_assets import Environment
+
 
 engine = get_sql_alchemy_oracle_engine()
 tables = {tables}
@@ -11,13 +12,18 @@ tables = {tables}
 app = SecureFlaskApp(
     __name__, "{app_name}", engine, tables
 )
-app.config["app_name"] = os.getenv("app_name")
+
+for config_key in ["app_name", "app_port", "instance", "service", "app_url"]:
+    app.config[config_key] = os.getenv(config_key)
+
 
 # configure gunicorn logging
 app.logger.handlers.extend(logging.getLogger("gunicorn.error").handlers)
 app.logger.setLevel(logging.DEBUG)
 
-{asset_config}
+# configure asset management
+assets = Environment(app)
+
 
 @app.teardown_appcontext
 def shutdown_user_session(response_or_error):

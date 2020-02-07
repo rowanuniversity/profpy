@@ -1,1 +1,4 @@
 profpy
+Flask-Assets
+jsmin
+cssmin

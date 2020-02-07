@@ -6,6 +6,7 @@
 scratch*.py
 dist/
 build/
+app/static/mini/
 
 
 # Byte-compiled / optimized / DLL files
