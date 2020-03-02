@@ -40,7 +40,6 @@ class AppGenerator(object):
         self.__role_security = cmd_line_args.role_security if cmd_line_args.role_security else False
         self.__port = cmd_line_args.port
         self.__cas_url = cmd_line_args.cas_url
-        self.__asset_management = cmd_line_args.asset_management if cmd_line_args.asset_management else False
         self.__database_user = cmd_line_args.database_user
         
         if cmd_line_args.requirements:
@@ -104,20 +103,14 @@ class AppGenerator(object):
         """
         in_path = str(self.__dir / "cli.main.py")
         out_path = str(self.__path / "app" / "main.py")
-        asset_config = ""
-        asset_import = ""
         pathlib.Path(str(self.__path / "app" / "utils" / "__init__.py")).touch()
         with open(in_path, "r") as sample_file:
             contents = "".join(sample_file.readlines())
             with open(out_path, "w") as output:
-                if self.__asset_management:
-                    pathlib.Path(str(self.__path / "app" / "static" / "js" / "site.js")).touch()
-                    pathlib.Path(str(self.__path / "app" / "static" / "css" / "site.css")).touch()
-                    asset_import = "from flask_assets import Environment, Bundle"
-                    with open(str(self.__dir / "cli.asset_config.txt"), "r") as asset_config_txt:
-                        asset_config = "".join(asset_config_txt.readlines()).format(app_name=self.__name)
+                pathlib.Path(str(self.__path / "app" / "static" / "js" / "site.js")).touch()
+                pathlib.Path(str(self.__path / "app" / "static" / "css" / "site.css")).touch()
                 output.write(
-                    contents.format(asset_config=asset_config, asset_import=asset_import, app_name=self.__name, tables=str(self.__tables))
+                    contents.format(app_name=self.__name, tables=str(self.__tables))
                 )
     
     def __setup_ddl(self):
@@ -145,9 +138,8 @@ class AppGenerator(object):
         with open(str(self.__dir / "cli.requirements.txt"), "r") as in_requirements:
             contents = "".join(in_requirements.readlines())
             for r in self.__requirements:
-                contents += f"\n{r}"
-            if self.__asset_management:
-                contents += "\nFlask-Assets"
+                if r.lower() not in ["flask-assets", "profpy", "jsmin", "cssmin"]:
+                    contents += f"\n{r}"
             with open(str(self.__path / "requirements.txt"), "w") as out_requirements:
                 out_requirements.write(contents)
 
@@ -182,8 +174,8 @@ class AppGenerator(object):
         with open(str(self.__dir / "cli.gitignore"), "r") as in_gi:
             with open(str(self.__path / ".gitignore"), "w") as out_gi:
                 out_gi.writelines(in_gi.readlines())
-        with open(str(self.__dir / "cli.main.css"), "r") as in_css:
-            with open(str(self.__path / "app" / "static" / "css" / "main.css"), "w") as out_css:
+        with open(str(self.__dir / "cli.rowan-site.css"), "r") as in_css:
+            with open(str(self.__path / "app" / "static" / "css" / "rowan-site.css"), "w") as out_css:
                 out_css.write("".join(in_css.readlines()))
 
     def __setup_images(self):
@@ -296,7 +288,6 @@ def flask_init_prompt():
         dict(name="database-objects", help="Database tables/views for the application to have access to (e.g. schema1.table1 schema2.table2): ", list=True),
         dict(name="requirements", help="Any additional requirements for requirements.txt: ", list=True),
         dict(name="role-security", help="Whether or not to use role-based security (Y/n): ", flag=True, default="y"),
-        dict(name="asset-management", help="Whether or not to use flask-assets (Y/n): ", flag=True, default="y"),
         dict(name="force-create", help="Delete an existing application in the given directory with the same name (y/N): ", flag=True, default="n")
     ]:
         out_args.extend(flask_init_process_input(arg)["processed_arg"])
@@ -315,7 +306,6 @@ def flask_init_argparser():
     parser.add_argument("-rs", "--role-security", action="store_true", help="Whether or not to configure Spring-like, role-based security.")
     parser.add_argument("-c", "--cas-url", default="https://login.rowan.edu", required=True, type=str, help="The fully-qualified CAS url, (defaults to https://login.rowan.edu)"),
     parser.add_argument("-o", "--output-directory", type=str, help="Optional output app directory (./<name>)")
-    parser.add_argument("-a", "--asset-management", action="store_true", help="Whether or not to set up integration with Flask-Assets")
     parser.add_argument("-dbu", "--database-user", type=str, required=True, help="The Oracle user that will be the backing database user for this application.")
     parser.add_argument("-dbo", "--database-objects", type=str, nargs="*", help="Any tables/views to allow your app to have access to. Must be fully qualified names (schema.table).")
     parser.add_argument("-rq", "--requirements", type=str, nargs="*", help="Any additional dependencies to have in requirements.txt (profpy is placed in there by default).")
