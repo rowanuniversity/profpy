@@ -281,10 +281,11 @@ class SecureFlaskApp(Flask):
 
                     # do role-based security, if it was configured
                     if self.__role_security_configured:
-                        auths = self.db.query(self.users, self.roles.c.authority) \
-                            .outerjoin(self.user_roles, self.users.c.id == self.user_roles.c.app_user_id) \
-                            .outerjoin(self.roles, self.user_roles.c.app_role_id == self.roles.c.id) \
-                            .filter(self.users.c.username == cas.user).all()
+                        auths = self.db.query(self.user_roles, self.roles.c.authority).filter(
+                            self.user_roles.c.app_user_id == cas.id
+                        ).outerjoin(
+                            self.roles, self.user_roles.c.app_role_id == self.roles.c.id
+                        ).all()
                         cas.roles = [a.authority for a in auths]
 
                         # all_roles was set, and the authenticated user doesn't have all of the roles in the
