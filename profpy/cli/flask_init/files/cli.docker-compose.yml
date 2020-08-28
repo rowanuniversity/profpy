@@ -10,6 +10,7 @@ services:
       PYTHONUNBUFFERED: "TRUE"
       TZ: "America/New_York"
       NLS_LANG: ".AL32UTF8"
+      app_port: "{port_number}"
     env_file:
       - .env
     expose:

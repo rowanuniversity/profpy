@@ -15,13 +15,22 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.0.12/dist/js/select2.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.css" />
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css" />
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.5.6/css/buttons.dataTables.min.css" />
-    <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.5.6/js/dataTables.buttons.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-    <link rel="stylesheet" href="{{{{ url_for('static', filename='css/main.css') }}}}" />
-    <script type="text/javascript">
-        $.fn.select2.defaults.set("theme", "bootstrap");
-    </script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js"></script>
+
+    {{# Using the convention below, you can add minified assets to other templates. #}}
+    {{% if config["instance"] == "PPRD" %}}
+        <link rel="stylesheet" href="{{{{ url_for('static', filename='css/rowan-site.css') }}}}" />
+        <link rel="stylesheet" href="{{{{ url_for('static', filename='css/site.css') }}}}" />
+        <script type="text/javascript" src="{{{{ url_for('static', filename='js/site.js') }}}}"></script>
+    {{% else  %}}
+        {{% assets filters="cssmin", output="mini/site.min.css", "css/rowan-site.css", "css/site.css" %}}
+            <link rel="stylesheet" href="{{{{ ASSET_URL }}}}" />
+        {{% endassets %}}
+        {{% assets filters="jsmin", output="mini/site.min.js", "js/site.js" %}}
+            <script type="text/javascript" src="{{{{ ASSET_URL }}}}"></script>
+        {{% endassets %}}
+    {{% endif %}}
     {{% block additional_sources %}}{{% endblock %}}
 </head>
 <body>
