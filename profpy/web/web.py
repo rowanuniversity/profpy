@@ -12,7 +12,7 @@ from urllib.parse import quote
 from uuid import uuid1
 from sqlalchemy import MetaData, Table
 from sqlalchemy.orm import scoped_session, sessionmaker
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 
 
 # some constants
@@ -83,7 +83,7 @@ class SecureFlaskApp(Flask):
                  cas_url=os.environ.get(_default_cas_url_var), logout_endpoint="logout",
                  post_logout_view_function=None, custom_403_template=None, security_schema=os.environ.get(_schema_var),
                  role_table=os.environ.get(_role_var), user_table=os.environ.get(_user_var),
-                 user_role_table=os.environ.get(_user_role_var), **configs):
+                 user_role_table=os.environ.get(_user_role_var), secret_key=os.getenv("db_password"), app_url=os.getenv("app_url"), app_port=os.getenv("app_port"), dev_server="http://asa-dev", **configs):
         """
         Constructor
         :param context:                    WSGI object name (__name__)
@@ -101,12 +101,19 @@ class SecureFlaskApp(Flask):
         :param configs                     Any additional Flask configs to set/override.
         """
         super().__init__(context)
-
         if cas_url is None:
             raise Exception("CAS url not configured.")
+        if not secret_key:
+            raise Exception("Secret key required.")
+        if not app_port:
+            raise Exception("App port required.")
+
+        self.app_port = app_port
+        self.app_url = f"{dev_server}:{app_port}" if not app_url else app_url
+
 
         # strip trailing slash, if it is present
-        elif cas_url[len(cas_url) - 1] == "/":
+        if cas_url[len(cas_url) - 1] == "/":
             cas_url = cas_url[:-1]
 
         # organize tables by schema
@@ -183,8 +190,10 @@ class SecureFlaskApp(Flask):
         self.application_name = name
         self.url_map.strict_slashes = False
         self.config["JSONIFY_PRETTYPRINT_REGULAR"] = True
-        self.secret_key = str(uuid1())
+        self.secret_key = secret_key
+        self.config["SECRET_KEY"] = self.secret_key
         self.config["TEMPLATES_AUTO_RELOAD"] = True
+        self.config['PERMANENT_SESSION_LIFETIME'] =  timedelta(days=1)
         self.jinja_env.auto_reload = True
 
         # set any user-provided configs
@@ -272,9 +281,10 @@ class SecureFlaskApp(Flask):
                 # the decorated route function
                 response = render_template(self.__custom_403) if self.__custom_403 \
                                else jsonify(dict(message="Unauthorized")), 403
-                session["cas-after-login"] = f"{request.path}{_parse_query_string(quoted=False)}"
                 if "cas-object" not in session:
-                    response = _login(self.__cas_server_url)
+                    after_login = f"{request.path}{_parse_query_string(quoted=False)}"
+                    session["cas-after-login"] = after_login
+                    response = _login(self.__cas_server_url, self.app_url)
                 else:
                     raw_cas = session.get("cas-object")
                     cas = CasUser(raw_cas["user"], raw_cas["attributes"], db_session=self.db, user_table=self.users)
@@ -393,25 +403,24 @@ def _parse_query_string(quoted=False):
     return (quote(qs) if quoted else qs) if qs != "?" else ""
 
 
-def _login(in_cas_url, db_session=None, security_user_table=None):
+def _login(in_cas_url, in_app_url, db_session=None, security_user_table=None):
     """
     Business logic for CAS login
     :param in_cas_url:      The CAS server url
     :return:                An appropriate redirect url
     """
-    app_url = f"{request.base_url}{_parse_query_string(quoted=True)}"
+    app_url = f"{in_app_url}{request.path}{_parse_query_string(quoted=True)}"
     redirect_url = f"{in_cas_url}/cas/login?service={app_url}"
     if "ticket" in request.args:
         session["cas-ticket"] = request.args["ticket"]
 
     if "cas-ticket" in session:
-
         client = caslib.SAMLClient(in_cas_url, app_url)
         cas_response = client.saml_serviceValidate(session["cas-ticket"])
         if cas_response.success:
             session["cas-object"] = CasUser(cas_response.user, cas_response.attributes, db_session,
                                             security_user_table).serialize()
-            redirect_url = session.pop("cas-after-login")
+            redirect_url = session.get("cas-after-login")
         else:
             del session["cas-ticket"]
     return redirect(redirect_url)
