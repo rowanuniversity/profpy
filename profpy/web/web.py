@@ -83,7 +83,7 @@ class SecureFlaskApp(Flask):
                  cas_url=os.environ.get(_default_cas_url_var), logout_endpoint="logout",
                  post_logout_view_function=None, custom_403_template=None, security_schema=os.environ.get(_schema_var),
                  role_table=os.environ.get(_role_var), user_table=os.environ.get(_user_var),
-                 user_role_table=os.environ.get(_user_role_var), secret_key=os.getenv("db_password"), app_url=os.getenv("app_url"), app_port=os.getenv("app_port"), dev_server="http://asa-dev", **configs):
+                 user_role_table=os.environ.get(_user_role_var), app_url=os.getenv("app_url"), app_port=os.getenv("app_port"), dev_server="http://asa-dev", **configs):
         """
         Constructor
         :param context:                    WSGI object name (__name__)
@@ -101,6 +101,7 @@ class SecureFlaskApp(Flask):
         :param configs                     Any additional Flask configs to set/override.
         """
         super().__init__(context)
+        secret_key = os.getenv("secret_key")
         if cas_url is None:
             raise Exception("CAS url not configured.")
         if not secret_key:
