@@ -6,6 +6,7 @@ Users can call tools on the command line like so:
     profpy <tool> <args>
 """
 import sys 
+import uuid
 import argparse
 from .cli.run_app import run_app, run_app_argparser
 from .cli.flask_init import flask_init, flask_init_prompt, flask_init_argparser
@@ -19,7 +20,8 @@ _programs = [
     dict(name="run-app", description="Run a dockerized web app that you created with one of the profpy init tools."),
     dict(name="stop-app", description="Stop a dockerized web app that you created with one of the profpy init tools."),
     dict(name="logs", description="Get the logs for an app you created with a profpy init tool."),
-    dict(name="help", description="Get info on profpy CLI tools.")
+    dict(name="help", description="Get info on profpy CLI tools."),
+    dict(name="generate-secret", description="Generate a secret key for a Flask web app.")
 ]
 
 
@@ -80,6 +82,15 @@ class Cli(object):
             print(f"\t{prog['name']} - {prog['description']}")
         sys.exit(0)
     
+
+    def generate_secret(self):
+        """
+        Creates a valid, randomized secret key for secured web applications. This 
+        key is used to sign the session.
+        """
+        print(uuid.uuid1())
+        sys.exit(0)
+
 
     def run_app(self):
         """
