@@ -3,6 +3,21 @@
 The ```web``` submodule contains an extension of the Flask wsgi object called ```SecuredFlaskApp``` which allows
 us to make role and CAS-secured Flask apps with minimal overhead. 
 
+## Required Configuration
+In order to use this module, there are some required environment variables you must set.
+
+| Variable                | Description                                                        |
+|--------------------------|--------------------------------------------------------------------|
+| cas_url          | The CAS server url e.g. https://login.rowan.edu, protocol is required       |
+| app_port      | The port on which you are running this application.               |
+| secret_key      | A unique secret key for the application, used for signing hashed session objects in Flask.                  |
+
+In addition to those, you must set the variable ```app_url``` when running in a non-dev environment. The protocol must be included in this string. If no ```app_url``` is set, the application will by 
+default run at ```http://asa-dev:${app_port}```. The default ```asa-dev``` convention can be 
+overriden via the optional ```dev_server``` argument to the ```SecureFlaskApp``` constructor.
+
+Role-based authorization configuration can be found later in this README. These variables are completely optional, but required when doing role-based authorization.
+
 #### Creating an Application
 The ```SecureFlaskApp``` class allows us to access auto-generated Sql-Alchemy models of any table or view 
 as attributes of the application. All you have to do is provide schema-qualified table/view names in a list to
