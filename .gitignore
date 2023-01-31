@@ -9,3 +9,4 @@ scratch.py
 dist/
 build/
 __pycache__/
+.tool-versions

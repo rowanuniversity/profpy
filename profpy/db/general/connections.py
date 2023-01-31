@@ -1,4 +1,4 @@
-import cx_Oracle
+import oracledb as cx_Oracle
 import os
 import re
 import functools
