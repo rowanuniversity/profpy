@@ -5,8 +5,8 @@
 *.egg-info/
 test/quick_tests.py
 test/scratch.py
-scratch.py
+.tool-versions
+scratch*.py
 dist/
 build/
 __pycache__/
-.tool-versions

@@ -36,5 +36,11 @@ For in-depth documentation, explore the submodules individually:
 
 
 ### Dependencies
+<<<<<<< HEAD
 - Python 3.8 or above
 - Oracle Instant Client
+=======
+- Python 3.6.7 or above
+- Oracle Instant Client
+
+>>>>>>> 180f5254d12ad4be90798ec9892b1589e85d912d
