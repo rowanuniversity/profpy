@@ -5,6 +5,7 @@
 *.egg-info/
 test/quick_tests.py
 test/scratch.py
+.tool-versions
 scratch*.py
 dist/
 build/
