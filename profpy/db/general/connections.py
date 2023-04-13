@@ -1,4 +1,4 @@
-import cx_Oracle
+import oracledb as cx_Oracle
 import os
 import re
 import functools
@@ -41,7 +41,7 @@ class OracleConnectionHelper(object):
         self.__username = username
         self.__password = password
         self.__dsn = dsn
-        self.__engine_string = f"oracle://{username}:{password}@{dsn}"
+        self.__engine_string = f"oracle+oracledb://{username}:{password}@{dsn}"
 
     def get_cx_oracle_connection(self):
         """

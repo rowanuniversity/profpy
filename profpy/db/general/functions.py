@@ -1,5 +1,5 @@
 import os
-import cx_Oracle
+import oracledb as cx_Oracle
 import re
 
 DEFAULT_ARRAY_SIZE = 1000
