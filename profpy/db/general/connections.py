@@ -7,6 +7,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 short_form_regex = re.compile(r"^[a-zA-Z]+[a-zA-Z0-9_]*@[a-zA-Z_]+$")
 
+DatabaseError = cx_Oracle.DatabaseError
 
 class OracleConnectionHelper(object):
     """
@@ -19,6 +20,11 @@ class OracleConnectionHelper(object):
         :param login:    the database login string
         :param password: the database password
         """
+
+        # Run oracledb using thick mode. (Requires the oracle instant client to be installed)
+        d = None
+        cx_Oracle.init_oracle_client(lib_dir=d)
+        
         login_parts = login.split("@")
 
         if re.match(short_form_regex, login):
@@ -133,8 +139,8 @@ def with_sql_alchemy_model(engine, owner, object_name):
     def with_sql_alchemy_model_(f):
         @functools.wraps(f)
         def wrap(*args, **kwargs):
-            md = MetaData(engine, schema=owner)
-            md.reflect(only=[object_name], views=True)
+            md = MetaData()
+            md.reflect(engine, schema=owner, only=[object_name], views=True)
             model = None
             for tbl_name, tbl_obj in md.tables.items():
                 if tbl_name == f"{owner}.{object_name}":
@@ -268,8 +274,8 @@ def get_sql_alchemy_oracle_model(engine, object_owner, object_name, return_relat
                                  is modeled, that source tables for the key are also modeled.
     :return:                     A model or list of models, depending on the parameters
     """
-    md = MetaData(engine, schema=object_owner)
-    md.reflect(only=[object_name], views=True)
+    md = MetaData()
+    md.reflect(engine, schema=object_owner, only=[object_name], views=True)
 
     if return_relationships:
         return md.tables.items()

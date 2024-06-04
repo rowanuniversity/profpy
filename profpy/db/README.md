@@ -9,8 +9,8 @@ that was found across multiple projects and CVS repositories.
 
 ---
 #### with_cx_oracle_connection( *login=os.environ['full_login'], password=os.environ['db_password'], auto_commit=False*)
-<i>Decorator that passes a cx_Oracle connection to the wrapped function. This is the suggested profpy method
-for connecting to Oracle with cx_Oracle!</i>
+<i>Decorator that passes a oracledb connection to the wrapped function. This is the suggested profpy method
+for connecting to Oracle with oracledb!</i>
 
 <b>Parameters:</b>
 
@@ -150,7 +150,7 @@ def get_person(connection, person_id):
 
 
 #### get_cx_oracle_connection(*login=os.environ['full_login'], password=os.environ['db_password']*)
-<i>Returns cx_Oracle connection object</i>
+<i>Returns oracledb connection object</i>
 
 <b>Parameters:</b>
 
@@ -240,16 +240,16 @@ users_with_foreign_key_models = get_sql_alchemy_oracle_model(engine, "admin", "u
 ---
 
 #### execute_statement ( <i>cursor, sql, params=None</i> )
-<i>Executes a SQL statement (DML/DDL) with a cx_Oracle cursor and returns nothing.
+<i>Executes a SQL statement (DML/DDL) with a oracledb cursor and returns nothing.
 This method exists for semantic consistency with ```execute_query```. The same 
-functionality can be achieved by using ```cursor.execute(sql, params)``` natively with the cx_Oracle
+functionality can be achieved by using ```cursor.execute(sql, params)``` natively with the oracledb
 cursor.</i>
 
 <b>Parameters:</b>
 
 | Name                 | Description                                          | Type             | Required |
 |----------------------|------------------------------------------------------|------------------|----------|
-| cursor               | database cursor                                      | cx_Oracle Cursor | yes      |
+| cursor               | database cursor                                      | oracledb Cursor | yes      |
 | sql                  | sql to be executed                                   | str              | yes      |
 | params               | parameters for the sql                               | dict             | no       |
 
@@ -271,7 +271,7 @@ with get_connection("full_login", "db_password") as connection:
 ---
 
 #### execute_query ( <i>cursor, sql, params=None, limit=None, null_to_empty_string=False, prefix=None, use_generator=False</i> )
-<i>Returns a list of dictionaries from a resulting SQL query, using a cx_Oracle cursor. This is in contrast to the normal behavior of cx_Oracle cursor
+<i>Returns a list of dictionaries from a resulting SQL query, using a oracledb cursor. This is in contrast to the normal behavior of cx_Oracle cursor
 executions which return a list of lists. This allows us to access data by column name, rather than having to keep track of indexes, leading to much more readable code. The "use_generator" parameter allows for the user to return a generator object rather than a list of dictionaries. This generator 
 object will yield dictionaries as needed. This option is highly recommended for use cases involving large datasets. </i>
 
@@ -279,7 +279,7 @@ object will yield dictionaries as needed. This option is highly recommended for 
 
 | Name                 | Description                                          | Type             | Required |
 |----------------------|------------------------------------------------------|------------------|----------|
-| cursor               | database cursor                                      | cx_Oracle Cursor | yes      |
+| cursor               | database cursor                                      | oracledb Cursor | yes      |
 | sql                  | sql to be executed                                   | str              | yes      |
 | params               | parameters for the sql                               | dict             | no       |
 | limit                | a limit on the number of rows returned               | int              | no       |
