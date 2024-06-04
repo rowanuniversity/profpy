@@ -345,8 +345,8 @@ def _get_single_table(engine, in_schema, in_table):
     :param in_table:  the table
     :return:          sqlalchemy table object
     """
-    md = MetaData(engine, schema=in_schema)
-    md.reflect(only=[in_table], views=True)
+    md = MetaData()
+    md.reflect(engine, schema=in_schema, only=[in_table], views=True)
     return md.tables[f"{in_schema}.{in_table}"] if md.tables else None
 
 
@@ -358,8 +358,8 @@ def _create_table_objects(engine, schema, tables):
     :param tables: the tables
     :return:       sqlalchemy table objects in a dict
     """
-    md = MetaData(engine, schema=schema)
-    md.reflect(only=tables, views=True)
+    md = MetaData()
+    md.reflect(engine, schema=schema, only=tables, views=True)
     return md.tables
 
 
